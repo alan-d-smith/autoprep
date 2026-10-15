@@ -17,7 +17,7 @@ export const defaultSettings = () => ({
   goal: null,
 });
 
-const defaultUi = () => ({ ukiepcDifficulty: false, ukiepcTopics: false, ukiepcOpen: [], sidebarOpen: true, ttsRate: 1, closedTracks: [], openStages: [], closedStages: [], codeStyle: 'general', ttsVoice: 'auto', naturalModel: false, naturalReady: false, jumpTipShown: false });
+const defaultUi = () => ({ ukiepcDifficulty: false, ukiepcTopics: false, ukiepcOpen: [], sidebarOpen: true, ttsRate: 1, closedTracks: [], openStages: [], closedStages: [], codeStyle: 'general', ttsVoice: 'auto', naturalModel: false, naturalReady: false, vizSpeed: 1, vizMuted: false, jumpTipShown: false });
 
 const fresh = () => ({
   math: { rounds: [], drills: [], settings: defaultSettings() },
@@ -45,7 +45,8 @@ function load() {
     for (const key of ['ukiepcOpen', 'closedTracks', 'openStages', 'closedStages']) if (!Array.isArray(ui[key])) ui[key] = [];
     if (!(ui.ttsRate >= 0.25 && ui.ttsRate <= 1.75)) ui.ttsRate = 1;
     if (typeof ui.ttsVoice !== 'string') ui.ttsVoice = 'auto';
-    for (const key of ['jumpTipShown']) ui[key] = ui[key] === true;
+    if (![0.5, 1, 2].includes(ui.vizSpeed)) ui.vizSpeed = 1;
+    for (const key of ['vizMuted', 'jumpTipShown']) ui[key] = ui[key] === true;
     return {
       math: {
         rounds: Array.isArray(math.rounds) ? math.rounds.filter((r) => Array.isArray(r?.questions)) : [],

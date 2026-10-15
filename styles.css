@@ -717,7 +717,12 @@ input.answer.miss { color: var(--signal); border-bottom-color: var(--signal); }
 .viz-small .viz-frame svg { max-width: 460px; }
 .viz-caption { margin-top: 12px; color: var(--text); font-size: 14.5px; line-height: 1.6; min-height: 3.2em; max-width: 46rem; }
 .viz-small .viz-caption { min-height: 0; color: var(--text-2); }
-.viz-controls { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+.viz-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.viz-scrub { flex: 1 1 120px; min-width: 0; accent-color: #60a5fa; cursor: pointer; }
+.viz-speed { min-width: 3.4em; padding-left: 8px; padding-right: 8px; color: var(--text-2); font-family: var(--mono); font-size: 12px; }
+.viz-mute { padding: 4px 9px; color: var(--text-2); }
+.viz-mute[aria-pressed='true'] { color: var(--text-3); }
+.viz-mute .icon { width: 16px; height: 16px; }
 .viz-count { font-family: var(--mono); font-size: 12px; color: var(--text-3); min-width: 3.5em; text-align: center; }
 .btn-small { min-height: 30px; padding: 4px 12px; font-size: 13px; border-radius: 8px; }
 .play-btn { padding: 4px 10px; }
