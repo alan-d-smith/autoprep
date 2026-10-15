@@ -1,0 +1,11 @@
+{
+  "name": "autoprep",
+  "private": true,
+  "type": "module",
+  "description": "Competitive programming roadmap and diagnostic mental-maths trainer. Static site, no build step.",
+  "scripts": {
+    "dev": "node scripts/serve.js",
+    "test": "node --test \"tests/**/*.test.js\"",
+    "verify:curriculum": "node scripts/verify-curriculum.js"
+  }
+}
