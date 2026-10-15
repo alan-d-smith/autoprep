@@ -31,7 +31,7 @@ npm test         # engine, diagnosis, curriculum and UKIEPC data tests
 npm run verify:curriculum   # re-check every problem's name and rating against the Codeforces API
 ```
 
-Node 20+ is only needed for the dev server and tests. The site itself is static files: `index.html`, `styles.css`, `favicon.svg`, `audio/` and `src/`. Because it uses ES modules, open it through a server rather than straight from the file system. Deploy to Vercel (or any static host) from the repo root, with framework preset **Other**, no build command, and output directory `.`.
+Node 20+ is only needed for the dev server and tests. The site itself is static files: `index.html`, `styles.css`, `favicon.svg`, `fonts/`, `audio/` and `src/`. Because it uses ES modules, open it through a server rather than straight from the file system. Deploy to Vercel (or any static host) from the repo root, with framework preset **Other**, no build command, and output directory `.`.
 
 ## How the mental-maths diagnosis works
 
