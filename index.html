@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>autoprep</title>
+  <meta name="description" content="A Codeforces path through DP, graphs and geometry with hints that teach you to recognise each technique, UKIEPC practice sets, and a Zetamac trainer that finds the mental-maths technique costing you the most." />
+  <meta name="theme-color" content="#09090b" />
+  <meta name="color-scheme" content="dark" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400..700&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
+  <script type="module" src="src/main.js"></script>
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+
+  <header class="glass-nav">
+    <span class="glass-refract" aria-hidden="true"></span>
+    <span class="glass-sheen" aria-hidden="true"></span>
+    <a class="wordmark" href="#/">autoprep</a>
+    <nav class="nav" aria-label="Main">
+      <span class="lens" aria-hidden="true"></span>
+      <a href="#/" data-nav="">Today</a>
+      <a href="#/path" data-nav="path">Path</a>
+      <a href="#/ukiepc" data-nav="ukiepc">UKIEPC</a>
+      <a href="#/math" data-nav="math">Mental maths</a>
+    </nav>
+  </header>
+
+  <!-- Refraction filters for the nav and its lens, filled in by src/glass.js at each element's size.
+       Chromium applies SVG filters to backdrops; other browsers get plain frosted glass. -->
+  <svg class="defs" aria-hidden="true" focusable="false">
+    <filter id="glass-nav"></filter>
+    <filter id="glass-lens"></filter>
+    <!-- Arrowheads for the diagrams, one per state colour. -->
+    <marker id="v-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9 Z" fill="#8a8a94" /></marker>
+    <marker id="v-arrow-hl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9 Z" fill="#60a5fa" /></marker>
+    <marker id="v-arrow-good" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9 Z" fill="#4ade80" /></marker>
+    <marker id="v-arrow-bad" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9 Z" fill="#ff6b5e" /></marker>
+  </svg>
+
+  <main id="app" tabindex="-1">
+    <noscript><p>autoprep needs JavaScript to run.</p></noscript>
+  </main>
+  <div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
