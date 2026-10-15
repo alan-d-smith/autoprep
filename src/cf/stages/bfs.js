@@ -1,0 +1,161 @@
+// BFS, multi-source BFS and state graphs: primer and problems.
+export default {
+  id: 'bfs',
+  title: 'BFS, multi-source BFS and state graphs',
+  track: 'graphs',
+  summary: 'Find fewest-move answers in O(V + E) with BFS: from one source or many, on the reversed graph, with 0/1 move costs, and on graphs whose vertices are states (position plus whatever else matters) that you build from the statement.',
+  primer: {
+    idea: 'BFS takes vertices out of the queue in order of distance, so when every move costs the same, the first time a vertex is reached is its shortest distance, in O(V + E) total. Three extensions cover most problems: start many sources at distance 0 to get "distance to the nearest of a set", run it on the reversed graph to get every vertex\'s distance to a target set in one pass, and push 0-cost moves to the front of a deque (0-1 BFS). The real modelling step is choosing the vertices: when the rules depend on more than your position (the direction you face, turns used, the previous city, the time), the vertex is the tuple of all of it.',
+    spot: [
+      '"Minimum number of moves, clicks, steps or minutes" where every move costs the same: BFS, not DP or Dijkstra.',
+      'Many starting points spreading at once (fires, infections, shops), or "distance to the nearest X" for every cell: multi-source BFS.',
+      'A distance asked for every starting vertex but towards a fixed set of targets: reverse the edges and run one BFS from the targets.',
+      'Whether a move is allowed, or what it costs, depends on history (direction, turns used, previous city, time of day): BFS over states (position, extra info); if some moves are free and others cost 1, use 0-1 BFS.',
+    ],
+    disguises: [
+      'A device whose buttons change a number → BFS over the numbers it can display, capped at the largest useful value (520B), or the same search run backwards from the target.',
+      '"For each i, the fewest jumps to any position with property P" → reverse every jump and run one multi-source BFS from all positions with P (1272E).',
+      '"Cheapest s different types of goods for every town" with only k ≤ 100 types → k multi-source BFS passes, one per type, instead of n single-source ones (986A).',
+      'Forbidden triples of consecutive cities, a limit on turns or a timetable → the vertex is (previous city, city), (cell, direction) or (place, time) (59E, 793B). UKIEPC 2023 Journey of Recovery searches such a time-expanded graph backwards from the destination.',
+    ],
+    pitfalls: [
+      'Marking a vertex visited when it is popped instead of when it is pushed lets the queue hold many copies of it (up to O(E)), which runs out of time or memory. Set dist when you push.',
+      'Count the states before coding: 10^6 cells × 4 directions is fine, × 4 directions × 10^3 times is not. Store a state as one integer id with a flat dist array, not a map of tuples.',
+      'Plain BFS (first visit is final) gives wrong distances once moves have different costs. 0/1 costs need a deque (0-1 BFS) or Dijkstra; re-pushing improved vertices to the back of an ordinary queue is correct but can be very slow.',
+    ],
+    code: `// Multi-source BFS: every source starts at distance 0. One source is the usual BFS.
+// For a state graph, number the states (e.g. id = cell * 4 + direction) and
+// generate neighbours on the fly instead of storing adj.
+vector<int> bfs(const vector<vector<int>>& adj, const vector<int>& sources) {
+    vector<int> dist(adj.size(), -1);
+    queue<int> q;
+    for (int s : sources) if (dist[s] == -1) { dist[s] = 0; q.push(s); }
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        for (int v : adj[u])
+            if (dist[v] == -1) { dist[v] = dist[u] + 1; q.push(v); }
+    }
+    return dist;  // -1 = unreachable
+}
+// 0-1 BFS: every edge costs 0 or 1. adj[u] holds {v, w}.
+vector<int> bfs01(const vector<vector<pair<int, int>>>& adj, int s) {
+    vector<int> dist(adj.size(), INT_MAX);
+    deque<int> dq;
+    dist[s] = 0; dq.push_back(s);
+    while (!dq.empty()) {
+        int u = dq.front(); dq.pop_front();
+        for (auto [v, w] : adj[u])
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                if (w == 0) dq.push_front(v); else dq.push_back(v);
+            }
+    }
+    return dist;
+}`,
+    resources: [
+      { label: 'CP-Algorithms: Breadth-first search', url: 'https://cp-algorithms.com/graph/breadth-first-search.html' },
+      { label: 'CP-Algorithms: 0-1 BFS', url: 'https://cp-algorithms.com/graph/01_bfs.html' },
+      { label: 'USACO Guide: Unweighted Shortest Paths', url: 'https://usaco.guide/gold/unweighted-shortest-paths' },
+      { label: 'CSES: Labyrinth (BFS with path recovery)', url: 'https://cses.fi/problemset/task/1193' },
+      { label: 'CSES: Monsters (multi-source BFS)', url: 'https://cses.fi/problemset/task/1194' },
+    ],
+  },
+  problems: [
+    {
+      id: '520B',
+      name: 'Two Buttons',
+      rating: 1400,
+      tier: 'warmup',
+      hints: [
+        'Each click turns the displayed number x into 2x or x − 1, and every click costs the same. What graph are you walking on?',
+        'The numbers are vertices and the buttons are edges, so the fewest clicks is the BFS distance from n to m. The graph is infinite, but an optimal sequence never shows a number above max(n, 2m), so the numbers 1..2·10^4 are enough.',
+        'BFS from n over 1..20000 with neighbours 2x and x − 1 (staying ≥ 1) and print dist[m]. Alternatively, work backwards from m: add 1 if it is odd, halve it if it is even, until it is ≤ n, then add n − m; each step is one click.',
+      ],
+      solution: 'Treat each number 1..20000 as a vertex with edges x → 2x and x → x − 1, BFS from n, and print dist[m]; the cap is safe because doubling a number that is already ≥ m only creates extra subtractions, so no optimal sequence goes above max(n, 2m). O(10^4). The backwards greedy (from m: +1 if odd, halve if even, until ≤ n, then add the difference) is the same search on the reversed operations, where the choice is forced.',
+    },
+    {
+      id: '35C',
+      name: 'Fire Again',
+      rating: 1500,
+      tier: 'warmup',
+      hints: [
+        'The fire spreads one tree per minute in four directions, starting from K trees at once. When does a given tree start burning, in terms of the K starting trees?',
+        'A tree ignites at its distance to the nearest starting tree, so this is multi-source BFS: put all K burning trees in the queue at distance 0 and run a single BFS. BFS takes cells out in order of distance, so the last cell taken out is a correct answer.',
+        'Run that BFS on the N × M grid (up to 4·10^6 cells) with flat int arrays for dist and the queue, and print the last cell dequeued. Read from input.txt and write to output.txt, as the statement says.',
+      ],
+      solution: 'Push all K sources at distance 0 and run one BFS over the grid; the last cell dequeued has the largest distance to its nearest source. O(NM) with N, M ≤ 2000; flat int arrays for dist and the queue (32 MB together) keep you under the 64 MB limit. With no obstacles, min over sources of |x − x_i| + |y − y_i| for every cell (O(NMK)) also passes. The most common WA is reading stdin: this problem uses input.txt and output.txt.',
+    },
+    {
+      id: '986A',
+      name: 'Fair',
+      rating: 1600,
+      tier: 'core',
+      hints: [
+        'For a fixed town v, what does it cost to bring goods of type t? You need that number for every pair (town, type).',
+        'The cost for (v, t) is the distance from v to the nearest town that produces t. A BFS from each of the n towns is too slow, but there are only k ≤ 100 types, and one multi-source BFS from all towns of type t gives that distance for every v at once.',
+        'Run k BFS passes, pass t starting from every town of type t, to fill dist[t][v]. For each town take the s smallest of its k values (nth_element or sort) and add them up. O(k·(n + m) + n·k).',
+      ],
+      solution: 'For each type t, run a BFS seeded with all towns producing t, so dist[t][v] is the cost of the nearest unit of type t for town v. The types are chosen independently, so the answer for v is the sum of the s smallest dist[t][v] over the k types. That is at most 100 BFS passes over 10^5 vertices and edges, about 2·10^7 steps, plus nth_element per town. dist takes k·n ints (40 MB), well within 512 MB.',
+    },
+    {
+      id: '793B',
+      name: 'Igor and his way to work',
+      rating: 1600,
+      tier: 'core',
+      hints: [
+        'Knowing only which cell Igor is in does not tell you whether his next move is a turn. What else must you remember?',
+        'Make the state (cell, direction he is moving). Stepping forward in the same direction costs no turn and changing direction costs one turn, so this is a shortest path on a state graph with edge costs 0 and 1.',
+        'Run 0-1 BFS from the four states (S, d) with 0 turns: forward steps go to the front of the deque, direction changes to the back. Print YES if some (T, d) needs at most 2 turns. 4·n·m ≤ 4·10^6 states, O(nm).',
+      ],
+      solution: 'States are (cell, direction), 4·n·m of them. From (c, d) you can step to the next cell in direction d if it has no road works (cost 0) or switch to another direction in place (cost 1); the four states at S start with cost 0. 0-1 BFS gives the minimum number of turns for every state, and the answer is YES iff min over d of turns(T, d) ≤ 2. O(nm). A plain BFS over (cell, direction, turns used ≤ 2) also works with 3 times as many states and no deque.',
+    },
+    {
+      id: '1063B',
+      name: 'Labyrinth',
+      rating: 1800,
+      tier: 'core',
+      hints: [
+        'Suppose a path ends in column j after L moves left and R moves right. What is R − L, whichever path you took?',
+        'R − L = j − c is fixed by the target column, so the path with the fewest left moves also has the fewest right moves. Up and down moves are free, so this is a shortest path where a left move costs 1 and every other move costs 0: 0-1 BFS.',
+        '0-1 BFS from (r, c), with left moves pushed to the back of the deque and up, down and right moves to the front, gives the minimum L for every cell. A cell counts iff L ≤ x and L + (j − c) ≤ y. O(nm) for up to 4·10^6 cells.',
+      ],
+      solution: 'Because rights − lefts equals j − c on every path to column j, minimising left moves minimises both counts at once. A 0-1 BFS (cost 1 for left, 0 otherwise) computes the minimum number of left moves L for every free cell; count the cells with L ≤ x and L + j − c ≤ y. O(nm). A plain BFS by number of steps is wrong: the shortest path to a cell may use more left moves than a longer detour that goes up and around an obstacle.',
+    },
+    {
+      id: '1272E',
+      name: 'Nearest Opposite Parity',
+      rating: 1900,
+      tier: 'core',
+      hints: [
+        'A BFS from every position i is O(n²). But every odd-valued position is looking for the same kind of target. Can you search in the other direction?',
+        'Reverse the jumps: add an edge j → i whenever i can jump to j. The distance from i to the nearest even-valued position is then the distance from the set of all even-valued positions to i in the reversed graph: one multi-source BFS. Do it once with even sources and once with odd sources.',
+        'Build radj with i added to radj[i − a_i] and radj[i + a_i] (when in range). BFS from all even-valued positions at distance 0 and read the answer for the odd-valued ones; repeat with odd sources for the even-valued ones. Unreached positions get −1. O(n).',
+      ],
+      solution: 'Each position has at most two jumps, so the reversed graph has at most 2n edges. A multi-source BFS from all positions with even a_j on the reversed graph gives every position its fewest forward jumps to some even-valued position; record it for the odd-valued positions, then repeat with odd-valued sources for the even-valued ones. O(n). A BFS from the targets on the original (non-reversed) edges computes the wrong direction: it measures jumps from the targets, not to them.',
+    },
+    {
+      id: '59E',
+      name: 'Shortest Path',
+      rating: 2000,
+      tier: 'challenge',
+      hints: [
+        'Whether you may go from city v to city w depends on the city you were in just before v. What must a vertex of your search remember?',
+        'Make the state the last road taken, (u, v) with u the previous city. From (u, v) you may go to (v, w) for each neighbour w unless (u, v, w) is forbidden. Every road costs the same, so BFS over the 2m directed roads gives the shortest valid route, and a city may appear twice on it (sample 3).',
+        'Seed the queue with every road (1, w) at distance 1, keep the forbidden triples in a sorted vector of encoded integers, store a parent per state, and stop at the first popped state that ends in n; print −1 if there is none. Check whether (v, w) is already visited before looking up the triple.',
+      ],
+      solution: 'BFS on directed roads: state (u, v) means "in v, arrived from u". Start from every road (1, w) at distance 1; from (u, v) move to an unvisited (v, w) unless (u, v, w) is forbidden; the first popped state with v = n gives the distance, and parent pointers rebuild the path. Checking visited first means at most k + 2m triple lookups, and the remaining work is Σ deg(v)², at most about 1.2·10^8 cheap array checks, fine in 3 seconds. A BFS on cities alone is wrong: the shortest way into a city may be blocked for the next step while a longer way in is not.',
+    },
+    {
+      id: '1520G',
+      name: 'To Go Or Not To Go?',
+      rating: 2200,
+      tier: 'challenge',
+      hints: [
+        'Can it ever help to use the portals twice? Compare jumping a → b and later c → d with jumping a → d directly.',
+        'One portal jump is always enough: a → b then c → d costs a + b + c + d, more than a → d. So the route is either a pure walk, or walk to a portal, jump once, and walk from another portal. Walking costs w per step, which is BFS from the start and BFS from the end.',
+        'BFS from (1, 1) and from (n, m) over free cells. Let bestS = min over portals p reachable from the start of distS(p)·w + a_p, and bestT the same with distT. The answer is min(distS(n, m)·w, bestS + bestT), or −1. Use long long throughout. O(nm).',
+      ],
+      solution: 'One portal jump always suffices, since two jumps a → b, c → d cost more than the single jump a → d. BFS from both corners gives step counts distS and distT; the answer is the minimum of distS(n, m)·w and min_p(distS(p)·w + a_p) + min_q(distT(q)·w + a_q), each minimum taken over portals reachable from that side. If both minima pick the same portal the sum is still at least the walk through it, so no special case is needed. O(nm) with long long: 4·10^6 steps × 10^9 overflows int, and 4·10^6 numbers of input want fast reading.',
+    },
+  ],
+};
