@@ -91,6 +91,24 @@ export function declineStorage() {
   }
 }
 
+// Browser caches the natural voice model fills (src/tts-worker.js), only while storage is allowed.
+export const MODEL_CACHES = ['transformers-cache', 'kokoro-voices'];
+
+// Withdraws consent: deletes everything autoprep stored on this device, including the downloaded voice
+// model, and saves nothing more this visit. What's on screen stays until you leave.
+export async function withdrawStorage() {
+  try {
+    localStorage.removeItem(KEY);
+    localStorage.removeItem(CONSENT_KEY);
+  } catch {
+    // Storage was never available.
+  }
+  declineStorage();
+  state.ui.naturalModel = false;
+  state.ui.naturalReady = false;
+  if (typeof caches !== 'undefined') await Promise.all(MODEL_CACHES.map((name) => caches.delete(name).catch(() => false)));
+}
+
 export function save() {
   if (storageConsent() !== 'granted') return;
   try {

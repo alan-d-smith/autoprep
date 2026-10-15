@@ -415,6 +415,7 @@ a.chip:hover { color: var(--text); border-color: rgba(255, 255, 255, 0.3); }
 /* Keep the page clear of the open list; with it hidden, the text gets the full width. */
 @media (min-width: 861px) {
   .path-page.with-index { margin-left: max(0px, 256px - max(0px, (100vw - 1080px) / 2)); }
+  body:has(.path-page.with-index) .site-foot { padding-left: calc(var(--gutter) + max(0px, 256px - max(0px, (100vw - 1080px) / 2))); }
 }
 
 .stage-link {
@@ -869,6 +870,38 @@ input.answer.miss { color: var(--signal); border-bottom-color: var(--signal); }
 .read-part { cursor: pointer; border-radius: 6px; transition: background-color 0.12s, box-shadow 0.12s; }
 .read-part:not(.speaking):hover { background: rgba(255, 255, 255, 0.05); box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05); }
 @media (prefers-reduced-motion: reduce) { .read-part { transition: none; } }
+
+/* ---------- Privacy and cookie policies ---------- */
+
+.legal { max-width: 44rem; }
+.legal section { margin-top: 44px; }
+.legal h2 { margin-bottom: 12px; }
+.legal h3 { margin: 26px 0 6px; }
+.legal p { color: var(--text-2); line-height: 1.65; }
+.legal p + p { margin-top: 10px; }
+.legal .page-head { margin-bottom: 0; }
+.legal .page-head .updated { font-size: 13px; color: var(--text-3); }
+.legal .legal-basis { margin-top: 6px; font-size: 13px; color: var(--text-3); }
+.storage-choice { display: grid; gap: 14px; }
+.storage-choice p { color: var(--text); }
+.stored { display: grid; border-top: 1px solid var(--line); }
+.stored-item { padding: 14px 0; border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
+.stored-item code { font-size: 13px; color: var(--text); }
+.stored-item p + p { margin-top: 0; }
+
+/* Two small links at the very bottom of every page. */
+.site-foot {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 0 var(--gutter) 40px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-size: 13px;
+}
+.site-foot a { color: var(--text-3); text-decoration: none; }
+.site-foot a:hover, .site-foot a[aria-current='page'] { color: var(--text-2); }
+.site-foot a:hover { text-decoration: underline; text-decoration-color: var(--text-3); }
 
 /* ---------- Storage notice ---------- */
 

@@ -8,6 +8,7 @@ import { renderPath } from './cf/view.js';
 import { renderUkiepc } from './cf/ukiepc-view.js';
 import { renderMath } from './math/view.js';
 import { renderLesson } from './math/lesson.js';
+import { renderPrivacy, renderCookies } from './legal.js';
 
 const routes = [
   [/^\/$/, () => renderHome, 'autoprep'],
@@ -15,6 +16,8 @@ const routes = [
   [/^\/ukiepc$/, () => renderUkiepc, 'UKIEPC practice'],
   [/^\/math$/, () => renderMath, 'Mental maths'],
   [/^\/math\/learn\/([\w-]+)$/, (m) => (app) => renderLesson(app, m[1]), 'Mental maths'],
+  [/^\/privacy$/, () => renderPrivacy, 'Privacy policy'],
+  [/^\/cookies$/, () => renderCookies, 'Cookie policy'],
 ];
 
 const app = $('#app');
@@ -24,9 +27,11 @@ let firstRender = true;
 
 const lens = $('.lens');
 
+// On a page outside the main nav (the policies), the lens fades out.
 function placeLens(instant) {
   const active = nav.querySelector('a[aria-current="page"]');
   if (active) moveLens(lens, active, { instant });
+  else lens.style.opacity = '0';
 }
 
 function route() {
@@ -41,7 +46,7 @@ function route() {
 
   // Start the lens sliding before rendering, so the page work doesn't delay it.
   const section = path.split('/')[1] || '';
-  for (const link of nav.querySelectorAll('[data-nav]')) {
+  for (const link of document.querySelectorAll('[data-nav]')) {
     if (link.dataset.nav === section) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   }
@@ -70,9 +75,9 @@ function storageNotice() {
   notice.className = 'consent';
   notice.setAttribute('aria-label', 'Storage notice');
   mount(notice, html`
-    <p><strong>Save your progress on this device?</strong> autoprep keeps your settings, rounds, solved problems and revealed hints in this browser's storage so they're still here next time. It's only used to make the site work: nothing is tracked, and nothing is sent anywhere.</p>
+    <p><strong>Save your progress on this device?</strong> autoprep keeps your settings, rounds, solved problems and revealed hints in this browser's storage so they're still here next time. It's only used to make the site work: nothing is tracked, and none of it is sent anywhere. You can change your mind at any time in the <a href="#/cookies">cookie policy</a>.</p>
     <div class="btn-row">
-      <button class="btn btn-primary" type="button" data-consent="accept">Accept</button>
+      <button class="btn" type="button" data-consent="accept">Accept</button>
       <button class="btn" type="button" data-consent="decline">Not now</button>
     </div>`);
   notice.addEventListener('click', (e) => {

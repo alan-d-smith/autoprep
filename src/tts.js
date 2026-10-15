@@ -10,7 +10,7 @@
 //    isn't pre-recorded, such as a new worked example.
 // 3. The browser's own speech synthesis, for everything else or a browser voice picked under Voice.
 // The first two send nothing anywhere. Some browsers' online voices (Edge's natural voices, Chrome's
-// Google voices) are made on their maker's servers.
+// Google voices) are made on their maker's servers; the privacy policy (src/legal.js) says so.
 
 import { html, mount, toast } from './dom.js';
 import { state, save, storageConsent } from './store.js';
