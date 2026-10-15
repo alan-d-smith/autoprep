@@ -29,11 +29,14 @@ test('C++ highlighting tags each role and escapes the rest', () => {
 });
 
 test('notation is read out as words', () => {
-  assert.equal(speakable('dp[i][j] = max(dp[i − 1][j], 3)'), 'dp of i, j equals max(dp of i minus 1, j, 3)');
+  assert.equal(speakable('dp[i][j] = max(dp[i − 1][j], 3)'), 'dp of i, j is max(dp of i minus 1, j, 3)');
   assert.equal(speakable('O(n log n) for n ≤ 10^5'), 'O of n log n for n at most 10 to the 5');
-  assert.equal(speakable('a_i and 2^(n/2) and |s|'), 'a i and 2 to the n/2 and the size of s');
-  assert.equal(speakable('47 + 38 = 85'), '47 plus 38 equals 85');
-  assert.equal(speakable('A → B'), 'A : that is, B');
+  assert.equal(speakable('a_i and 2^(n/2) and |s|'), 'A i and 2 to the n over 2 and the size of s');
+  assert.equal(speakable('47 + 38 = 85'), '47 plus 38 is 85');
+  assert.equal(speakable('big n → binary search'), 'big n: that is, binary search');
+  assert.equal(speakable('Edge S → A, then 1–2, 60–100 and S → B → T'), 'Edge S to A, then 1 to 2, 60 to 100 and S to B to T');
+  assert.equal(speakable('Floyd–Warshall in log₂(16) = 4 steps'), 'Floyd–Warshall in log base 2 of 16 is 4 steps');
+  assert.equal(speakable('0.7 × 64 → 7 × 64 = 448 → 44.8, and 7 → 6 → 4'), '0.7 times 64, then 7 times 64 is 448, then 44.8, and 7, then 6, then 4');
 });
 
 test('every stage has a diagram, and every frame has a picture and a caption', () => {

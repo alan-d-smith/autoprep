@@ -8,7 +8,7 @@ export default {
     idea: 'The convex hull is the smallest convex polygon containing a point set. Andrew\'s monotone chain builds it in O(n log n): sort the points by x, then sweep once for the lower hull and once for the upper hull, popping the last point while it does not make a left turn. Many problems need only one chain: the upper hull consists of the lines through two points with no point above them, and the lower hull of prefix-sum points gives the smallest averages. The convex hull trick is the same idea for lines: the minimum of lines m·x + c is a lower envelope, so a DP of the form dp[i] = min_j (dp[j] + m_j·x_i) runs in O(n) instead of O(n²) when slopes and queries arrive in sorted order.',
     spot: [
       'Questions about the outermost points of a set: the length of a fence around everything, which points can be extreme, whether one shape fits inside another',
-      'A DP transition dp[i] = min or max over j of (dp[j] + f(j)·g(i)), a product of something about j and something about i, with n up to 10^5–10^6',
+      'A DP transition dp[i] = min or max over j of (dp[j] + f(j)·g(i)), a product of something about j and something about i, with n up to 10^5 or 10^6',
       'Averages, slopes or rates built from prefix sums, such as choosing blocks with the smallest average',
       'Curves like y = x² + bx + c through pairs of points, which become straight lines after a change of variables',
     ],

@@ -6,6 +6,10 @@
   "scripts": {
     "dev": "node scripts/serve.js",
     "test": "node --test \"tests/**/*.test.js\"",
-    "verify:curriculum": "node scripts/verify-curriculum.js"
+    "verify:curriculum": "node scripts/verify-curriculum.js",
+    "audio:texts": "node scripts/audio-texts.js"
+  },
+  "devDependencies": {
+    "playwright-core": "1.58.2"
   }
 }

@@ -15,7 +15,7 @@ export default {
     disguises: [
       'Reorder songs, dishes or rows so that every adjacent pair is compatible or scores a bonus → a Hamiltonian path, dp[mask][last] over the items placed so far',
       'Order matrix rows to maximise the minimum difference between neighbours in a column-by-column traversal → precompute one cost per pair of rows, then a Hamiltonian-path DP with a fixed first row that maximises a minimum instead of a sum',
-      'For every x find an array element y with x & y = 0 → y is a submask of the complement of x, so an SOS DP that stores one witness per mask answers all queries',
+      'For every x find an array element y with x & y = 0, which means y is a submask of the complement of x, so an SOS DP that stores one witness per mask answers all queries',
       'Pick a subset of up to 35 numbers to maximise the sum modulo m → split into halves, list the 2^17 or 2^18 subset sums of each, sort one list and binary search a partner for each sum in the other',
     ],
     pitfalls: [
