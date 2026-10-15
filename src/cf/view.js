@@ -7,6 +7,7 @@ import { UKIEPC } from './ukiepc.js';
 import { currentStage, nextProblem, stageProgress, belowLevel, problemUrl, ratingBand, trackStages, stagePosition } from './roadmap.js';
 import { fetchProfile } from './codeforces.js';
 import { videosTpl, bindVideos } from './video-view.js';
+import { TRD_CODE, TRD_REPO } from './trd.js';
 import { CHEVRON_ICON } from '../icons.js';
 import { hintToggle, hintPanel, bindHints } from './hints.js';
 import { rich, highlightCpp } from '../format.js';
@@ -203,6 +204,28 @@ export function renderPath(app, stageId) {
     scroll.scrollTop = top;
   }
 
+  // The stage's code, either general or written against the TRD (KACTL-based), as chosen.
+  function templateTpl(stage) {
+    const trdEntry = TRD_CODE[stage.id];
+    const style = state.ui.codeStyle === 'trd' && trdEntry ? 'trd' : 'general';
+    return html`
+      <div class="template-head">
+        <h3>Template</h3>
+        ${trdEntry ? html`
+          <div class="segmented" role="group" aria-label="Implementation">
+            <button type="button" data-code-style="general" aria-pressed="${String(style === 'general')}">General</button>
+            <button type="button" data-code-style="trd" aria-pressed="${String(style === 'trd')}">KACTL TRD</button>
+          </div>` : ''}
+      </div>
+      ${style === 'trd' ? html`
+        <p class="uses small">Uses
+          ${trdEntry.uses.map((u) => html`<span class="chip ${u.from === 'kactl' ? 'kactl' : ''}" title="${u.from === 'kactl' ? 'From KACTL: not in your TRD' : 'In your TRD'}">${u.file}${u.from === 'kactl' ? ' (KACTL)' : ''}</span>`)}
+          <a href="${TRD_REPO}" target="_blank" rel="noopener">Your TRD</a>
+        </p>
+        ${trdEntry.uses.some((u) => u.from === 'kactl') ? html`<p class="small faint">Files marked KACTL aren't in your TRD yet.</p>` : ''}` : ''}
+      <pre class="code"><code>${highlightCpp((style === 'trd' ? trdEntry.code : stage.primer.code).trim())}</code></pre>`;
+  }
+
   function primerTpl(stage) {
     const { primer } = stage;
     return html`
@@ -218,10 +241,7 @@ export function renderPath(app, stageId) {
           <h3 data-read="primer">How it hides in a statement</h3>
           <ul class="disguises">${primer.disguises.map((s) => html`<li data-read="primer">${rich(s)}</li>`)}</ul>
         </div>
-        <div>
-          <h3>Template</h3>
-          <pre class="code"><code>${highlightCpp(primer.code.trim())}</code></pre>
-        </div>
+        <div class="template" data-template="${stage.id}">${templateTpl(stage)}</div>
         <div>
           <h3>Read more</h3>
           <div class="resources">${primer.resources.map((r) => html`<a href="${r.url}" target="_blank" rel="noopener">${r.label}</a>`)}</div>
@@ -326,6 +346,16 @@ export function renderPath(app, stageId) {
 
   // Show or hide the floating stage list without re-rendering (so your place on the page stays put).
   app.addEventListener('click', (e) => {
+    const codeStyle = e.target.closest('[data-code-style]');
+    if (codeStyle) {
+      // Swap just the code block so the page doesn't jump.
+      state.ui.codeStyle = codeStyle.dataset.codeStyle;
+      save();
+      const holder = codeStyle.closest('[data-template]');
+      mount(holder, templateTpl(stageById[holder.dataset.template]));
+      holder.querySelector(`[data-code-style="${state.ui.codeStyle}"]`)?.focus();
+      return;
+    }
     const button = e.target.closest('[data-index]');
     if (!button) return;
     const show = button.dataset.index === 'show';

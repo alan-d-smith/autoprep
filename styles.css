@@ -469,6 +469,12 @@ code.ic {
 .tok-f { color: #fde68a; }
 .tok-p { color: #f9a8d4; }
 
+.template-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.template-head h3 { margin: 0; }
+.uses { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; color: var(--text-2); }
+.uses a { margin-left: 4px; }
+.chip.kactl { color: #fbbf24; border-color: rgba(251, 191, 36, 0.4); }
+.template .faint { margin: -2px 0 10px; }
 .resources { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; }
 
 .problems { margin-top: 56px; }

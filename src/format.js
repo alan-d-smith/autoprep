@@ -49,7 +49,7 @@ const CPP = new RegExp([
   String.raw`(^[ \t]*#[^\n]*)`, // 3 preprocessor
   String.raw`\b(0x[0-9a-fA-F]+|\d[\d']*(?:\.\d+)?(?:e[+-]?\d+)?[uUlLfF]*)\b`, // 4 number
   String.raw`\b(auto|break|case|const|constexpr|continue|default|do|else|for|if|inline|namespace|operator|return|static|struct|class|switch|template|typename|using|while|true|false|nullptr|sizeof|this|new|delete|public|private|mutable)\b`, // 5 keyword
-  String.raw`\b(int|long|short|char|bool|double|float|void|unsigned|signed|size_t|int64_t|uint64_t|__int128|ll|ull|ld|pii|vector|pair|array|string|map|set|multiset|unordered_map|unordered_set|priority_queue|deque|queue|stack|bitset|tuple|greater|less|function|numeric_limits|mt19937_64|mt19937)\b`, // 6 type
+  String.raw`\b(int|long|short|char|bool|double|float|void|unsigned|signed|size_t|int64_t|uint64_t|__int128|ll|ull|ld|pii|pli|vi|vector|pair|array|string|map|set|multiset|unordered_map|unordered_set|priority_queue|deque|queue|stack|bitset|tuple|greater|less|function|numeric_limits|mt19937_64|mt19937)\b`, // 6 type
   String.raw`\b([A-Za-z_]\w*)(?=\s*\()`, // 7 function call or definition
 ].join('|'), 'gm');
 

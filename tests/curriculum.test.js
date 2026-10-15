@@ -111,3 +111,13 @@ test('every stage has at least one short explainer video', async () => {
     }
   }
 });
+
+test('every stage has a KACTL/TRD version of its template', async () => {
+  const { TRD_CODE } = await import('../src/cf/trd.js');
+  for (const stage of STAGES) {
+    const entry = TRD_CODE[stage.id];
+    assert.ok(entry, `no TRD code for ${stage.id}`);
+    assert.ok(entry.code.trim().length > 50 && !entry.code.includes('#include'), stage.id);
+    assert.ok(entry.uses.length && entry.uses.every((u) => /\.(h|cpp)$/.test(u.file) && ['trd', 'kactl'].includes(u.from)), stage.id);
+  }
+});

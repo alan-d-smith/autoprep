@@ -17,7 +17,7 @@ export const defaultSettings = () => ({
   goal: null,
 });
 
-const defaultUi = () => ({ ukiepcDifficulty: false, ukiepcTopics: false, ukiepcOpen: [], sidebarOpen: true, ttsRate: 1, closedTracks: [], openStages: [], closedStages: [] });
+const defaultUi = () => ({ ukiepcDifficulty: false, ukiepcTopics: false, ukiepcOpen: [], sidebarOpen: true, ttsRate: 1, closedTracks: [], openStages: [], closedStages: [], codeStyle: 'general' });
 
 const fresh = () => ({
   math: { rounds: [], drills: [], settings: defaultSettings() },
