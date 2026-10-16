@@ -22,6 +22,7 @@ test('chains of equals say what each step gives, and the variable a is said as a
   assert.equal(speakable('d[i][k] + d[k][j] = 5 + 3 = 8, and x += 1'), 'd of i, k plus d of k, j is 5 plus 3, so 8, and x plus-equals 1');
   assert.equal(speakable('a single chain of a, and a to b in a 2D grid'), 'a single chain of A, and A to b in a 2D grid');
   assert.equal(speakable('a.x · b.y, i.e. the dot'), 'A x times b y, i.e. the dot');
+  assert.equal(speakable('dp[0110₂][2] = 7, not 110'), 'dp of zero one one zero, 2 is 7, not 110');
   // Kokoro reads some capital As as the article, so the recording script says "eh", the letter's sound.
   assert.equal(recordingScript('a_i + a[j] = 3'), 'eh i plus eh of j is 3');
   assert.equal(recordingScript('A small grid, lca(a, x)'), 'A small grid, lca(eh, x)');

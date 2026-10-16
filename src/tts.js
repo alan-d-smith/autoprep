@@ -252,6 +252,8 @@ function spoken(s) {
   const span = (end) => (end === ')' ? 'up to' : 'to');
   const words = s
     .replace(/`/g, '')
+    // A binary number written with a subscript 2, such as a mask 0101₂, is read digit by digit.
+    .replace(/\b([01]+)₂/g, (_, bits) => [...bits].map((b) => (b === '1' ? 'one' : 'zero')).join(' '))
     .replace(/⌊([^⌋]*)⌋/g, 'floor of $1').replace(/⌈([^⌉]*)⌉/g, 'ceiling of $1')
     .replace(/\bO\(((?:[^()]|\([^()]*\))*)\)/g, 'O of $1')
     // A point's coordinates: a.x → "A x".
