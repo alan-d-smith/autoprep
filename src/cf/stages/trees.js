@@ -5,7 +5,16 @@ export default {
   track: 'graphs',
   summary: 'Root a tree in O(n), use depth, subtree sizes and DFS order to answer subtree questions, write bottom-up DP on subtrees, reroot it to get an answer for every vertex, and find a diameter with two BFS passes.',
   primer: {
-    idea: 'Rooting the tree once gives every vertex a parent, a depth and a subtree; walking the DFS preorder backwards finishes every child before its parent, so a DP over subtrees is a single O(n) pass. In a preorder each subtree is a contiguous block order[tin[v] .. tin[v] + sz[v] − 1], which turns "everything below v" into an array range. When the statement wants an answer for every vertex as the root, compute it for one root and move the root across each edge with an O(1) update (rerooting): O(n) in total instead of O(n²).',
+    idea: 'Rooting the tree once gives every vertex a parent, a depth and a subtree (the vertex and everything below it). One DFS from the root visits the vertices in preorder; walking that order backwards finishes every child before its parent, so a DP over subtrees is a single O(n) pass. A DFS finishes a subtree before it leaves it, so each subtree is a contiguous block of the preorder, order[tin[v] .. tin[v] + size[v] − 1], which turns "everything below v" into an array range. When the statement wants an answer for every vertex as the root, compute it for one root and move the root across each edge with an O(1) update (rerooting): O(n) in total instead of O(n²).',
+    terms: [
+      'par[v]: v\'s parent once the tree is rooted; the root has none (−1).',
+      'depth[v]: the number of edges from the root down to v (`dep` in the TRD version).',
+      '`order`: the vertices in DFS preorder, the order in which a DFS from the root first reaches them (in the TRD version, `rootTree` builds a BFS order and `preorder()` fills `tin`).',
+      'tin[v]: the position of v in `order`, also called its entry time.',
+      'size[v]: how many vertices are in v\'s subtree, v included (`sub` in the TRD version).',
+      'down[v]: in a subtree DP, the answer for v\'s subtree on its own, filled children first.',
+      'ans[v]: in rerooting, the answer with v as the root, filled parents first from ans[par[v]].',
+    ],
     spot: [
       'n vertices and n − 1 edges, "connected and acyclic", or parents given as p_i < i: it is a tree, and once rooted every vertex has a well-defined subtree.',
       'The value at a vertex depends only on what lies below it (counts, sums, the best choice among children): a subtree DP processed children-first.',
@@ -13,9 +22,9 @@ export default {
       '"Farthest pair", "longest path" or "pick vertices so their paths cover the most edges": the diameter, found by two BFS passes.',
     ],
     disguises: [
-      'A command or search spreading from v in DFS order, asked for its k-th step → the preorder slice of length sz[v] starting at tin[v]; one DFS from the root answers every query (1006E).',
+      'A command or search spreading from v in DFS order, asked for its k-th step → the preorder slice of length size[v] starting at tin[v]; one DFS from the root answers every query (1006E).',
       'Pick k cities whose envoys walk to the capital and score the unpicked cities they pass → each city is worth depth − (subtree size − 1); sort and take the k largest (1336A).',
-      'Choose the best centre for a weighted sum of distances → compute the sum for root 1, then reroot: moving from p to its child v changes it by S − 2·sub(v) (1092F). This is the "move to a neighbour with an O(1) update" step in UKIEPC 2024 Jabber Network.',
+      'Choose the best centre for a weighted sum of distances → compute the sum for root 1, then reroot: moving from p to its child v changes it by S − 2·sub(v), where S is the total of all the weights and sub(v) the total inside v\'s subtree (1092F). This is the "move to a neighbour with an O(1) update" step in UKIEPC 2024 Jabber Network.',
       'Infection spreading down from the root while you delete one vertex per step → a subtree DP that decides at each vertex which child to sacrifice (1689C).',
     ],
     pitfalls: [
@@ -24,24 +33,24 @@ export default {
       'In the rerooting pass, the upward value for child v must use the parent\'s full answer with v\'s own contribution removed (for example ans[p] − max(0, down[v])), not down[p], which ignores everything above p. Distance sums like Σ dist·a_i reach 10^15 and need long long.',
     ],
     code: `// Root the tree at r without recursion. order is a DFS preorder, so the subtree of v
-// is the contiguous block order[tin[v] .. tin[v] + sz[v] - 1].
+// is the contiguous block order[tin[v] .. tin[v] + size[v] - 1].
 struct RootedTree {
-    vector<int> par, dep, sz, tin, order;
+    vector<int> par, depth, size, tin, order;
     RootedTree(const vector<vector<int>>& g, int r)
-        : par(g.size(), -1), dep(g.size(), 0), sz(g.size(), 1), tin(g.size(), -1) {
+        : par(g.size(), -1), depth(g.size(), 0), size(g.size(), 1), tin(g.size(), -1) {
         vector<int> st = {r};
         while (!st.empty()) {
             int v = st.back(); st.pop_back();
             tin[v] = order.size(); order.push_back(v);
-            for (int u : g[v]) if (u != par[v]) { par[u] = v; dep[u] = dep[v] + 1; st.push_back(u); }
+            for (int u : g[v]) if (u != par[v]) { par[u] = v; depth[u] = depth[v] + 1; st.push_back(u); }
         }
         // reverse preorder finishes every child before its parent: bottom-up DP goes here
-        for (int i = (int)order.size() - 1; i > 0; i--) sz[par[order[i]]] += sz[order[i]];
+        for (int i = (int)order.size() - 1; i > 0; i--) size[par[order[i]]] += size[order[i]];
     }
-    bool inSubtree(int u, int v) const { return tin[v] <= tin[u] && tin[u] < tin[v] + sz[v]; }
+    bool inSubtree(int u, int v) const { return tin[v] <= tin[u] && tin[u] < tin[v] + size[v]; }
 };
 // Rerooting: compute f(root) directly, then walk order[1..] (parents before children) and
-// get f(v) from f(par[v]) in O(1), e.g. sum of distances: f(v) = f(par) + n - 2 * sz[v].
+// get f(v) from f(par[v]) in O(1), e.g. sum of distances: f(v) = f(par) + n - 2 * size[v].
 
 // BFS from s; the last vertex dequeued is a farthest one. Diameter: farthest(farthest(any)).
 pair<int, int> farthest(const vector<vector<int>>& g, int s, vector<int>& d) {
@@ -96,7 +105,7 @@ pair<int, int> farthest(const vector<vector<int>>& g, int s, vector<int>& d) {
         'In a DFS preorder every subtree is a contiguous block: the order from u is the slice of the commander\'s order that starts at u\'s position and has length size(u). One DFS from the root answers every query.',
         'Build children lists in increasing index (reading p_2..p_n in order already sorts them), run one iterative preorder from 1 recording tin[v] and order[], compute subtree sizes, and answer (u, k) with order[tin[u] + k − 1] if k ≤ sz[u], else −1. O(n + q).',
       ],
-      solution: 'Children are appended in increasing index as p_i is read for i = 2..n. One preorder DFS from 1 (iterative, pushing children in reverse so the smallest is popped first) gives order[] and tin[]; walking order[] backwards gives subtree sizes. For query (u, k), print −1 if k > sz[u], otherwise order[tin[u] + k − 1]. O(n + q). Simulating the spread per query is O(nq) and times out, and a recursive DFS on a 2·10^5 chain risks a stack overflow.',
+      solution: 'Children are appended in increasing index as p_i is read for i = 2..n. One preorder DFS from 1 (iterative, pushing children in reverse so the smallest is popped first) gives order[] and tin[]; walking order[] backwards gives subtree sizes. For query (u, k), print −1 if k > size[u], otherwise order[tin[u] + k − 1]. O(n + q). Simulating the spread per query is O(nq) and times out, and a recursive DFS on a 2·10^5 chain risks a stack overflow.',
     },
     {
       id: '1336A',

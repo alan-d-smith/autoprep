@@ -21,6 +21,8 @@ test('stages have a full primer', () => {
     assert.ok(nonEmpty(s.title) && nonEmpty(s.summary), s.id);
     const p = s.primer;
     assert.ok(nonEmpty(p.idea), `${s.id} idea`);
+    // Optional definitions of the names a stage uses, each "name: meaning".
+    for (const t of p.terms || []) assert.match(t, /^\S[^:]*: \S/, `${s.id} term: ${t}`);
     for (const key of ['spot', 'disguises', 'pitfalls']) {
       assert.ok(Array.isArray(p[key]) && p[key].length >= 2 && p[key].every(nonEmpty), `${s.id} ${key}`);
     }

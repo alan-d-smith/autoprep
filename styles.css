@@ -447,6 +447,16 @@ a.chip:hover { color: var(--text); border-color: rgba(255, 255, 255, 0.3); }
 
 .primer { margin-top: 36px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
 .primer-idea { font-size: 16px; line-height: 1.7; max-width: 46rem; }
+/* The names a stage uses, defined in one place. */
+.terms { max-width: 46rem; }
+.terms h3 { margin-bottom: 10px; }
+.terms dl { display: grid; gap: 8px; margin: 0; }
+.terms dl > div { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: 14px; align-items: baseline; font-size: 14.5px; line-height: 1.55; }
+.terms dt { white-space: nowrap; }
+.terms dd { margin: 0; color: var(--text-2); }
+@media (max-width: 600px) {
+  .terms dl > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}
 .primer-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
 .primer ul { padding-left: 18px; display: grid; gap: 6px; color: var(--text-2); }
 .primer li::marker { color: var(--text-3); }

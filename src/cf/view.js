@@ -233,6 +233,7 @@ export function renderPath(app, stageId) {
     return html`
       <section class="primer" aria-label="Primer">
         <p class="primer-idea" data-read="primer">${rich(primer.idea)}</p>
+        ${primer.terms ? termsTpl(primer.terms) : ''}
         ${(STAGE_VISUALS[stage.id]?.() || []).map((viz, i) => stepperTpl(`${stage.id}-${i}`, viz))}
         ${videosTpl(stage.id)}
         <div class="primer-cols">
@@ -250,6 +251,19 @@ export function renderPath(app, stageId) {
         </div>
         ${sourcesTpl(STAGE_SOURCES[stage.id])}
       </section>`;
+  }
+
+  // What the names in the idea, code and diagram stand for, each written "name: meaning".
+  function termsTpl(terms) {
+    return html`
+      <div class="terms">
+        <h3 data-read="primer">What the arrays mean</h3>
+        <dl>${terms.map((t) => {
+          const at = t.indexOf(': ');
+          // The colon is only for reading aloud, so the name and its meaning don't run together.
+          return html`<div data-read="primer"><dt>${rich(t.slice(0, at))}<span class="visually-hidden">:</span></dt> <dd>${rich(t.slice(at + 2))}</dd></div>`;
+        })}</dl>
+      </div>`;
   }
 
   // Pages checked to contain what this stage teaches, each with what it backs. Folded away by default.
