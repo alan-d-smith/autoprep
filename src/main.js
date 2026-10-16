@@ -5,6 +5,7 @@ import { storageConsent, grantStorage, declineStorage } from './store.js';
 import { glassFor, moveLens } from './glass.js';
 import { renderHome } from './home.js';
 import { renderPath } from './cf/view.js';
+import { renderOverview } from './cf/overview.js';
 import { renderUkiepc } from './cf/ukiepc-view.js';
 import { renderMath } from './math/view.js';
 import { renderLesson } from './math/lesson.js';
@@ -12,7 +13,8 @@ import { renderPrivacy, renderCookies } from './legal.js';
 
 const routes = [
   [/^\/$/, () => renderHome, 'autoprep'],
-  [/^\/path(?:\/([\w-]+))?$/, (m) => (app) => renderPath(app, m[1]), 'Codeforces path'],
+  [/^\/path$/, () => renderOverview, 'Codeforces path'],
+  [/^\/path\/([\w-]+)$/, (m) => (app) => renderPath(app, m[1]), 'Codeforces path'],
   [/^\/ukiepc$/, () => renderUkiepc, 'UKIEPC practice'],
   [/^\/math$/, () => renderMath, 'Mental maths'],
   [/^\/math\/learn\/([\w-]+)$/, (m) => (app) => renderLesson(app, m[1]), 'Mental maths'],

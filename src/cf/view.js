@@ -14,6 +14,7 @@ import { rich, highlightCpp } from '../format.js';
 import { STAGE_VISUALS } from '../viz/stages.js';
 import { stepperTpl, bindSteppers } from '../viz/stepper.js';
 import { listenButton, bindListen } from '../tts.js';
+import { quizConfident } from './quiz.js';
 
 // Problems whose accepted submissions we keep after a sync: the path plus the UKIEPC sets.
 export const TRACKED_IDS = new Set([
@@ -275,10 +276,11 @@ export function renderPath(app, stageId) {
   }
 
   function draw() {
-    const here = new Set(TRACKS.map((t) => currentStage(t, isSolved, rating())).filter(Boolean));
-    const stage = stageById[stageId] || [...here][0] || STAGES[0];
+    const here = new Set(TRACKS.map((t) => currentStage(t, isSolved, rating(), quizConfident)).filter(Boolean));
+    const stage = stageById[stageId];
+    // An unknown stage: show the overview of all three tracks instead.
     if (!stage) {
-      mount(app, html`<div class="page-head"><h1>Codeforces path</h1><p>The stages are still loading.</p></div>`);
+      location.replace('#/path');
       return;
     }
     const { track, index, of } = stagePosition(stage);
@@ -305,7 +307,7 @@ export function renderPath(app, stageId) {
           </select>
 
           <header class="stage-head">
-            <span class="kicker">${track.title}, stage ${index} of ${of}</span>
+            <span class="kicker"><a href="#/path">${track.title}</a>, stage ${index} of ${of}</span>
             <h2 data-read="primer">${stage.title}</h2>
             <p data-read="primer">${rich(stage.summary)}</p>
             ${listenButton('primer')}

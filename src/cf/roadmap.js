@@ -37,8 +37,9 @@ export function belowLevel(stage, rating) {
 
 export const trackStages = (track) => track.stages.map((id) => stageById[id]).filter(Boolean);
 
-export function currentStage(track, isSolved, rating = null) {
-  return trackStages(track).find((s) => !stageProgress(s, isSolved).complete && !belowLevel(s, rating)) || null;
+// The first stage still to do. skip(stage) passes over stages you've said you're confident in.
+export function currentStage(track, isSolved, rating = null, skip = () => false) {
+  return trackStages(track).find((s) => !stageProgress(s, isSolved).complete && !belowLevel(s, rating) && !skip(s)) || null;
 }
 
 export function nextProblem(stage, isSolved) {

@@ -91,6 +91,8 @@ test('progress, current stage and coverage per track', () => {
   assert.equal(stageProgress(stages[0], (id) => first.has(id)).complete, true);
   assert.equal(currentStage(dp, (id) => first.has(id)).id, stages[1].id);
   assert.equal(currentStage(dp, () => true), null);
+  // Stages the quiz marked confident are passed over.
+  assert.equal(currentStage(dp, () => false, null, (s) => s.id === stages[0].id).id, stages[1].id);
   assert.equal(nextProblem(stages[0], (id) => id === stages[0].problems[0].id).id, stages[0].problems[1].id);
   assert.ok(belowLevel(stages[0], 3000));
   assert.ok(!belowLevel(stages[0], null));
@@ -120,4 +122,10 @@ test('every stage has a KACTL/TRD version of its template', async () => {
     assert.ok(entry.code.trim().length > 50 && !entry.code.includes('#include'), stage.id);
     assert.ok(entry.uses.length && entry.uses.every((u) => /\.(h|cpp)$/.test(u.file) && ['trd', 'kactl'].includes(u.from)), stage.id);
   }
+});
+
+test('the where-to-start quiz asks about every stage once, in path order', async () => {
+  const { QUIZ_ITEMS } = await import('../src/cf/quiz.js');
+  assert.deepEqual(QUIZ_ITEMS.map((item) => item.stage), TRACKS.flatMap((t) => t.stages));
+  for (const item of QUIZ_ITEMS) assert.ok(nonEmpty(item.name) && nonEmpty(item.hint), item.stage);
 });

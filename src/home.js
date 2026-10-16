@@ -8,6 +8,7 @@ import { focusReason } from './math/view.js';
 import { TRACKS } from './cf/curriculum.js';
 import { UKIEPC } from './cf/ukiepc.js';
 import { currentStage, nextProblem, stageProgress, problemUrl, ratingBand, covered } from './cf/roadmap.js';
+import { quizConfident } from './cf/quiz.js';
 
 function mathCard() {
   const rounds = benchmarkRounds();
@@ -35,7 +36,7 @@ function mathCard() {
 
 function trackItem(track) {
   const rating = state.cf.maxRating ?? state.cf.rating;
-  const stage = currentStage(track, isSolved, rating);
+  const stage = currentStage(track, isSolved, rating, quizConfident);
   if (!stage) return html`<li><div class="track-head"><strong>${track.title}</strong><span>Complete</span></div></li>`;
   const progress = stageProgress(stage, isSolved);
   const next = nextProblem(stage, isSolved);

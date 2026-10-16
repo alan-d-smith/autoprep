@@ -23,6 +23,8 @@ Each stage's code template can be switched between general code and a version wr
 
 Each stage also links one or two short explainer videos from well-known channels (WilliamFiset, Errichto, Tushar Roy, Reducible, 3Blue1Brown and others), all under 30 minutes (`src/cf/videos.js`). Nothing loads from YouTube until you press play; then the video plays from youtube-nocookie.com.
 
+Path opens on an overview of its three tracks (dynamic programming, graphs, and geometry with searching the answer): stages and problems done, a progress rail with a segment per stage, where you are, and a button to continue. "Not sure where to start?" opens a short quiz: each technique appears in turn to be dragged (or clicked, or sorted with 1, 2 and 3) into never heard of, heard of but not confident, or confident. Stages you're confident in are then passed over when the path works out where you are (`src/cf/overview.js`, `src/cf/quiz.js`).
+
 The path's stage list floats on the left and can be hidden for a wider page. Each track folds away, and each stage opens to list its problems; clicking one jumps to it. Hints and primers show notation like `dp[i][j]`, `O(n log n)` and `10^9` as inline code and superscripts (`src/format.js`). Templates get C++ syntax highlighting.
 
 ## Run it

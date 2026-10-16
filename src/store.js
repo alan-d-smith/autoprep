@@ -21,7 +21,7 @@ const defaultUi = () => ({ ukiepcDifficulty: false, ukiepcTopics: false, ukiepcO
 
 const fresh = () => ({
   math: { rounds: [], drills: [], settings: defaultSettings() },
-  cf: { handle: '', rating: null, maxRating: null, rank: null, synced: {}, manual: {}, hints: {}, totalSolved: null, syncedAt: null },
+  cf: { handle: '', rating: null, maxRating: null, rank: null, synced: {}, manual: {}, hints: {}, totalSolved: null, syncedAt: null, quiz: null },
   ui: defaultUi(),
 });
 
@@ -41,6 +41,8 @@ function load() {
     if (!(Number.isInteger(settings.goal) && settings.goal > 0)) settings.goal = null;
     const cf = { ...base.cf, ...(saved.cf || {}) };
     for (const key of ['synced', 'manual', 'hints']) if (!cf[key] || typeof cf[key] !== 'object') cf[key] = {};
+    // The where-to-start quiz: { at, ratings: { stageId: 0 never heard of, 1 not confident, 2 confident } }.
+    if (!(cf.quiz?.ratings && typeof cf.quiz.ratings === 'object')) cf.quiz = null;
     const ui = { ...base.ui, ...(saved.ui || {}) };
     for (const key of ['ukiepcOpen', 'closedTracks', 'openStages', 'closedStages']) if (!Array.isArray(ui[key])) ui[key] = [];
     if (!(ui.ttsRate >= 0.25 && ui.ttsRate <= 1.75)) ui.ttsRate = 1;
