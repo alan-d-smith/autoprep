@@ -5,7 +5,90 @@ export default {
   track: 'dp',
   summary: 'Answer any range-sum question in O(1) after one O(n) pass, combine best-from-the-left with best-from-the-right around a split, and turn "count the subarrays with property X" into counting equal prefix values.',
   primer: {
-    idea: 'Store P[i] = a[0] + … + a[i−1] once; the sum of any block a[l..r] is then P[r+1] − P[l], so each query costs O(1) after O(n) work, and the same holds on a grid with inclusion–exclusion. The bigger payoff is that a condition on a subarray becomes a condition on a pair of prefix values: "this block sums to zero" means P[r+1] = P[l], so finding or counting such blocks is finding or counting equal values, in O(n log n) with a sort or a map. Suffix arrays are the mirror image: precompute the best answer ending at each index (left to right) and starting at each index (right to left), then try every split point in O(1) each.',
+    slides: [
+      {
+        title: 'Questions about blocks of consecutive values',
+        points: [
+          'Many questions ask for the total from l to r, or how many blocks sum to exactly k.',
+          'Adding up each block from scratch is O(n): about 4·10^10 steps for 2·10^5 questions.',
+          'The blocks overlap, so almost all of that adding is repeated work.',
+        ],
+        say: 'Many questions ask about blocks of consecutive values: the total from position l to position r, how many marked positions lie between them, or how many blocks add up to exactly k. Adding a block up from scratch costs O(n), so 2·10^5 such questions on 2·10^5 values take about 4·10^10 steps, and testing all n²/2 blocks one by one, about 2·10^10 of them, is no better. The blocks overlap, so almost all of that adding is repeated work.',
+      },
+      {
+        title: 'Every block is a difference of prefixes',
+        points: [
+          'A prefix is a block that starts at the very beginning.',
+          'The values from l to r are the first r + 1 values with the first l taken away.',
+          'Know the sum of every prefix, and any block\'s sum is one subtraction.',
+        ],
+        show: [0, 10],
+        note: 'The block a[2..5] sums to P[6] − P[2] = 23 − 4 = 19.',
+        say: 'The observation: every block is the difference of two prefixes, the blocks that start at the very beginning. The values from l to r are the first r + 1 values with the first l taken away, so once the sum of every prefix is known, the sum of any block is one subtraction.',
+      },
+      {
+        title: 'One pass fills P',
+        points: [
+          'P[i] is the sum of the first i values: P[0] = 0, then P[i+1] = P[i] + a[i].',
+          'The block a[l..r] sums to P[r+1] − P[l], so after the O(n) pass each question is O(1).',
+          'On a grid, S[i][j] gives any rectangle in four lookups by inclusion–exclusion.',
+        ],
+        show: [0, 7],
+        note: 'The pass has just filled P[7] = P[6] + a[6] = 25, the total of the whole array.',
+        say: 'Call the input a, indexed from 0, and let P[i] be the sum of its first i values, a[0] + … + a[i−1]. One left-to-right pass fills all n + 1 entries: P[0] = 0 for the empty prefix, then P[i+1] = P[i] + a[i]. The block a[l..r], from index l to index r with both ends included, sums to P[r+1] − P[l], so after that O(n) pass every question costs O(1). A grid works the same way with S[i][j], the sum of the top-left block of i rows by j columns: any rectangle takes four lookups by inclusion–exclusion, the top-left block that ends at the rectangle\'s bottom-right cell, minus the blocks above it and to its left, plus the block above and to the left that was subtracted twice.',
+      },
+      {
+        title: 'The shared prefix cancels',
+        points: [
+          'P[r+1] and P[l] both contain a[0] + … + a[l−1], and the subtraction removes exactly those.',
+          'P[0] = 0 lets a block that starts at index 0 use the same formula.',
+          'So any condition on a block becomes a condition on two prefix values.',
+        ],
+        show: [0, 9],
+        note: 'P[2] = 4 is the part before the block, so subtracting it leaves exactly a[2..5].',
+        say: 'Why it is right: P[r+1] and P[l] both contain a[0] + … + a[l−1], and the subtraction cancels exactly those terms, leaving a[l] + … + a[r]. The empty prefix, P[0] = 0, is what lets a block that starts at index 0 use the same formula. Since the identity holds for every pair l ≤ r, any condition on a block can be rewritten as a condition on two prefix values, and that is the bigger payoff.',
+      },
+      {
+        title: 'Count blocks by matching prefix values',
+        points: [
+          'a[l..r] sums to k exactly when P[r+1] − P[l] = k: count pairs i < j with P[i] = P[j] − k.',
+          'Walk j with `seen`, seeded with 0 once: add the count of P[j] − k, then record P[j].',
+          'Many conditions reduce to this: "the sum equals the length" is "the values a_i − 1 sum to 0".',
+        ],
+        show: [0, 16],
+        note: 'The case k = 0 on a new array a: P[5] = P[0] = 0, so the block a[0..4] sums to 0.',
+        say: '"The block a[l..r] sums to k" becomes P[r+1] − P[l] = k, so counting such blocks means counting pairs of prefix positions i < j with P[i] = P[j] − k. Walk j from 1 to n with `seen`, a map from each prefix value met so far to how often it occurred, seeded with the value 0 once for P[0]: at each j add the count of P[j] − k, then record P[j]. That is one O(n log n) pass; when k is 0 it is a search for equal prefix values, and sorting them and comparing neighbours works too. Many conditions turn into this one: "the sum equals the length" is "the values a_i − 1 sum to 0", and "two kinds of item balance" is "the sum is 0 once one kind is negated".',
+      },
+      {
+        title: 'Splits combine a left and a right',
+        points: [
+          'Fill L[i], the best part ending at i, left to right, and R[i], the best part starting at i, right to left.',
+          'Removing one element, cutting once or picking a pivot then costs O(1) per choice, O(n) in all.',
+          'Maximum subarray sum: maximise P[r] − P[l] over l < r, keeping the running minimum of P.',
+        ],
+        say: 'Prefix values have a mirror image, suffix values computed from the right, and the two together handle splits. Fill L[i], the best answer for a part that ends at index i, from left to right, and R[i], the best for a part that starts at i, from right to left. When the question removes one element, cuts the array once or picks a pivot, each choice combines a left part with a right part, so it costs O(1) from L and R and trying them all is O(n). The maximum subarray sum fits the same pattern: maximise P[r] − P[l] over l < r, a non-empty block, by keeping the running minimum of P from the left.',
+      },
+    ],
+    terms: [
+      'a[i]: the input value at index i, counting from 0; a[l..r] is the block from index l to index r, both ends included.',
+      'P[i]: the sum of the first i values, a[0] + … + a[i−1], with P[0] = 0; it has n + 1 entries, and a[l..r] sums to P[r+1] − P[l]. In `countSubarrays`, P is a single running total, the prefix sum so far.',
+      'S[i][j]: on a grid g, the sum of the top-left block of i rows by j columns, g[0..i−1][0..j−1]; `query(r1, c1, r2, c2)` returns the rectangle with those inclusive corners (the TRD version, `prefix2D`, returns S itself, without `query`).',
+      '`seen`: in `countSubarrays`, a map from each prefix value met so far to how many times it occurred, seeded with 0 once for P[0].',
+      'L[i]: the best answer for a part of the array that ends at index i, filled left to right; what "best" means depends on the problem, such as the longest increasing run ending at i.',
+      'R[i]: the mirror image of L[i], the best answer for a part that starts at index i, filled right to left.',
+    ],
+    worked: {
+      title: 'blocks that sum to k',
+      question: 'An array a holds the n = 6 values 1, 2, −1, 3, −2, 3, and k = 3. Count the blocks of consecutive values whose sum is exactly k. The real version has n up to 2·10^5, values between −10^9 and 10^9, and |k| ≤ 2·10^14.',
+      steps: [
+        'Recognise it: a count of blocks with a condition on their sum. At full size there are about n²/2 ≈ 2·10^10 blocks, too many to try, and the negative values rule out a sliding window, because making a block longer can lower its sum. So rewrite the condition with prefix sums.',
+        'Model it: the block that starts at index i and ends just before index j sums to P[j] − P[i], so it sums to k exactly when P[i] = P[j] − k. For each j from 1 to n, count the earlier positions i < j with that prefix value; `seen` holds those counts.',
+        'The prefix sums P[0] to P[6] are 0, 1, 3, 2, 5, 3, 6. Start with `seen` holding the value 0 once, for P[0].',
+        'Walk j, looking up P[j] − 3 before recording P[j]. j = 1: P[1] = 1, look for −2: none. j = 2: P[2] = 3, look for 0: once, the block a[0..1]. j = 3: P[3] = 2, look for −1: none. j = 4: P[4] = 5, look for 2: once, a[3..3]. j = 5: P[5] = 3, look for 0: once, a[0..4].',
+        'j = 6: P[6] = 6, look for 3, which `seen` holds twice, from P[2] and P[5]. One lookup finds two blocks, a[2..5] and a[5..5], which is why `seen` counts occurrences rather than just marking values.',
+        'Answer: 1 + 1 + 1 + 2 = 5 blocks. The single pass with a map is O(n log n). Prefix sums reach 2·10^14 and the count reaches about 2·10^10 (all zeros with k = 0), so both need long long. Without the starting 0 for P[0] the walk finds only 3, missing a[0..1] and a[0..4].',
+      ],
+    },
     spot: [
       'Many queries for the sum or count of something over a range [l, r], with no updates in between.',
       'Count (or find) subarrays whose sum is k, whose sum equals their length, or whose two kinds of items balance out.',
@@ -16,7 +99,7 @@ export default {
       'Count adjacent equal pairs, or positions with some property, inside [l, r] → prefix count of a 0/1 indicator array',
       'Subarray whose sum equals its length, or where two kinds of items balance → subtract 1 from every element (or negate one kind), then look for two equal prefix sums',
       'Delete one element / cut the array into parts / choose a pivot → best-from-the-left and best-from-the-right arrays, then try every split in O(n)',
-      'Best block to reverse, flip or swap → write down the gain of each position, then maximise P[r] − min P[l] over l ≤ r (maximum subarray sum)',
+      'Best block to reverse, flip or swap → write down the gain of each position, then maximise P[r] − min P[l] over l ≤ r, a maximum subarray sum in which l = r is the empty block (gain 0, for when changing nothing is allowed)',
     ],
     pitfalls: [
       'Off-by-one between inclusive ranges and P: with P of size n+1, sum a[l..r] is P[r+1] − P[l]. Forgetting P[0] = 0 also forgets every subarray that starts at the first element.',

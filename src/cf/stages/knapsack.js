@@ -6,8 +6,88 @@ export default {
   summary:
     'Recognise a knapsack under any wording, decide what the capacity dimension really measures, and use the right loop direction for 0/1, unbounded and bounded items.',
   primer: {
-    idea:
-      'A knapsack DP indexes by a small additive resource, dp[c] = best value with c of it used, and adds items one at a time, each in O(C), for O(n·C) overall. The real work is choosing that dimension: it can be weight, elapsed time, the number of items covered, the peak storage in use during a step, a small value when the weight is huge, or a sum shifted by an offset. Loop direction then controls how often an item counts: capacity downwards for 0/1, upwards for unbounded.',
+    slides: [
+      {
+        title: 'Most value within a weight limit',
+        points: [
+          'Item i has weight w[i] and value v[i]: choose a set of weight at most W with the most value.',
+          'Each item is used at most once (0/1), and trying every subset is 2^n, about 10^30 for n = 100.',
+          'Greedy by value per weight fails: with W = 4 it takes (3, 5) and scores 5, but the two (2, 3) items score 6.',
+        ],
+        say: 'The model question: n items, item i with weight w[i] and value v[i], and a capacity W. Choose a set of total weight at most W with the largest total value, each item used at most once (the 0/1 knapsack). Trying every subset costs 2^n, about 10^30 when n is 100, and greedy by value per unit of weight fails: with a capacity of 4 and items of (weight, value) (3, 5), (2, 3) and (2, 3), it takes the first, has no room left and scores 5, while the two small items score 6.',
+      },
+      {
+        title: 'Only the weight used matters',
+        points: [
+          'What a partial choice leaves for the other items depends only on how much weight it used.',
+          'Of two choices with the same weight, keep the one with more value.',
+          'With integer weights there are W + 1 amounts, so the work grows with W, not 2^n.',
+        ],
+        say: 'The key observation: what a partial choice leaves for the remaining items depends only on how much weight it has used. Two choices that used the same weight face exactly the same future, so only the one with more value is worth keeping. With integer weights there are just W + 1 possible amounts, so the work grows with W, not with 2^n.',
+      },
+      {
+        title: 'One pass over c per item',
+        points: [
+          'dp[c] is the best value of a set so far with weight at most c; before any item it is 0.',
+          'Item i sets dp[c] = max(dp[c], dp[c − w[i]] + v[i]) for every c ≥ w[i]: skip it or take it.',
+          'After the last item, dp[W] is the answer.',
+        ],
+        show: [0, 7],
+        note: 'Each row is one item\'s pass over c. Item B at capacity 5: taking it (3 + 4 = 7) beats skipping it (3).',
+        say: 'So let dp[c] be the best value of a set of the items considered so far with total weight at most c; before any item, every dp[c] is 0. Item i is added in one pass over c: dp[c] = max(dp[c], dp[c − w[i]] + v[i]) for every c ≥ w[i], which either skips the item or puts it on top of the best set that leaves w[i] free. After the last item, dp[W] is the answer.',
+      },
+      {
+        title: 'Sweep c downwards for 0/1',
+        points: [
+          'The update is right only if dp[c − w[i]] still means "without item i".',
+          'Downwards, that smaller index is untouched in this pass, so dp[c] is the best over the first i items.',
+          'Upwards, the item can be taken again and again: wrong for 0/1, right for the unbounded knapsack.',
+        ],
+        show: [0, 14],
+        note: 'Row C runs from capacity 5 down, as in the code: taking C at 4 reads capacity 0, which this pass hasn\'t reached, so it is still without C.',
+        say: 'The update is right only if dp[c − w[i]] still means "without item i". Sweeping c downwards guarantees that, because the smaller index has not been touched yet in this pass, so after item i each dp[c] is the best over subsets of the first i items; that invariant is the whole proof. Sweeping upwards, dp[c − w[i]] may already include item i, so the item can be taken again and again: wrong for 0/1, and exactly right when every item has unlimited copies (the unbounded knapsack).',
+      },
+      {
+        title: 'Exact weights, copies and bitsets',
+        points: [
+          'The DP is O(n·W) time and O(W) memory; starting from −∞ except dp[0] = 0 means "weight exactly c".',
+          'An item with cnt[i] copies splits into packs of 1, 2, 4, … plus a remainder, each run as a 0/1 item.',
+          'For feasibility alone, the bitset `can` takes each item with `can |= can << w[i]` in O(MAXS/64).',
+        ],
+        say: 'Each item costs O(W), so the DP is O(n·W) time and O(W) memory. Starting from 0 everywhere means "weight at most c"; starting from dp[0] = 0 and −∞ everywhere else means "weight exactly c". An item with cnt[i] copies is split into packs of 1, 2, 4 and so on copies plus a remainder, each run as a 0/1 item, and when only feasibility matters, a bitset `can`, whose bit s says some subset sums to s, takes each item with `can |= can << w[i]` in O(MAXS/64).',
+      },
+      {
+        title: 'Choose what the index measures',
+        points: [
+          'The index must be additive over the chosen items and small enough to loop over.',
+          'Weight, time, items covered or peak storage all work; with huge weights, index by value and store the least weight.',
+          'When per-item amounts can be negative, shift the sum by an offset.',
+        ],
+        say: 'The real work is choosing what the index measures. It must be additive over the chosen items and small enough to loop over: weight, elapsed time, the number of items covered, the peak storage in use during a step, a small total value when the weights are huge (then store the least weight for each value), or a sum shifted by an offset when per-item amounts can be negative.',
+      },
+    ],
+    terms: [
+      'w[i]: the weight of item i (in the TRD version each item is a pair, and its weight is `wt`).',
+      'v[i]: the value of item i (`val` in the TRD version).',
+      'W: the capacity, the largest total weight allowed (`C` in the TRD version).',
+      'dp[c]: the best total value of a set of the items processed so far with total weight at most c, or exactly c with the −∞ start. The diagram keeps one row per item, dp[i][c] for the first i items; the code keeps only the latest row.',
+      'cnt[i]: how many copies of item i exist, in the bounded version.',
+      '`can`: the subset-sum bitset; bit s is set when some subset sums to exactly s (built by `reachable` in the TRD version).',
+      '`MAXS`: the largest sum the bitset tracks (`S` in the TRD version).',
+      'minW[x]: in the worked question, the least total weight of a set whose values add up to exactly x, for when the weights are too large to index by.',
+    ],
+    worked: {
+      title: 'heavy crates, small values',
+      question:
+        'A cargo drone can lift at most W = 9 kg. There are n = 4 crates, given as (weight, value): A (4, 3), B (8, 2), C (3, 1) and D (5, 2). Choose crates with total weight at most W and the largest total value. In the real version n ≤ 100, the weights and W are up to 10^9, and each value is at most 1000.',
+      steps: [
+        'Recognise it: each crate is taken or left under a weight budget, a 0/1 knapsack. But a table indexed by weight needs 10^9 + 1 cells, and 100 passes over it is 10^11 steps. The values are small, at most 100·1000 = 10^5 in total, so swap the roles and index by value.',
+        'Model it: minW[x] is the least total weight of a set of crates whose values add up to exactly x, with minW[0] = 0 and ∞ elsewhere. A crate (w, v) is added by sweeping x downwards from the total value to v: minW[x] = min(minW[x], minW[x − v] + w). The answer is the largest x with minW[x] ≤ W.',
+        'Here the values add up to 8, so x runs from 0 to 8. After A, minW[3] = 4 and every other x > 0 is ∞. After B, minW[2] = 8 and minW[5] = 4 + 8 = 12. After C, minW[1] = 3, minW[4] = 4 + 3 = 7 and minW[6] = 12 + 3 = 15, while minW[3] stays 4, because putting C on top of minW[2] would weigh 11.',
+        'After D, minW[2] = min(8, 0 + 5) = 5, minW[5] = min(12, 4 + 5) = 9, minW[6] = min(15, 7 + 5) = 12, minW[7] = 12 + 5 = 17 and minW[8] = 15 + 5 = 20, so for x from 0 to 8 the table now reads 0, 3, 5, 4, 7, 9, 12, 17, 20. Sweeping upwards would have let a crate count twice: in A\'s own pass, minW[6] would build on the 4 just written into minW[3] and become 8, which is two copies of A, and the answer would wrongly be 6.',
+        'Answer: 5, with crates A and D (4 + 5 = 9 kg): minW[8] = 20, minW[7] = 17 and minW[6] = 12 are too heavy, and minW[5] = 9 fits. The table need not grow with x (here minW[2] = 5 but minW[3] = 4), so check every x rather than stopping at the first that is too heavy. The DP is O(n·Σv), at most 10^7 steps; a set can weigh up to 10^11, so store weights in long long, with an ∞ such as 10^18 so that ∞ + w cannot overflow.',
+      ],
+    },
     spot: [
       'You pick a subset of items, each with a cost and a gain, under a total budget that is at most about 10⁵ or can be capped there.',
       '"Can we make exactly S" or "which totals are reachable": subset-sum feasibility, often as a bitset.',
@@ -22,8 +102,8 @@ export default {
     ],
     pitfalls: [
       'Wrong loop direction: sweeping capacity upwards in a 0/1 knapsack lets one item be taken many times. With a negative weight the safe direction flips; when unsure, copy the row.',
-      '"At most c" versus "exactly c": all zeros means at most, −∞ except dp[0] = 0 means exactly. If you computed exactly, take the maximum over all c ≤ C (or make the table monotone) before reading the answer, otherwise a capacity that cannot be filled exactly looks impossible.',
-      'A capacity far larger than the items can use: k up to 10⁶ when the weights can only add up to 12n. Cap the capacity at the total weight before allocating the table.',
+      '"At most c" versus "exactly c": all zeros means at most, −∞ except dp[0] = 0 means exactly. If you computed exactly, take the maximum over all c ≤ W (or make the table monotone) before reading the answer, otherwise a capacity that cannot be filled exactly looks impossible.',
+      'A capacity W far larger than the total weight Σw[i] of all the items: cap W at Σw[i] before allocating the table. In 1633D the capacity reaches 10⁶, but the weights add up to at most 12n.',
     ],
     code: `// dp[c] = best value with total weight at most c (start all zeros; use -INF except dp[0] for "exactly c").
 // 0/1: each item once. Sweep c DOWNWARDS so dp[c - w] still means "without this item".
@@ -167,7 +247,7 @@ bitset<MAXS + 1> subsetSums(const vector<int>& a) {
       hints: [
         'W and the counts go up to 10¹⁸, but there are only 8 distinct weights. Is there a number that every weight from 1 to 8 divides, so that groups of equal items become interchangeable?',
         'L = lcm(1..8) = 840. Any 840/i items of weight i weigh exactly 840, so all but fewer than 840/i items of each weight can be treated as identical 840-blocks. The real knapsack is only over the loose remainder, whose weight is below 8·840.',
-        'dp[s] = most whole 840-blocks available when the loose items weigh exactly s. For weight i try r = 0..min(cnt_i, 840/i − 1) loose items: s grows by r·i and the blocks grow by ⌊(cnt_i − r) / (840/i)⌋. Answer max over s ≤ W of s + 840·min(dp[s], ⌊(W − s)/840⌋). About 4.5·10⁷ steps.',
+        'dp[s] = most whole 840-blocks available when the loose items weigh exactly s. For weight i try r = 0..min(cnt_i, 840/i − 1) loose items: s grows by r·i and the blocks grow by ⌊(cnt_i − r) / (840/i)⌋. Answer max over s ≤ W of s + 840·min(dp[s], ⌊(W − s)/840⌋). With s ≤ 8·840 = 6720, that is about 6721 · (840/1 + 840/2 + … + 840/8) ≈ 1.5·10⁷ steps.',
       ],
       solution:
         'Write the number of weight-i items taken as r + q·(840/i) with 0 ≤ r < 840/i; each group of 840/i items weighs exactly 840, so only the remainders r need a real knapsack and everything else is a pool of identical 840-blocks. A bounded knapsack over the loose weight s ≤ 8·840 stores the largest number of blocks the leftover items can form. For each reachable s ≤ W, add as many blocks as fit, min(dp[s], ⌊(W − s)/840⌋), and take the best total. Keep r ≤ cnt_i and use 64-bit arithmetic throughout.',

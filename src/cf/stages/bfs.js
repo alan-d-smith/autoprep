@@ -5,7 +5,87 @@ export default {
   track: 'graphs',
   summary: 'Find fewest-move answers in O(V + E) with BFS: from one source or many, on the reversed graph, with 0/1 move costs, and on graphs whose vertices are states (position plus whatever else matters) that you build from the statement.',
   primer: {
-    idea: 'BFS takes vertices out of the queue in order of distance, so when every move costs the same, the first time a vertex is reached is its shortest distance, in O(V + E) total. Three extensions cover most problems: start many sources at distance 0 to get "distance to the nearest of a set", run it on the reversed graph to get every vertex\'s distance to a target set in one pass, and push 0-cost moves to the front of a deque (0-1 BFS). The real modelling step is choosing the vertices: when the rules depend on more than your position (the direction you face, turns used, the previous city, the time), the vertex is the tuple of all of it.',
+    slides: [
+      {
+        title: 'Fewest moves, all of equal cost',
+        points: [
+          'Clicks on a device, steps on a grid, minutes of a spreading fire.',
+          'Trying move sequences is exponential: 4^20 ≈ 10^12 sequences of just 20 grid steps.',
+          'DFS finds some path, not the shortest; DP needs a fill order, which a graph with cycles lacks.',
+        ],
+        say: 'This stage is about "the fewest moves" when every move costs the same: clicks on a device, steps on a grid, minutes of a spreading fire. Trying move sequences is exponential (there are 4^20, about 10^12, sequences of just 20 grid steps), a DFS finds some path but not necessarily the shortest, and DP needs an order in which to fill its states, which a graph with cycles does not have.',
+      },
+      {
+        title: 'Reach vertices layer by layer',
+        points: [
+          'Distance d + 1 is exactly the not-yet-reached neighbours of the vertices at distance d.',
+          'Reaching vertices nearest first, the first visit to a vertex is along a shortest path, so its distance is final.',
+        ],
+        show: [0, 21],
+        note: 'Grey squares are walls. The BFS reaches the target T at distance 10 and can stop there: its first visit is final.',
+        say: 'The key observation is about layers. The vertices at distance 1 from the start are its neighbours, and the vertices at distance d + 1 are exactly the not-yet-reached neighbours of the vertices at distance d. So if you reach vertices layer by layer, nearest first, the first time a vertex is reached is along a shortest path, and its distance never needs revising.',
+      },
+      {
+        title: 'A queue produces that order',
+        points: [
+          'dist[s] = 0 and s goes into `q`; every other dist[v] starts at −1.',
+          'Take u from the front; each neighbour v in adj[u] with dist[v] = −1 gets dist[u] + 1 and joins the back.',
+          'Setting dist on push, not on pop, puts each vertex in the queue once.',
+        ],
+        show: [0, 2],
+        note: 'Early on: (1, 0) at distance 1 adds its unreached neighbours, at distance 2, to the back.',
+        say: 'A first-in, first-out queue `q` produces that order. adj[u] lists the vertices one move from u, and dist[v] is −1 until v is first reached and then holds its distance; the start s gets dist[s] = 0 and goes into `q`. Repeatedly take u from the front of `q`, and for every neighbour v of u with dist[v] = −1, set dist[v] = dist[u] + 1 and add v at the back. Setting dist when a vertex is pushed, not when it is popped, means each vertex enters the queue once.',
+      },
+      {
+        title: 'The queue stays sorted by distance',
+        points: [
+          'The queue holds vertices at distance d, then at d + 1, since popping d only adds d + 1 at the back.',
+          'So vertices leave in order of distance, each first reached from the layer before, and its dist is final.',
+          'Each vertex is pushed once and each edge examined from its start: O(V + E).',
+        ],
+        show: [0, 4],
+        note: 'The queue holds one cell at distance 2, then two at distance 3, in order.',
+        say: 'Why it is right: at every moment the queue holds some vertices at distance d followed by some at distance d + 1, because a vertex popped at distance d only adds vertices at d + 1 to the back. So vertices leave in order of distance, every vertex is first reached from a vertex in the layer before it, and its dist is final. Each vertex is pushed once and each edge examined once from its start (twice for an undirected edge), so the cost is O(V + E) for V vertices and E edges.',
+      },
+      {
+        title: 'Multi-source BFS and 0-1 BFS',
+        points: [
+          'Start all `sources` at distance 0, and one pass gives each vertex its distance to the nearest.',
+          'When moves cost w = 0 or 1, use a deque `dq`: 0-cost moves go to the front, 1-cost ones to the back.',
+          'A vertex can now improve after it is reached, so relax with dist[u] + w < dist[v] instead of testing −1.',
+        ],
+        say: 'Three variations cover most problems. Put many `sources` in the queue at distance 0 and one pass gives every vertex its distance to the nearest of them (multi-source BFS), exactly like a BFS from one imaginary vertex joined to all of them, with every distance one smaller; to get every vertex\'s distance to a target set, reverse every edge and run one multi-source BFS from the targets. When each move costs w = 0 or w = 1, use a deque `dq` instead: a 0-cost move goes to the front and a 1-cost move to the back, which keeps it sorted by distance (0-1 BFS). A vertex can now improve after it was first reached, so relax with dist[u] + w < dist[v] instead of testing for −1.',
+      },
+      {
+        title: 'The vertex is the whole state',
+        points: [
+          'If a move depends on more than where you are (direction, turns used, time), the vertex is the whole tuple.',
+          'Generate moves from the rules, and number each state as one integer `id`, such as cell·4 + direction.',
+          'Count the states before coding: the cost is O(states + moves).',
+        ],
+        say: 'The real modelling step is choosing the vertices. When whether a move is allowed, or what it costs, depends on more than where you are (the direction you face, the turns used, the previous city, the time), the vertex is the tuple of all of it, and the moves are generated from the rules instead of being stored. Number each state as one integer `id`, such as cell·4 + direction, keep a flat dist array, and count the states before coding, since the cost is now O(states + moves).',
+      },
+    ],
+    terms: [
+      'adj[u]: the vertices one move from u; in the 0-1 version, pairs {v, w} of a vertex and the move\'s cost (`g` in the TRD version, and `adj01` for 0-1 BFS).',
+      'dist[v]: the fewest moves from the source, or from the nearest source, to v; −1 until v is reached (INT_MAX in the 0-1 version).',
+      '`q`: the first-in, first-out queue of reached vertices whose neighbours have not been scanned yet.',
+      '`sources`: the vertices that start at distance 0; a single source gives the ordinary BFS (the argument of `multiBfs` in the TRD version, whose GraphBasics `bfs(s)` takes one source).',
+      'w: the cost of a move in 0-1 BFS, 0 or 1.',
+      '`dq`: the deque in the template\'s `bfs01`, with 0-cost moves pushed to the front and 1-cost moves to the back (`bfs01` is `zeroOneBfs` in the TRD version, with the same `dq`).',
+      '`id`: a state numbered as one integer, such as cell·4 + direction, so that dist stays a flat array.',
+    ],
+    worked: {
+      title: 'the nearest shop',
+      question: 'A town is a 3 × 6 grid with rows 0 to 2 and columns 0 to 5. There are shops at (0, 0) and (2, 5), buildings at (0, 2), (1, 2), (1, 4) and (2, 4), and every other square is open. People walk between side-adjacent squares that are not buildings, one minute per step. For each open square take the walk to its nearest shop, and print the longest of these walks in minutes, or −1 if some open square cannot reach a shop. The real map is up to 1000 × 1000 with any number of shops.',
+      steps: [
+        'Recognise it: every step costs one minute, so fewest steps is BFS, and "distance to the nearest of a set" for every square is multi-source BFS. One BFS per open square costs O((nm)²), about 10^12 steps for an n × m map at full size, and one BFS per shop is not much better, 10^11 steps for 10^5 shops; one BFS seeded with every shop at once is O(nm).',
+        'Model it: square (r, c) is vertex r·6 + c, and its neighbours are the side-adjacent squares that are not buildings. Set every dist to −1, then push both shops at distance 0: dist[0] = 0 for (0, 0) and dist[17] = 0 for (2, 5).',
+        'Run it, layer by layer. Distance 1: (0, 1), (1, 0), (1, 5). Distance 2: (1, 1), (2, 0), (0, 5). Distance 3: (2, 1), (0, 4). Distance 4: (2, 2), (0, 3). Distance 5: (2, 3), (1, 3). All 12 open squares besides the shops are reached and the queue empties.',
+        'Each square is first reached from whichever shop is nearer, without ever comparing the shops: (1, 3) gets 5 from (2, 5) by way of the top row, and (2, 3) gets 5 from (0, 0) down the left column and along the bottom row. (2, 3) is only 2 columns from (2, 5), but the buildings at (2, 4) and (1, 4) make that walk 6 steps, so a formula that ignores the walls would be wrong.',
+        'Answer: 5 minutes, for the squares (1, 3) and (2, 3). The BFS is O(nm) time and keeps one dist entry per square, 10^6 ints at full size; any open square still at −1 at the end makes the answer −1. Set dist when a square is pushed, so no square enters the queue twice.',
+      ],
+    },
     spot: [
       '"Minimum number of moves, clicks, steps or minutes" where every move costs the same: BFS, not DP or Dijkstra.',
       'Many starting points spreading at once (fires, infections, shops), or "distance to the nearest X" for every cell: multi-source BFS.',

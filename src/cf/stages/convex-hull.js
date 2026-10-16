@@ -5,7 +5,96 @@ export default {
   track: 'geometry',
   summary: 'Build a convex hull with the monotone chain, use it for containment and extreme-point questions, recognise hulls hiding in prefix sums and parabolas, and speed up DP with the convex hull trick.',
   primer: {
-    idea: 'The convex hull is the smallest convex polygon containing a point set. Andrew\'s monotone chain builds it in O(n log n): sort the points by x, then sweep once for the lower hull and once for the upper hull, popping the last point while it does not make a left turn. Many problems need only one chain: the upper hull consists of the lines through two points with no point above them, and the lower hull of prefix-sum points gives the smallest averages. The convex hull trick is the same idea for lines: the minimum of lines m·x + c is a lower envelope, so a DP of the form dp[i] = min_j (dp[j] + m_j·x_i) runs in O(n) instead of O(n²) when slopes and queries arrive in sorted order.',
+    slides: [
+      {
+        title: 'The outermost points of a set',
+        points: [
+          'Fences round trees, points extreme in some direction, one shape inside another: all ask about the outermost points.',
+          'Testing all n² pairs as edges against all n points is O(n³), about 10^15 steps for n = 10^5.',
+          'The convex hull, the smallest convex polygon containing every point, can be built in O(n log n) instead.',
+        ],
+        show: [0, 26],
+        note: 'The finished hull of 8 points runs 1, 5, 8, 6, 2; points 3, 4 and 7 lie inside or on an edge.',
+        say: 'Hull questions are about the outermost points of a set: the shortest fence around n trees, which points can be extreme in some direction, whether one shape fits inside another. A hull edge joins two points with every other point on one side of the line through them, but testing all n² pairs against all n points is O(n³), about 10^15 steps for n = 10^5. The convex hull, the smallest convex polygon containing every point, can be built in O(n log n) instead.',
+      },
+      {
+        title: 'Every corner is a left turn',
+        points: [
+          'Walking counter-clockwise round a convex polygon, every corner turns left.',
+          'Sort the points by x, then y, and walk along the bottom from the leftmost to the rightmost: the lower hull.',
+          'A point where the walk turns right or goes straight lies on or above its neighbours\' line, so it is not a corner.',
+        ],
+        show: [0, 13],
+        note: 'The lower hull 1 → 5 → 8: every corner on it turns left.',
+        say: 'The observation: walking counter-clockwise round a convex polygon, every corner is a left turn. So sort the points by x, breaking ties by y, and walk along the bottom from the leftmost point to the rightmost; that walk is the lower hull, the part of the hull seen from below. A point where the walk would turn right or go straight on lies on or above the line joining its neighbours, so it is not a corner.',
+      },
+      {
+        title: 'Andrew\'s monotone chain pops right turns',
+        points: [
+          '`convexHull` scans the sorted points with a stack `h`, testing the turn from its top two points to the next point q.',
+          'Before pushing q, pop while o → a → q is not a left turn, cross(o, a, q) ≤ 0, where a is the top of `h` and o the one below.',
+          'A second scan from right to left builds the upper hull; joining the chains gives the hull counter-clockwise.',
+        ],
+        show: [0, 2],
+        note: '1 → 2 → 3 turns right (cross = −5), so 2 is popped: it is not on the lower hull.',
+        say: 'Andrew\'s monotone chain, `convexHull` in the template, does this with a stack `h`. Scan the sorted points, and before pushing each point q, measure the turn from o, the second-to-top point of h, through a, the top one, to q with cross(o, a, q), the cross product of a − o and q − o, which is positive for a left turn. While that turn is not a left turn, pop the top: it is not on the lower hull. A second scan from right to left builds the upper hull the same way, and joining the two chains gives the hull counter-clockwise.',
+      },
+      {
+        title: 'A popped point never returns in that scan',
+        points: [
+          'A popped point lies on or above the segment from the point below it to q, both of which are in the set.',
+          'So it can never be a lower-hull corner, and `h` always holds the lower hull of the points scanned so far.',
+          'Each point is pushed once and popped at most once: O(n) per scan, so the sort dominates at O(n log n).',
+        ],
+        show: [0, 5],
+        note: '3 → 4 → 5 turns right, so 4 is popped, and the lower-hull scan never pushes it again (the upper-hull scan starts afresh).',
+        say: 'Why popping is safe: a popped point lies on or above the segment from the point below it to q, both of which are in the set, so it can never be a lower-hull corner, however many points come later. So h always holds the lower hull of the points scanned so far. Each point is pushed once and popped at most once, so each scan is O(n) and the sort dominates: O(n log n) in all.',
+      },
+      {
+        title: 'The convex hull trick for DP',
+        points: [
+          'In dp[i] = min over j < i of (dp[j] + m_j·x_i), each j is a line, and dp[i] is their lower envelope at x_i.',
+          'Trying every j is O(n²). With decreasing slopes and increasing queries, `MonoCHT` keeps the envelope in a deque `L`.',
+          'add(m, c) pops back lines while useless(l1, l2, l3) says so; query(x) pops front lines already beaten at x.',
+        ],
+        say: 'The convex hull trick is the same idea for lines. In a DP like dp[i] = min over j < i of (dp[j] + m_j·x_i), each earlier j is a line with slope m_j and intercept dp[j], and dp[i] is the lowest of those lines at x = x_i, a point on their lower envelope, which is a convex chain; trying every j is O(n²), 5·10^11 steps for n = 10^6. When slopes arrive in decreasing order and queries in increasing order, `MonoCHT` keeps the envelope in a deque `L` of lines (m, c), each meaning y = m·x + c. Adding a line with add(m, c) first pops the last line l2 while useless(l1, l2, l3) says it can never again be strictly lowest, where l1 is the line before it and l3 the new one, and query(x) pops from the front any line already beaten at x, since it stays beaten for every larger x.',
+      },
+      {
+        title: 'Unsorted lines, and problems needing one chain',
+        points: [
+          'Each line enters and leaves the deque at most once, so the DP is O(n); with unsorted queries, binary search the envelope.',
+          'With unsorted slopes too, use a Li Chao tree or KACTL\'s `LineContainer`, at O(log n) per operation.',
+          'One chain often suffices: prefix sums as points (i, S_i) turn averages into slopes, and subtracting x² turns parabolas into lines.',
+        ],
+        say: 'Each line enters the deque once and leaves it at most once, so the whole DP is O(n). With unsorted queries, binary search the envelope instead of popping from the front; with unsorted slopes too, use a Li Chao tree or KACTL\'s `LineContainer`, at O(log n) per operation. Many hull problems need only one chain: the lines through two points with no point strictly above them are the upper-hull edges, prefix sums drawn as points (i, S_i) turn block averages into slopes so the lower hull gives the smallest averages, and parabolas y = x² + bx + c become lines once you subtract x² from y.',
+      },
+    ],
+    terms: [
+      'cross(o, a, b): the cross product of a − o and b − o, positive when o → a → b turns left (in the TRD version it is the member function `o.cross(a, b)` of `Point<ll>`).',
+      '`convexHull`: Andrew\'s monotone chain, returning the hull counter-clockwise without duplicates or points in the middle of an edge (ConvexHull.h in the TRD has the same name and output).',
+      '`h`: the stack holding the chain built so far; its top two points and the next point form the turn being tested.',
+      'dp[i]: the DP value at i, a minimum over earlier j.',
+      'm_j, x_i: in dp[i] = min over j of (dp[j] + m_j·x_i), the slope that j contributes and the point at which i queries.',
+      '`MonoCHT`: the monotone convex hull trick, keeping the lower envelope of lines (the TRD version uses KACTL\'s `LineContainer` instead, which keeps the maximum, writes lines as k·x + m with slope k, and takes lines and queries in any order at O(log n) each; for a minimum, add(−k, −m) and negate query(x)).',
+      '`L`: the deque of lines (m, c), each meaning y = m·x + c, in decreasing order of slope.',
+      'add(m, c): adds the line y = m·x + c at the back, first popping the lines it makes useless.',
+      'query(x): the lowest value of the lines at x, after popping lines from the front that can no longer be lowest.',
+      'useless(l1, l2, l3): for the last two lines l1, l2 of `L` and a new line l3, true when l2 is never strictly below both l1 and l3, so l2 can go.',
+      'a_i, b_j: input numbers, as in the disguise dp[i] = min_j dp[j] + b_j·a_i, where b_j becomes line j\'s slope and a_i the query point.',
+      'S_i: the prefix sum a_1 + … + a_i, with S_0 = 0.',
+    ],
+    worked: {
+      title: 'stepping stones',
+      question: 'Stones 1 to 5 lie at positions x = 0, 2, 3, 6 and 8. You start on stone 1 and must reach stone 5, always jumping forward, and a jump from stone j to stone i costs (x_i − x_j)² + K, with K = 17. Find the smallest total cost. The real version has n up to 2·10^5 stones at strictly increasing positions up to 10^6, and K up to 10^12.',
+      steps: [
+        'Recognise it: dp[i], the cheapest way to reach stone i, is the minimum over j < i of dp[j] + (x_i − x_j)² + K, and trying every j is about n²/2 = 2·10^10 transitions at full size. Expanding the square gives dp[i] = x_i² + K + min over j of (−2·x_j·x_i + dp[j] + x_j²), and the only part that mixes i and j is a product of something about j with x_i: the convex hull trick.',
+        'Model it: stone j becomes the line with slope m = −2·x_j and intercept c = dp[j] + x_j², and dp[i] = x_i² + K + (the lowest line at x = x_i). Positions increase, so slopes are added in decreasing order and queries come in increasing order, exactly what `MonoCHT` needs. dp[1] = 0, so line 1 is (m, c) = (0, 0).',
+        'Stones 2 and 3: at x = 2 only line 1 is there, value 0, so dp[2] = 4 + 17 + 0 = 21 and line 2 is (−4, 25). At x = 3 line 1 gives 0 and line 2 gives −12 + 25 = 13, so line 1 stays in front, dp[3] = 9 + 17 + 0 = 26, and line 3 is (−6, 35).',
+        'Adding line 3 makes line 2 useless: lines 1 and 3 meet at x = 35/6 ≈ 5.8, where both are 0 and line 2 is 25 − 4·35/6 ≈ 1.7, so line 2 is never strictly lowest and add(−6, 35) pops it. The template\'s useless(l1, l2, l3), with l1, l2, l3 lines 1, 2 and 3, agrees: (35 − 0)·(0 − (−4)) = 140 ≤ (25 − 0)·(0 − (−6)) = 150. In the story, no later stone is ever reached more cheaply from stone 2 than from stone 1 or 3.',
+        'Stone 4, x = 6: line 3 gives −36 + 35 = −1 ≤ 0, line 1\'s value, so query(6) pops line 1 for good and dp[4] = 36 + 17 − 1 = 52; line 4 is (−12, 88). Stone 5, x = 8: line 3 gives −48 + 35 = −13 and line 4 gives −96 + 88 = −8, so line 3 stays in front and dp[5] = 64 + 17 − 13 = 68.',
+        'Answer: 68, by jumping 1 → 3 → 5 at cost (3² + 17) + (5² + 17) = 26 + 42. Each line is added once and popped at most once, so the DP is O(n). dp[i] stays at most 2·10^12 (one jump straight to stone n costs at most 10^12 + 10^12), but the `useless` test multiplies an intercept difference up to 3·10^12 by a slope difference up to 2·10^6, about 6·10^18 and close to the long long limit, so keep the template\'s __int128.',
+      ],
+    },
     spot: [
       'Questions about the outermost points of a set: the length of a fence around everything, which points can be extreme, whether one shape fits inside another',
       'A DP transition dp[i] = min or max over j of (dp[j] + f(j)·g(i)), a product of something about j and something about i, with n up to 10^5 or 10^6',
@@ -46,8 +135,8 @@ vector<P> convexHull(vector<P> p) {
 // Convex hull trick: min of lines m*x + c; slopes strictly decreasing, queries non-decreasing, O(n) total.
 struct MonoCHT {
   deque<pair<ll, ll>> L;  // (m, c)
-  static bool useless(pair<ll, ll> a, pair<ll, ll> b, pair<ll, ll> c) {  // b is never strictly lowest
-    return (__int128)(c.second - a.second) * (a.first - b.first) <= (__int128)(b.second - a.second) * (a.first - c.first);
+  static bool useless(pair<ll, ll> l1, pair<ll, ll> l2, pair<ll, ll> l3) {  // l2 is never strictly lowest
+    return (__int128)(l3.second - l1.second) * (l1.first - l2.first) <= (__int128)(l2.second - l1.second) * (l1.first - l3.first);
   }
   void add(ll m, ll c) {
     while (L.size() >= 2 && useless(L[L.size() - 2], L.back(), {m, c})) L.pop_back();
@@ -122,9 +211,9 @@ struct MonoCHT {
       hints: [
         'No rectangle contains another, so sorting by x also sorts y in the opposite order. For a chosen set in that order, what does the union look like, and how much area does each new rectangle add?',
         'With x increasing and y decreasing the union is a staircase: adding rectangle i after j adds (x_i − x_j)·y_i. So dp[i] = x_i·y_i − a_i + max(0, max_{j<i} dp[j] − x_j·y_i), and the inner maximum is over lines with slope −x_j evaluated at y_i: the convex hull trick.',
-        'Slopes −x_j decrease as j grows and the query points y_i decrease, so a monotone deque works in O(n) after sorting (substitute z = −y if you want the min-with-increasing-queries form). Read the 10^6 lines fast, use __int128 in the line test, and take the best dp[i] overall.',
+        'Slopes −x_j decrease as j grows and the query points y_i decrease, so a monotone deque works in O(n) after sorting. To reuse MonoCHT, which keeps a minimum, set z = −y and add each line negated, add(−x_j, −dp[j]); the inner maximum is then −query(−y_i). Read the 10^6 lines fast, use __int128 in the line test, and take the best dp[i] overall.',
       ],
-      solution: 'Sort by x ascending; since no rectangle is nested, y is then strictly descending. Rectangle i placed after j adds the strip (x_i − x_j)·y_i to the union, so dp[i] = x_i·y_i − a_i + max(0, max_{j<i}(dp[j] − x_j·y_i)), and the answer is the largest dp[i]. Each j contributes the line y ↦ dp[j] − x_j·y; the slopes decrease and the queries y_i decrease, so keep the upper envelope in a deque and drop lines from the front as queries advance (or negate, z = −y, and reuse a min-hull with increasing queries), O(n) after an O(n log n) sort. Values reach 10^18, so the intersection comparison needs __int128, and 3·10^6 input numbers need fast reading.',
+      solution: 'Sort by x ascending; since no rectangle is nested, y is then strictly descending. Rectangle i placed after j adds the strip (x_i − x_j)·y_i to the union, so dp[i] = x_i·y_i − a_i + max(0, max_{j<i}(dp[j] − x_j·y_i)), and the answer is the largest dp[i]. Each j contributes the line y ↦ dp[j] − x_j·y; the slopes decrease and the queries y_i decrease, so keep the upper envelope in a deque and drop lines from the front as queries advance (or reuse a minimum hull such as MonoCHT: add(−x_j, −dp[j]) and take −query(−y_i)), O(n) after an O(n log n) sort. Values reach 10^18, so the intersection comparison needs __int128, and 3·10^6 input numbers need fast reading.',
     },
     {
       id: '605C',

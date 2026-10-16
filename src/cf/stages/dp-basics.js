@@ -5,7 +5,79 @@ export default {
   track: 'dp',
   summary: 'Write a DP state as one sentence, add the small extra index the next step needs (last action, run length, time of day), and fill the table with take/skip or count-the-ways transitions.',
   primer: {
-    idea: 'A DP state is a sentence: "dp[i][s] = the best answer for the first i positions, given that position i ended in situation s". The extra index s holds exactly what the next step needs to know about the past and nothing more: the last action, which row the last pick came from, the current run length, or the time of day mod h. The cost is (number of states) × (choices per state), so n positions with 3 extra states is O(n) and n sleeps on an h-hour clock is O(n · h). Counting problems use the same table with + instead of max, start from one way to build the empty prefix, and reduce modulo p after every addition.',
+    slides: [
+      {
+        title: 'One choice per position, left to right',
+        points: [
+          'Each position gets one choice, such as take or skip, and a rule links it to the choices just before.',
+          'Trying every combination is 2^n or 3^n, hopeless when n is 10^5.',
+          'Greedy fails on tiny cases: with no two neighbours, taking 4 first in 3, 4, 3 misses 3 + 3 = 6.',
+        ],
+        say: 'The questions in this stage make one choice per position, left to right: take or skip an item, pick the day\'s activity, decide which way a tree falls, and a rule links each choice to the ones just before it. Trying every combination is 2^n or 3^n, hopeless when n is 10^5, and a greedy rule that looks only at the current position fails on tiny cases: with no two neighbours allowed, taking the largest value first in 3, 4, 3 gets 4, while 3 + 3 = 6.',
+      },
+      {
+        title: 'The past shrinks to a short summary',
+        points: [
+          'The rule never needs the whole history, only a summary: the last action, the run length, the time.',
+          'Histories with the same summary have exactly the same futures.',
+          'So keep only the best of them or, when counting, how many there are.',
+        ],
+        say: 'The observation is that the rule never needs the whole history. To know what is allowed at the next position, and what it can add, a short summary of the past is enough: what was done last, how long the current run is, what time it is. All histories with the same summary have exactly the same futures, so of those only the best one matters, or, when counting, only how many there are.',
+      },
+      {
+        title: 'The state is a sentence',
+        points: [
+          'dp[i][s] = the best answer for the first i positions, given that they end in situation s.',
+          's holds exactly what the next step needs: the last action, the run length, or the time mod h.',
+          'Each entry is the max over every way into it, starting from 0 for the empty prefix and −∞ elsewhere.',
+        ],
+        show: [0, 8],
+        note: 'Never two neighbours, partway through: dp[4][1], the best of the first 4 values with the 4th (8) taken, is dp[3][0] + 8 = 13.',
+        say: 'So the state is a sentence: dp[i][s] = the best answer for the first i positions, given that they end in situation s. The extra index s holds exactly what the next step needs to know about the past and nothing more: the last action, which row the last pick came from, the current run length, or the time of day mod h on an h-hour clock. A transition says how one more position changes s and the answer, for example take (the run grows from s to s + 1, if that is allowed) or skip (the run resets to 0), and each entry is the max over every way of arriving in it. The empty prefix starts the table: 0 for its one real situation and −∞ for every other, so that an impossible state never feeds a later one.',
+      },
+      {
+        title: 'Same situation, same futures',
+        points: [
+          'Partial solutions that end in the same s can be finished in the same ways, with the same gain.',
+          'So an optimal solution\'s first i positions can be swapped for the best ending in s, which is dp[i][s].',
+          'Leave out of s a fact the future depends on, and the swap fails: the table mixes histories that should be kept apart.',
+        ],
+        say: 'Why it is right: if two partial solutions end in the same s, any way of finishing one also finishes the other, with the same gain. So the first i positions of an optimal solution can be swapped for the best ones ending in the same s without losing anything, and that best value is exactly dp[i][s], computed from row i − 1, which is already final. If a fact the future depends on is left out of s, the swap is no longer safe, and the table mixes histories that should be kept apart.',
+      },
+      {
+        title: 'States times choices, one row at a time',
+        points: [
+          'The cost is states × choices: O(n) for 3 values of s, O(n · h) on an h-hour clock.',
+          'Row i + 1 needs only row i, so the template keeps dp[s] and builds the next row in nd[s].',
+          'Counting uses + instead of max: one way for the empty prefix, reduced modulo `MOD` after each addition.',
+        ],
+        show: [0, 19],
+        note: 'The finished table: each row was built from the row above alone, and the best total is 19 = 5 + 8 + 6.',
+        say: 'The cost is (number of states) × (choices per state): n positions with 3 values of s is O(n), and n sleeps on an h-hour clock is O(n · h). Row i + 1 needs only row i, so the template keeps one row dp[s] and builds the next one in nd[s]. Counting problems use the same table with + instead of max: start from one way to build the empty prefix, and reduce modulo 10^9 + 7 (MOD) after every addition.',
+      },
+    ],
+    terms: [
+      'dp[i][s]: the best answer (or, when counting, the number of ways) for the first i positions, given that they end in situation s.',
+      'dp[s]: in the template, the current row, dp[i][s] for the positions read so far; the i is dropped because only the latest row is kept.',
+      'nd[s]: the next row, for one more position, built from dp[s] and then copied over it.',
+      'K: in the template, the most items allowed in a row; s, the current run length, goes from 0 to K.',
+      '`NEG`: the stand-in for −∞ that marks an unreachable state, LLONG_MIN / 4, so that adding a value to it cannot overflow.',
+      '`MOD`: the modulus for counting, 10^9 + 7 (`mod` in the TRD version, from ModBinomial.cpp).',
+      'ways[i]: in a counting DP over lengths, the number of ways to build something of length i; ways[0] = 1, the empty build.',
+      'pre[i]: ways[1] + … + ways[i], so pre[b] − pre[a − 1] counts the ways for every length from a to b.',
+    ],
+    worked: {
+      title: 'never three days in a row',
+      question: 'A courier is offered one job on each of n days, and the job on day i pays a_i. She may take any of them, but never work three days in a row. Find the most she can earn. Example: n = 6, with pay 4, 6, 5, 1, 8, 7. The real version has n up to 2·10^5 and a_i up to 10^9.',
+      steps: [
+        'Recognise it: one choice per day, and the rule looks back at the days just before, so this is a DP over positions. All 2^n plans are far too many, and working whenever allowed fails: it takes days 1, 2, 4 and 5 for 4 + 6 + 1 + 8 = 19.',
+        'Model it: to decide about tomorrow she needs only how many days in a row she has just worked, 0, 1 or 2. So dp[i][s] = the most earned in the first i days, given that they end in a run of exactly s worked days (s = 0 means day i was a rest). This is `bestNoLongRun` with K = 2.',
+        'Transitions into day i + 1: rest, so dp[i+1][0] is the largest of dp[i][0], dp[i][1] and dp[i][2]; or work after a run of s = 0 or 1, so dp[i+1][s+1] = dp[i][s] + a_{i+1}. Start from dp[0][0] = 0 and dp[0][1] = dp[0][2] = −∞, since nothing has been worked yet.',
+        'Fill the rows (dp[i][0], dp[i][1], dp[i][2]): after day 1, (0, 4, −∞); after day 2, (4, 6, 10); after day 3, (10, 9, 11). Already the best entry, 11 in state 2 (rest on day 1, work days 2 and 3), beats the 10 of the greedy plan, which worked days 1 and 2 and was then forced to rest.',
+        'After day 4 (pay 1): (11, 11, 10). After day 5 (pay 8): (11, 19, 19). After day 6 (pay 7): (19, 18, 26), where dp[6][2] = dp[5][1] + 7 = 19 + 7.',
+        'Answer: 26, the largest entry of the last row, from working days 2, 3, 5 and 6: 6 + 5 + 8 + 7. With 3 states and 2 choices per day it is O(n) time, and two rolling rows make it O(1) memory. The total can pass 10^14, so use long long, with a −∞ sentinel such as LLONG_MIN / 4 that adding pay cannot overflow.',
+      ],
+    },
     spot: [
       'Choices are made left to right (days, trees, students in a row) and each choice only restricts the next one or two',
       'The rule mentions the previous step: not the same activity two days running, not the same row twice in a row, at most k in a row',
@@ -13,9 +85,9 @@ export default {
       'A greedy rule fails on a small hand example, and the number of (position, extra state) pairs is at most about 10^7',
     ],
     disguises: [
-      'Deleting a value also deletes every v − 1 and v + 1 → group equal values, then run the no-two-adjacent take/skip DP over the value axis (house robber)',
+      'Deleting a value v also deletes every v − 1 and v + 1 → group equal values, then run the no-two-adjacent take/skip DP over the value axis (house robber)',
       'Count walks of length n on a small fixed graph → DP over steps whose state is the current vertex, or a class of vertices that symmetry makes interchangeable',
-      'Count strings built from fixed-size blocks → ways[i] = ways[i − 1] + ways[i − k], plus prefix sums when the question asks about a range of lengths',
+      'Count strings built from blocks of length 1 and k → ways[i] = ways[i − 1] + ways[i − k], plus prefix sums when the question asks about a range of lengths',
       'A schedule that keeps drifting around a clock → the state is the time mod h, not the absolute time',
     ],
     pitfalls: [

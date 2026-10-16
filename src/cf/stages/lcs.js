@@ -6,8 +6,87 @@ export default {
   summary:
     'Set up dp[i][j] over prefixes of two sequences to align, count, score or edit them, and spot the hidden second sequence when it is a reverse, a permutation order or a pattern automaton.',
   primer: {
-    idea:
-      'When a problem compares two sequences, let dp[i][j] be the answer for the prefixes a[0..i) and b[0..j). Each cell looks at three neighbours: drop the last item of a (i−1, j), drop the last item of b (i, j−1), or pair the two last items (i−1, j−1). That is O(nm) time, and O(m) memory with two rolling rows when you only need the value. Twists change what a cell stores (a count, a score, a piece counter, an automaton state), not the shape of the table.',
+    slides: [
+      {
+        title: 'The longest subsequence both sequences contain',
+        points: [
+          'The LCS of a and b is the longest sequence both contain, in order but not necessarily adjacent.',
+          'Testing every subsequence of a costs 2^n, about 10^9 already at n = 30.',
+          'Greedy fails: for a = XAB and b = ABX, matching X first finds 1 instead of 2.',
+        ],
+        say: 'This stage compares two sequences, a with n items and b with m. The model question is the longest common subsequence (LCS): the longest sequence that both contain, its items in order but not necessarily adjacent. Testing every subsequence of a against b costs 2^n, about 10^9 already when n is 30, and matching greedily goes wrong: for a = XAB and b = ABX, matching X first leaves nothing after it for A and B, so it finds 1 instead of 2.',
+      },
+      {
+        title: 'Look only at the last items',
+        points: [
+          'If a and b end with the same item, some LCS pairs them: 1 plus the LCS of the rest.',
+          'If they differ, one of them is unused: take the better of dropping either last item.',
+          'Either way a prefix of a meets a prefix of b, and there are only (n + 1)(m + 1) such pairs.',
+        ],
+        show: [0, 13],
+        note: 'Equal last letters, C and C: dp[3][3] extends the diagonal, dp[2][2] + 1 = 2.',
+        say: 'Look only at the last items. If a and b end with the same item, some LCS pairs those two, so the answer is 1 plus the LCS of what is left of both. If they differ, at least one of the two is not used, so the answer is the better of dropping the last item of a or the last item of b. Either way what remains is again a prefix of a against a prefix of b, and there are only (n + 1)(m + 1) such pairs.',
+      },
+      {
+        title: 'Fill dp[i][j] row by row',
+        points: [
+          'dp[i][j] is the answer for `a[0..i)` and `b[0..j)`; row 0 and column 0 are 0.',
+          'Equal last items give dp[i − 1][j − 1] + 1; otherwise take max(dp[i − 1][j], dp[i][j − 1]).',
+          'dp[n][m] is the LCS length, and walking back from (n, m) prints one LCS.',
+        ],
+        show: [0, 14],
+        note: 'Different last letters: dp[3][4] takes the better of the cell above and the cell to the left.',
+        say: 'So let dp[i][j] be the answer for the prefixes `a[0..i)` and `b[0..j)`, the first i items of a and the first j of b; row 0 and column 0 are the empty prefixes, worth 0. Cell (i, j) compares the last items a[i − 1] and b[j − 1]: if they are equal, dp[i][j] = dp[i − 1][j − 1] + 1, otherwise dp[i][j] = max(dp[i − 1][j], dp[i][j − 1]). Filling the rows top to bottom, each left to right, has those neighbours ready in time, and dp[n][m] is the LCS length. To print an LCS, walk back from (n, m): when the two last items match, take the item and move diagonally, otherwise move to the neighbour holding the larger value.',
+      },
+      {
+        title: 'Pairing equal last items never loses',
+        points: [
+          'When a[i − 1] = b[j − 1], any common subsequence can move its last pair onto them, or gain them.',
+          'When they differ, pairing each with something earlier would make the pairs cross.',
+          'So at least one of them is unused, and dropping it loses nothing.',
+        ],
+        say: 'Why the rule is right: when a[i − 1] = b[j − 1], any common subsequence of the two prefixes can have its last matched pair moved onto these two items, or gain them as a new last pair, so pairing them never loses. When they differ they cannot be paired with each other, and pairing each with something earlier would make the two pairs cross, so at least one of them is unused and dropping it loses nothing.',
+      },
+      {
+        title: 'Edit distance uses the same table',
+        points: [
+          'dp[i][j] is now the fewest inserts, deletes and replacements turning `a[0..i)` into `b[0..j)`.',
+          'Deleting a[i − 1] or inserting b[j − 1] costs 1; turning a[i − 1] into b[j − 1] costs 1 only if they differ.',
+          'Row 0 costs j insertions and column 0 costs i deletions.',
+        ],
+        say: 'Edit distance, the fewest single-item inserts, deletes and replacements that turn a into b, uses the same table, with dp[i][j] now the fewest operations turning `a[0..i)` into `b[0..j)`. The three neighbours become: delete a[i − 1] (from (i − 1, j), plus 1), insert b[j − 1] (from (i, j − 1), plus 1), or turn a[i − 1] into b[j − 1] (from (i − 1, j − 1), plus 1 only if they differ). Row 0 costs j insertions and column 0 costs i deletions.',
+      },
+      {
+        title: 'O(nm) time, two rows of memory',
+        points: [
+          'Both tables take O(nm) time: quick at 5000 by 5000, but a full table of int is then 100 MB.',
+          'For the value alone keep two rows, `prv` and `cur`; keep the full table only to walk back.',
+          'Twists change what a cell stores, and the second sequence may be hidden: the first reversed, another permutation, a pattern automaton.',
+        ],
+        show: [0, 32],
+        note: 'The finished table: the green matches on the walk-back path spell one LCS, BCB, of length 3.',
+        say: 'Both tables take O(nm) time: 2.5·10^7 cells when both lengths are 5000, which is quick, but a full table of int is then 100 MB. When only the value is needed, keep two rows, `prv` and `cur`, for O(m) memory, and keep the full table only to walk back. Twists change what a cell stores (a count, a score, a piece counter, an automaton state), not the shape of the table, and the second sequence may be hidden: the reverse of the first, the order of another permutation, or a pattern automaton.',
+      },
+    ],
+    terms: [
+      'a[i]: the item at position i of the first sequence, counting from 0; a has n items, also written |a| (the diagram calls it s and runs it down the rows).',
+      'b[j]: the item at position j of the second sequence, which has m items, also written |b| (t in the diagram, along the columns).',
+      '`a[0..i)`: the prefix of a made of its first i items, a[0] to a[i − 1]; `b[0..j)` is the same for b.',
+      'dp[i][j]: the answer for the prefixes `a[0..i)` and `b[0..j)`, so the table has (n + 1) × (m + 1) cells and cell (i, j) looks at a[i − 1] and b[j − 1]. For LCS it is the length of a longest common subsequence; for edit distance, the fewest operations.',
+      '`prv`, `cur`: the previous and current rows of the table in the rolling version, swapped after each row.',
+    ],
+    worked: {
+      title: 'from TEAMS to MEATS',
+      question:
+        'You may delete any character of a string, or insert any character at any position, each at a cost of 1; replacing is not allowed. Let a be TEAMS and b be MEATS: what is the least cost to turn a into b? In the real version each string has up to 5000 characters, and only the cost is printed.',
+      steps: [
+        'Recognise it: the characters of a that are never deleted must match, in order, characters of b that are never inserted, so they form a common subsequence. Keeping k characters costs (n − k) deletions plus (m − k) insertions, so the answer is n + m − 2·LCS(a, b). Trying every set of kept characters is 2^n, and greedy matching keeps too few: T grabs the T of MEATS, after which only S still fits, so it keeps 2.',
+        'Model it: dp[i][j] is the LCS length of `a[0..i)` and `b[0..j)`, with row 0 and column 0 all 0. If a[i − 1] = b[j − 1] then dp[i][j] = dp[i − 1][j − 1] + 1, otherwise dp[i][j] = max(dp[i − 1][j], dp[i][j − 1]).',
+        'Fill it row by row, with the columns M, E, A, T, S: row T is 0, 0, 0, 1, 1; row E is 0, 1, 1, 1, 1; row A is 0, 1, 2, 2, 2; row M is 1, 1, 2, 2, 2; row S is 1, 1, 2, 2, 3. So dp[5][5] = 3.',
+        'Walk back from (5, 5) to see what is kept. S = S, so keep S and move to (4, 4). There M ≠ T and the cell above holds 2, as much as the cell to the left, so move up to (3, 4); there A ≠ T and the cell above holds 1, less than the 2 to the left, so move left to (3, 3). A = A and then E = E are kept, and at (1, 1) T ≠ M sends the walk to row 0, where it stops. The kept characters are E, A, S.',
+        'Answer: 5 + 5 − 2·3 = 4. Delete T and M, then insert M at the front and T before the S, so TEAMS becomes EAMS, EAS, MEAS and then MEATS. The table is O(nm), 2.5·10^7 cells at full size, and only the cost is printed, so two rolling rows of int, O(m) memory, are enough; printing the operations would need the full table to walk back.',
+      ],
+    },
     spot: [
       'Two strings or arrays of length up to about 5000, and the statement talks about subsequences, matching, aligning, merging or interleaving them.',
       'Operations insert, delete and replace, or "fewest characters to change or remove so that A becomes B".',

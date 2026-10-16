@@ -5,7 +5,91 @@ export default {
   track: 'dp',
   summary: 'Turn O(n²) transitions of the form "best or total over earlier items with a smaller key" into O(n log n) with a Fenwick tree over compressed keys, count ordered pairs and chains, and write segment trees with custom merges and lazy range updates.',
   primer: {
-    idea: 'Many quadratic DPs have the transition dp[i] = w[i] + best dp[j] over j < i with key[j] < key[i] (or a sum instead of a best). Process the items in index order and keep a Fenwick tree indexed by the compressed key: only earlier items have been inserted, so j < i holds automatically, key[j] < key[i] becomes a prefix query, and the whole DP runs in O(n log n). A segment tree does the same for any associative merge (minimum, per-bit counts, a bracket summary), and lazy propagation adds range updates in O(log n) each. UKIEPC 2024 Eradication Sort was an LIS-like DP sped up with a Fenwick tree, and UKIEPC 2023 History in Numbers needed a lazy segment tree.',
+    slides: [
+      {
+        title: 'Looking back at every earlier item',
+        points: [
+          'dp[i] = w[i] + the best dp[j] over j < i with key[j] < key[i], or a sum when counting.',
+          'Checking every earlier j is O(n²), about 2·10^10 checks at n = 2·10^5.',
+          'The LIS binary search fails: with weights, a longer chain is not always the better one to extend.',
+        ],
+        say: 'Several DPs from earlier stages look back at every earlier item: dp[i] = w[i] + the best dp[j] over j < i with key[j] < key[i], or a sum instead of a best when counting. That is the LIS DP with each item worth its weight w[i] instead of 1, and checking every earlier j is O(n²), about 2·10^10 checks at n = 2·10^5. The binary search from the LIS stage no longer applies, because with weights a longer chain is not always the better one to extend.',
+      },
+      {
+        title: 'Two conditions, and neither needs a loop',
+        points: [
+          'j < i is time: process items in index order, and insert dp[i] only once it is computed.',
+          'key[j] < key[i] is position: store each dp at its key\'s position, and the candidates form a prefix.',
+        ],
+        say: 'The transition has two conditions, and neither needs a loop. The condition j < i is a matter of time: process the items in index order and insert dp[i] only once it is computed, so whatever has been inserted came earlier. The condition key[j] < key[i] is a matter of position: store each dp at the position of its key, and the earlier items with a smaller key are exactly a prefix of the positions.',
+      },
+      {
+        title: 'Compress keys, then use a Fenwick tree',
+        points: [
+          'Keys reach 10^9, so replace each by its rank r in s, the sorted distinct keys, counted from 1.',
+          'A Fenwick tree (MaxBIT) answers query(i), the maximum over positions 1..i, and update(i, v), each in O(log n).',
+          'Per item: dp[i] = w[i] + max(0, query(r − 1)), then update(r, dp[i]).',
+        ],
+        show: [0, 21],
+        note: 'A Fenwick tree over 8 positions, built with 8 updates of at most 4 bars each (the diagram keeps sums, not maxima).',
+        say: 'Keys can be as large as 10^9, so first compress them: s is the sorted list of distinct keys, and the rank r of a key is its position in s counted from 1, so equal keys share a rank. A Fenwick tree (binary indexed tree), MaxBIT in the template, answers query(i), the maximum over positions 1..i, and update(i, v), which raises position i to at least v, each in O(log n). Each item then costs one query and one update: dp[i] = w[i] + max(0, query(r − 1)), then update(r, dp[i]).',
+      },
+      {
+        title: 'Each entry covers lowbit(i) positions',
+        points: [
+          't[i] holds the maximum over the lowbit(i) positions ending at i: t[4] covers 1..4, t[6] covers 5..6, t[7] just 7.',
+          'query(7) reads t[7], t[6] and t[4], removing the lowest bit each time; an update climbs by adding it.',
+          'Either walk touches at most log₂ n + 1 entries. The diagram keeps sums; the DP keeps maxima.',
+        ],
+        show: [0, 24],
+        note: 'query(7) reads t[7], t[6] and t[4], whose bar covers 1 to 4, then stops: three bars.',
+        say: 'The tree is an array t in which t[i] holds the maximum over the lowbit(i) positions that end at i, where lowbit(i) is the lowest set bit of i: t[4] covers positions 1..4, t[6] covers 5..6 and t[7] only 7. So query(7) reads t[7], t[6] and t[4], removing the lowest bit each time, and an update climbs by adding it, so either touches at most log₂ n + 1 entries.',
+      },
+      {
+        title: 'The tree holds exactly the earlier items',
+        points: [
+          'When item i is reached, the tree holds the dp of exactly the earlier items, each at its key\'s rank.',
+          'So query(r − 1) is the best earlier item with a strictly smaller key; query(r) would admit equal keys.',
+          'A prefix maximum works because values only go up, and max(0, …) lets item i start a new chain.',
+        ],
+        say: 'Why it is right: when item i is reached, the tree holds the dp of exactly the earlier items, each at its key\'s rank, so query(r − 1) is the best of the earlier items with a strictly smaller key, while query(r) would also admit equal keys. A prefix maximum can be kept this way because the value at a position only ever goes up, and the max(0, …) lets item i start a new chain on its own.',
+      },
+      {
+        title: 'Two O(log n) walks per item',
+        points: [
+          'So the DP is O(n log n). With + instead of max, the same sweep counts inversions, pairs or chains.',
+          'A segment tree answers any range, not just a prefix, for any associative merge, such as a minimum.',
+          'Lazy propagation keeps a range update as a pending tag, passed to the children only when needed: still O(log n).',
+        ],
+        say: 'Each item costs two O(log n) walks, so the DP is O(n log n); UKIEPC 2024 Eradication Sort was an LIS-like DP sped up this way. With + instead of max the same sweep counts: inversions, ordered pairs, or chains of length k with one tree per length. A segment tree answers any range, not just a prefix, for any associative merge (minimum, per-bit counts, a bracket summary), and lazy propagation adds updates to a whole range: a node lying inside the range keeps the update as a pending tag and hands it to its two children only when an operation must go below it, so each operation stays O(log n). UKIEPC 2023 History in Numbers needed such a lazy segment tree.',
+      },
+    ],
+    terms: [
+      'dp[i]: the best total weight of a chain that ends with item i, or in a counting DP the number of chains that end there (`cur` in the TRD version).',
+      'key[i]: the value that orders a chain: item j may come before item i only when j < i and key[j] < key[i] (`a` in the TRD version).',
+      'w[i]: the weight that item i adds to a chain.',
+      's: the distinct keys in increasing order, from sort and unique (`xs` in the TRD version).',
+      'r: the rank of a key, its position in s counted from 1, found with lower_bound; equal keys share a rank (`k`, counted from 0, in the TRD version).',
+      'MaxBIT: the template\'s Fenwick tree for prefix maxima over the ranks (the TRD version uses the segment tree `Tree` for maxima and KACTL\'s `FT` for sums).',
+      'query(i): the maximum stored at positions 1..i, or LLONG_MIN while there is none; in the diagram\'s sum version, the total of x[1..i]. The TRD version counts ranks from 0 and asks its segment tree for [0, k), so there query(r − 1) is `t.query(0, k)`.',
+      'update(i, v): raises the value at position i to v if v is larger; in the diagram\'s sum version, adds v to position i.',
+      'x[i]: in the diagram, the number added at position i. The diagram\'s t[i] holds a sum of x, where the DP\'s tree holds a maximum of dp.',
+      't[i]: the Fenwick tree\'s array: the maximum (or, for counting, the sum) over the lowbit(i) positions that end at i.',
+      'lowbit(i): the lowest set bit of i, i & −i in code: lowbit(6) = 2, lowbit(7) = 1 and lowbit(8) = 8.',
+      'P[i]: a prefix sum, the total of the first i elements of the array, with P[0] = 0.',
+    ],
+    worked: {
+      title: 'the heaviest rising chain',
+      question: 'Six items arrive in order with keys 30, 10, 50, 30, 40, 20 and weights 5, 3, 2, 4, 1, 9. Choose some of them, keeping their order, so that each chosen key is strictly larger than the one chosen before it, and maximise the total weight. The real version has n up to 2·10^5, with keys and weights up to 10^9.',
+      steps: [
+        'Recognise it: this is the LIS DP with weights, dp[i] = w[i] + the best dp[j] over j < i with key[j] < key[i]. Checking every earlier j is about 2·10^10 checks at full size, and the LIS binary search does not apply because a longer chain need not be heavier, so keep the dp values in a Fenwick tree of prefix maxima over the keys.',
+        'Model it: the distinct keys in order are s = 10, 20, 30, 40, 50, so the six items have ranks 3, 1, 5, 3, 4, 2, and both 30s share rank 3. For each item in turn, dp[i] = w[i] + max(0, query(r − 1)), then update(r, dp[i]). With five ranks, t[4] covers ranks 1..4, t[2] covers 1..2, and t[1], t[3] and t[5] cover only themselves.',
+        'Items 1 to 3. Item 1 (rank 3): query(2) finds no earlier item, so dp[1] = 5 + 0 = 5, and update(3, 5) sets t[3] and t[4] to 5. Item 2 (rank 1): dp[2] = 3, and update(1, 3) sets t[1] and t[2] to 3 while t[4] keeps 5. Item 3 (rank 5): query(4) reads only t[4] = 5, so dp[3] = 2 + 5 = 7.',
+        'Item 4 has key 30 again, rank 3: query(2) reads t[2] = 3, so dp[4] = 4 + 3 = 7, extending item 2. Querying rank 3 instead would reach item 1\'s 5 and give 9, from the chain 30, 30, which does not rise. Then update(3, 7) raises t[3] and t[4] to 7.',
+        'Items 5 and 6. Item 5 (rank 4): query(3) reads t[3] = 7 and t[2] = 3, so dp[5] = 1 + 7 = 8, the chain 10, 30, 40. Item 6 (rank 2): query(1) reads t[1] = 3, so dp[6] = 9 + 3 = 12.',
+        'Answer: 12, from items 2 and 6 (keys 10 and 20), although the longest chain, 10, 30, 40, has three items and weighs only 8. Sorting plus one query and one update per item is O(n log n), and totals reach 2·10^14, so use long long.',
+      ],
+    },
     spot: [
       'An O(n²) DP whose transition takes the max or sum of dp[j] over earlier j with a smaller (or larger) value, and n is 10^5 to 10^6.',
       'Count pairs, triples or length-k chains of indices whose values are ordered: inversions, decreasing triples, increasing subsequences of length k.',
@@ -73,7 +157,7 @@ long long bestChain(const vector<long long> &key, const vector<long long> &w) {
       hints: [
         'A triplet i < j < k with a_i > a_j > a_k has a middle man j. Once j is fixed, do the choices of i and of k depend on each other?',
         'They are independent, so the count for a fixed j is (stronger men to the left of j) × (weaker men to the right of j). Each factor is an inversion-style count that a Fenwick tree over the powers answers in O(log n).',
-        'Compress the powers to ranks 1..n. Sweep left to right: left[j] = j − (earlier ranks below rank_j). Sweep right to left: right[j] = later ranks below rank_j. Add left[j] · right[j] in long long. O(n log n).',
+        'Compress the powers to ranks 1..n. Sweep left to right with j counted from 1: left[j] = (j − 1) − (earlier ranks below rank_j), the earlier men minus the weaker ones. Sweep right to left: right[j] = later ranks below rank_j. Add left[j] · right[j] in long long. O(n log n).',
       ],
       solution: 'For each j multiply the number of i < j with a_i > a_j by the number of k > j with a_k < a_j and sum the products. Compress the powers (up to 10^9) to ranks and get both counts with a Fenwick tree in two sweeps, O(n log n) for n = 10^6. The answer reaches about 1.7·10^17, so the product and the sum must be long long, and the million numbers should be read with scanf or fast cin.',
     },

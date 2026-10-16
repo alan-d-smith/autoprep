@@ -5,7 +5,93 @@ export default {
   track: 'geometry',
   summary: 'Turn "find the best value" into "is this value achievable?" and binary search the boundary, or ternary search a convex cost over one free parameter.',
   primer: {
-    idea: 'If testing one candidate answer is easy and feasibility is monotone (when x is achievable, so is every smaller x), binary search for the boundary: O(log range) checks, each usually a greedy O(n) pass, so O(n log range) in total. On real numbers, run a fixed 60–100 halvings instead of looping until hi − lo < eps. When you instead choose one parameter (a position, a shift, a time) to minimise a cost that falls and then rises, such as a max or sum of convex pieces, ternary search discards a third of the interval per step; on integers, binary search on the sign of f(x + 1) − f(x) instead.',
+    slides: [
+      {
+        title: 'Asking for the best value outright',
+        points: [
+          'The most cookies, the least meeting time, the largest gap: often there is no formula.',
+          'The answer can be anywhere up to 2·10^9, and checking each candidate with an O(n) pass over n = 2·10^5 items costs about 4·10^14 steps.',
+        ],
+        say: 'Some questions ask for the best value outright: the most cookies you can bake, the least time in which everyone can meet, the largest gap you can keep between chosen points. There is often no formula, and trying candidates one by one is hopeless: the answer can be anywhere up to 2·10^9, and if checking one candidate is an O(n) pass over n = 2·10^5 items, a scan costs about 4·10^14 steps.',
+      },
+      {
+        title: 'Ask instead: is x achievable?',
+        points: [
+          'Write ok(x) for that check; it is usually a short greedy pass.',
+          'It is monotone: if x is achievable, so is every smaller x, so ok(x) reads true…true, false…false and the answer is the last true.',
+          'For a minimum, such as the least time, it reads false…false, true…true and the answer is the first true.',
+        ],
+        show: [0, 14],
+        note: 'ok(x) is x² ≤ 120 on 0 to 15: true up to 10, false from 11, so the answer is the last true, 10.',
+        say: 'The way in is an easier question: is x achievable? Write ok(x) for that check. It is usually a short greedy pass, and it is monotone: if the answer can be at least x, it can be at least every smaller x, so as x grows ok(x) reads true…true, false…false and the answer is the last true. For a minimum, such as the least time, it reads false…false, true…true and the answer is the first true.',
+      },
+      {
+        title: 'Binary search finds the switch',
+        points: [
+          'Keep `lo` and `hi` with the answer between them, and test the middle value `mid`.',
+          'If ok(mid) is true, set `lo = mid`; if false, everything from `mid` up fails, so set `hi = mid − 1`.',
+          'Each check halves the range: about 31 checks for 2·10^9 candidates. `lastTrue` in the template is this loop.',
+        ],
+        show: [0, 6],
+        note: 'Two checks in: ok(8) was true, so lo = 8; ok(12) was false, so hi = 11. Two more checks find 10.',
+        say: 'Finding where a monotone sequence switches is binary search. Keep two numbers `lo` and `hi` with the answer between them, and test the middle value `mid`: if ok(mid) is true the answer is at least mid, so set lo = mid; if it is false, everything from mid up fails, so set hi = mid − 1. Each check halves the range, so 2·10^9 candidates need about 31 checks; `lastTrue` in the template is this loop.',
+      },
+      {
+        title: 'The invariant, and why mid rounds up',
+        points: [
+          'Invariant: ok(lo) is true and everything above `hi` is false. Start `lo` where ok is known to hold.',
+          'Each step keeps it and shrinks the range, so the loop ends with `lo = hi` on the boundary.',
+          'The true branch sets `lo = mid`, so round up: `mid = lo + (hi − lo + 1) / 2`. Rounding down sticks once hi = lo + 1.',
+        ],
+        show: [0, 10],
+        note: 'lo = 10, hi = 11: ok(lo) is true and 12 to 15 are false. mid rounds up to 11; rounded down, 10 = lo would never move.',
+        say: 'It is correct because of an invariant: ok(lo) is true and everything above hi is false. Start lo where ok is known to hold (or check it first), and each step keeps the invariant while shrinking the range, so the loop ends with lo = hi on the boundary. The shrinking needs care: the true branch sets lo = mid, so mid must round up, mid = lo + (hi − lo + 1) / 2, because rounding down gives mid = lo once hi = lo + 1 and the loop never ends.',
+      },
+      {
+        title: 'Real answers: a fixed number of halvings',
+        points: [
+          'In total, O(log range) checks of O(n) each: O(n log range).',
+          'For a real answer, run a fixed 60 to 100 halvings, as `firstTrueReal` does.',
+          'Don\'t loop until hi − lo < eps: near 10^9 doubles are about 10^-7 apart, so with eps = 10^-9 it never ends.',
+        ],
+        say: 'In total that is O(log range) checks of O(n) each, so O(n log range). When the answer is a real number, such as a time printed to 10^-6, run a fixed 60 to 100 halvings, as `firstTrueReal` does, instead of looping until hi − lo < eps: near 10^9 neighbouring doubles are about 10^-7 apart, so with eps = 10^-9 the gap never gets that small and the loop never ends.',
+      },
+      {
+        title: 'Ternary search for a valley',
+        points: [
+          'To minimise a cost f(x) that falls then rises, compare f at `m1` < `m2`, a third and two thirds of the way across.',
+          'If f(m1) < f(m2) the minimum is not right of m2, otherwise not left of m1. `argminReal` runs 100 such rounds.',
+          'On integers, `argminInt` binary searches for the first x with f(x) ≤ f(x + 1). f must not be flat away from the minimum.',
+        ],
+        show: [1, 5],
+        note: 'f(m1) < f(m2), so the minimum cannot lie right of m2, where f only rises.',
+        say: 'Ternary search handles a different shape: you choose one parameter x, such as a meeting point or a shift, to minimise a cost f(x) that falls and then rises, often a max or sum of convex pieces like |a_i − x|. There is no yes/no check, but comparing f at two probe points `m1` < `m2`, a third and two thirds of the way from lo to hi, shows which part to drop: if f(m1) < f(m2) the minimum is not right of m2, otherwise it is not left of m1. Each round keeps 2/3 of the range, so `argminReal` runs 100 rounds; on integers, `argminInt` binary searches for the first x with f(x) ≤ f(x + 1), the sign of f(x + 1) − f(x). Either way f must have no flat stretch away from the minimum.',
+      },
+    ],
+    terms: [
+      'ok(x): the check "is x achievable?"; it must be monotone, true up to some point and false after it (or the reverse when minimising).',
+      '`lo`, `hi`: the ends of the range that still holds the answer. In `lastTrue` ok(lo) is true and everything above hi is false; in `firstTrueReal` (and the TRD\'s `firstTrue`) ok(hi) is true and everything below lo is false.',
+      '`mid`: the candidate tested in one round, halfway between lo and hi (rounded up in `lastTrue`).',
+      '`lastTrue`: the largest x in [lo, hi] with ok(x) true (the TRD version has `firstTrue` instead: the smallest x with ok(x) true, for a check that goes false…false, true…true).',
+      '`firstTrueReal`: the smallest real x with ok(x) true, found with 100 halvings.',
+      'f(x): in ternary search, the cost being minimised, which falls and then rises.',
+      'a_i: the i-th number in the input, such as a person\'s position or how much of an ingredient one cookie needs.',
+      '`m1`, `m2`: the two probe points, a third and two thirds of the way from lo to hi.',
+      '`argminReal`: ternary search for the real x that minimises f.',
+      '`argminInt`: the integer version, the first x with f(x) ≤ f(x + 1) (the TRD version\'s `peak` uses KACTL\'s `ternSearch` instead, written for a maximum).',
+    ],
+    worked: {
+      title: 'spacing out speakers',
+      question: 'A street has n = 6 lamp posts at positions 1, 5, 8, 14, 15 and 21. Hang c = 3 speakers on different posts so that the smallest distance between two speakers is as large as possible, and print that distance. The real version has n up to 2·10^5 and positions up to 10^9, not necessarily sorted.',
+      steps: [
+        'Recognise it: "make the smallest gap as large as possible" is a maximise-the-minimum question. Trying every set of c posts is hopeless, and trying every gap D from 1 to 10^9 with an O(n) check is 2·10^14 steps. But testing one D is easy, and speakers placed with every gap at least D also have every gap at least D − 1, so the check is monotone: binary search on D.',
+        'Model it: ok(D) asks whether c speakers fit with every gap at least D. Place them greedily: the first on the leftmost post, each next one on the first post at least D past the previous speaker. Moving any speaker left to the greedy spot never leaves less room for the rest, so the greedy fits as many speakers as any placement can.',
+        'Set the range: ok(1) is true because the posts are distinct and c ≤ n, and no gap can exceed 21 − 1 = 20, so run `lastTrue` with lo = 1 and hi = 20.',
+        'mid = 1 + (19 + 1) / 2 = 11: speakers at 1 and 14, and the next would need a post at 25 or beyond, so ok(11) is false and hi = 10. mid = 1 + (9 + 1) / 2 = 6: speakers at 1, 8 and 14, so ok(6) is true and lo = 6.',
+        'mid = 6 + (4 + 1) / 2 = 8: speakers at 1 and 14, and the next would need 22 or beyond, so ok(8) is false and hi = 7. mid = 6 + (1 + 1) / 2 = 7: speakers at 1, 8 and 15, so ok(7) is true, lo = 7 = hi, and the loop stops after 4 checks.',
+        'Answer: 7, for example with speakers at 1, 8 and 15. Sorting is O(n log n), then about 30 checks of O(n) each cover every gap up to 10^9 (log₂ 10^9 is about 30), so O(n log n + n log(range)) in all. Because the true branch sets lo = mid, mid must round up: rounded down, any state with hi = lo + 1 and ok(lo) true would repeat forever.',
+      ],
+    },
     spot: [
       'The statement asks for the largest or smallest value of something (cookies, time, radius, median) and a fixed candidate is easy to test, often greedily',
       'Feasibility is monotone in the answer: more time, a larger radius or a lower target can only make the check easier',
@@ -85,7 +171,7 @@ template <class F> long long argminInt(long long lo, long long hi, F f) {
         'Baking is monotone in the number of cookies, and checking a fixed count c is a single sum, so binary search on c: the answer is the largest c whose powder requirement is at most k.',
         'need(c) = sum over i of max(0, a_i·c − b_i). Search c in [0, 2·10^9] (b_i + k ≤ 2·10^9 and a_i ≥ 1). a_i·c reaches 2·10^18, which still fits in long long, but break out of the sum as soon as it exceeds k.',
       ],
-      solution: 'For c cookies ingredient i needs a_i·c grams, so the powder required is the sum of max(0, a_i·c − b_i), which never decreases as c grows. Binary search the largest c with requirement ≤ k, keeping lo = 0 feasible and hi = 2·10^9 + 1 infeasible; each check is O(n), so the total is O(n log 2·10^9). The usual WA is overflow: a_i·c is up to 2·10^18, and the running sum overflows if you keep adding after it passes k, so stop early.',
+      solution: 'For c cookies ingredient i needs a_i·c grams, so the powder required is the sum of max(0, a_i·c − b_i), which never decreases as c grows. Run lastTrue with lo = 0, which is always feasible, and hi = 2·10^9, where ok(c) says the requirement is at most k; each check is O(n), so the total is O(n log 2·10^9). The usual WA is overflow: a_i·c is up to 2·10^18, and the running sum overflows if you keep adding after it passes k, so stop early.',
     },
     {
       id: '780B',

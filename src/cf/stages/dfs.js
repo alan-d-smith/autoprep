@@ -5,7 +5,92 @@ export default {
   track: 'graphs',
   summary: 'Turn a statement into a graph, label its connected components in O(n + m), and use the same traversal to detect cycles and 2-colour (bipartite) structure, on explicit graphs and on grids.',
   primer: {
-    idea: 'Name the vertices (people, cells, snow drifts) and the edges (friends, shared side, same row), then one O(n + m) traversal started from every unvisited vertex labels the connected components. The same pass can collect facts per component (size, edge count, degrees) and 2-colour it, which answers "is it a single cycle", "does it contain a cycle" and "can it be split into two sides" without a second algorithm. The hard part is usually building the graph: grids, points that share a coordinate and lists of group members are all graphs once you decide what the vertices and edges are.',
+    slides: [
+      {
+        title: 'Many problems ask who reaches whom',
+        points: [
+          'Skaters between drifts, news between users, rooms in a floor plan: statements rarely say "graph".',
+          'Building it is the hard part: choose the vertices, and when two of them share an edge.',
+          'One search is O(n + m); one per question is about 8·10^10 steps for 2·10^5 questions at n = m = 2·10^5.',
+        ],
+        say: 'Many statements ask who can reach whom: can a skater get from any snow drift to any other, how many users eventually hear a piece of news, how many separate rooms a floor plan has. They rarely say "graph", and building one is usually the hard part: decide what the vertices are (people, grid cells, drifts) and when two of them share an edge (friends, a common side, a common row or column, the same group in a list of members). With n vertices and m edges one search costs O(n + m), so a fresh search for every vertex or every question costs about 8·10^10 steps when n, m and the number of questions are all 2·10^5.',
+      },
+      {
+        title: 'Reachability splits vertices into components',
+        points: [
+          'Reachability is transitive and edges go both ways, so the vertices split into connected components.',
+          'Inside a component everyone reaches everyone, and no edge leaves it.',
+          'Label each vertex with its component once: "can u reach v?" becomes "same label?"',
+        ],
+        show: [0, 22],
+        note: 'The finished search: comp[v] puts {1, 2, 3, 4, 5} in component 0, {6, 7, 8} in component 1 and {9} in component 2.',
+        say: 'The key fact is that reachability in an undirected graph sorts the vertices into groups. If u reaches v and v reaches w then u reaches w, and every edge can be walked both ways, so the vertices split into connected components: inside one, everyone reaches everyone, and no edge leaves it. One search started anywhere in a component finds exactly that component, so label every vertex with its component once, and "can u reach v?" becomes "do u and v have the same label?".',
+      },
+      {
+        title: 'One pass labels every component',
+        points: [
+          'For each s with comp[s] = −1, set comp[s] = `id` and push s onto the stack `st`.',
+          'Pop u and give each unlabelled neighbour in adj[u] the same label, pushing it; when `st` empties, `id` goes up.',
+          'The explicit stack replaces recursion, which can go 2·10^5 calls deep and overflow.',
+        ],
+        show: [0, 3],
+        note: 'Popping 1 labels both its neighbours, 2 and 3, with component 0 and pushes them; 3, now on top, is popped next.',
+        say: 'The template\'s `explore` labels every component in one pass. adj[u] lists the neighbours of u, comp[v] is the number of v\'s component (−1 while v is unvisited), and `id` is the next unused number. `explore` tries every vertex s in turn; if comp[s] is still −1, it sets comp[s] = id, pushes s onto a stack `st`, and then repeatedly pops a vertex u and gives every unlabelled neighbour v of u the same label, pushing v in turn. When `st` is empty the component is complete and `id` goes up by one; the explicit stack replaces recursion, which can go 2·10^5 calls deep and overflow the call stack.',
+      },
+      {
+        title: 'Nothing is missed, in O(n + m)',
+        points: [
+          'When `st` empties, every labelled vertex has its neighbours labelled, so no edge leads to an unlabelled vertex.',
+          'Each vertex is pushed once and each edge scanned from both ends: O(n + m). A queue (BFS) works too.',
+          'On an R × C grid, cell (r, c) is vertex r·C + c + 1, numbered from 1 like adj; `dr` and `dc` give its neighbours: O(RC).',
+        ],
+        show: [0, 12],
+        note: '`st` is empty: everything reachable from 1 is labelled, so component 0 is complete and `id` becomes 1. The dashed edge 2–4 closed a cycle.',
+        say: 'Nothing is missed: a vertex is labelled when it is pushed and its neighbours are scanned when it is popped, so once `st` is empty every labelled vertex has all its neighbours labelled, and a path from s to an unlabelled vertex would need an edge from a labelled vertex to an unlabelled one, which cannot exist. The order in which vertices leave the stack does not matter, so a queue (BFS) finds the same components. Each vertex is pushed once and each edge scanned once from each end, so the labelling is O(n + m). On an R × C grid, cell (r, c) is vertex r·C + c + 1, so the cells are numbered 1 to R·C like the template\'s adj, and its neighbours come from the offsets `dr` and `dc`, so a flood fill is O(RC).',
+      },
+      {
+        title: 'Edge counts reveal cycles',
+        points: [
+          'The same pass can record each component\'s size, degrees and edge count (half the degree sum).',
+          'With V vertices it holds a cycle exactly when it has at least V edges; a single ring if every degree is 2.',
+          'During the search, a cycle shows up as a labelled neighbour that is not the parent, the vertex that labelled the current one.',
+        ],
+        show: [0, 6],
+        note: 'From 4 the search meets 2, labelled but not 4\'s parent 3, so the edge 4–2 closes the cycle 4–3–1–2–4.',
+        say: 'The same pass can record facts per component, such as its size, its degrees and its edge count (half the sum of its degrees), and these settle cycle questions without a second algorithm. A connected component with V vertices has at least V − 1 edges, exactly V − 1 when it is a tree, so it contains a cycle exactly when it has at least V edges, and it is a single ring exactly when every vertex in it has degree 2. During the search a cycle also shows up directly, as an already labelled neighbour that is not the parent, the vertex that labelled the current one; the edge back to the parent is not a cycle.',
+      },
+      {
+        title: 'Two-colour each component while searching',
+        points: [
+          's gets side 0; each newly labelled vertex gets side[u] ^ 1, opposite the vertex u that found it.',
+          'So a component has exactly two valid splits, or none.',
+          'An edge joining two vertices on the same side means an odd cycle, so `bipartite` becomes false.',
+        ],
+        say: 'For "split into two sides so that every edge goes across", side[v] is 0 or 1: s gets side 0, and each newly labelled vertex gets the side opposite to the vertex that found it, side[u] ^ 1. Once s is placed every other side in its component is forced, so a component has exactly two valid splits (swap the sides) or none. Every edge is checked when its ends are scanned, and if one joins two vertices on the same side, `bipartite` becomes false: the search paths from s to its two ends have lengths of equal parity, so with that edge they form a closed walk of odd length, which contains an odd cycle, and an odd cycle cannot alternate between two sides.',
+      },
+    ],
+    terms: [
+      '`explore`: the template function that labels the components and 2-colours them in one pass, returning `bipartite` (the TRD version splits this into `countComponents` and `bipartite`).',
+      'adj[u]: the neighbours of u, with vertices numbered from 1 (`g` in the TRD version, numbered from 0).',
+      'comp[v]: the number of v\'s connected component, −1 until v is visited (the TRD version only marks visited vertices, in `vis`, and counts the components).',
+      '`id`: the number the next new component gets; at the end it equals the number of components.',
+      '`st`: the stack of labelled vertices whose neighbours have not been scanned yet.',
+      'side[v]: v\'s side in the 2-colouring, 0 or 1 (`col` in the TRD version).',
+      '`bipartite`: true while every edge found joins two different sides; false once an edge inside one side, and so an odd cycle, turns up.',
+      '`dr`, `dc`: the row and column offsets of a grid cell\'s four side neighbours; cell (r, c) of an R × C grid is vertex r·C + c + 1, so the template sees R·C vertices numbered from 1.',
+    ],
+    worked: {
+      title: 'two buses',
+      question: 'A school trip has two buses, a small red one and a large blue one. There are n = 8 pupils, and m = 6 pairs of them quarrel: 1–2, 2–3, 3–4, 4–1, 4–5 and 6–7. The two pupils of a quarrelling pair must ride different buses. Print the fewest pupils who can ride the red bus, or −1 if no seating works. In the real version n and m are up to 2·10^5.',
+      steps: [
+        'Recognise it: each quarrel is an edge whose two ends must get different buses, which is a 2-colouring. Trying all 2^n seatings is hopeless (2^8 = 256 here, but already 10^12 for n = 40). Once one pupil\'s bus is fixed, the quarrels force every other bus in that pupil\'s component, so each component has exactly two seatings or none, and different components do not affect each other.',
+        'Model it: pupils are vertices 1 to 8 and quarrels are edges in adj. One run of `explore` fills comp[v] and side[v], and sets `bipartite` to false on a conflict. Then count, for each component, its pupils on side 0 and on side 1: the red bus should take the smaller side of every component.',
+        'Run it. From s = 1 (side 0, component 0) the stack pops 1 and labels 2 and 4 with side 1, pops 4 and labels 3 and 5 with side 0, then pops 5, 3 and 2 without labelling anything new. Next s = 6 starts component 1 with side[6] = 0 and labels 7 with side 1, and s = 8 is component 2 on its own, with side[8] = 0.',
+        'Check the edges. The only edge that labelled nothing, 2–3, joins side 1 to side 0, so the 4-cycle 1–2–3–4 is even and `bipartite` stays true. Had there also been a quarrel 1–3, then 1–2–3 would be a triangle, an odd cycle: whatever order the search runs in, some edge of it joins two pupils on the same side, so `bipartite` becomes false and the answer is −1.',
+        'Count the sides: component 0 has {1, 3, 5} on side 0 and {2, 4} on side 1, component 1 has {6} and {7}, and component 2 has {8} and nobody. The red bus takes min(3, 2) + min(1, 1) + min(1, 0) = 2 + 1 + 0 = 3 pupils, for example 2, 4 and 7. As a check, there are 2^3 = 8 valid seatings in all, two per component.',
+        'Answer: 3. One `explore` pass plus one count per vertex is O(n + m); print −1 instead whenever `bipartite` is false. A pupil with no quarrels is a component of size 1 and costs nothing, and the total is at most n, so int is enough.',
+      ],
+    },
     spot: [
       'Symmetric reachability questions: "can he get from any X to any Y", "how many users will hear the news", "how many separate regions": connected components.',
       'A grid of cells with walls or colours and a question about areas, rooms or connected regions: flood fill, with cells as vertices and shared sides as edges.',
@@ -14,13 +99,13 @@ export default {
     ],
     disguises: [
       'Fewest new objects or roads so that everything becomes mutually reachable → number of components − 1, since one new link can merge two components (217A: drifts sharing an x or y coordinate are adjacent).',
-      'Groups or cliques given as member lists → link consecutive members of each list; k − 1 path edges give the same components as the k(k − 1)/2 pairs (1167C).',
+      'Groups or cliques given as member lists → link consecutive members of each list; for a group of k, k − 1 path edges give the same components as the k(k − 1)/2 pairs (1167C).',
       'Orient edges, assign parities or label vertices so that every edge joins two different kinds → 2-colour the graph; it is possible exactly when there is no odd cycle (1144F, 1093D).',
-      'Remove k cells and keep the rest connected → keep the first s − k cells a search discovers (they form a tree), or remove DFS-tree leaves first (377A).',
+      'Remove k cells and keep the rest connected → of the s empty cells, keep the first s − k a search discovers (they form a tree), or remove DFS-tree leaves first (377A).',
     ],
     pitfalls: [
       'Recursive DFS on 2·10^5 vertices, or on a 500 × 500 grid whose empty cells form one long snake, can overflow the stack; use an explicit stack or BFS when the depth can be large.',
-      'With many test cases, allocate the adjacency lists and visited arrays for this test (size n) instead of clearing a global array of the maximum size, which is O(t · maxN) when t is 3·10^5.',
+      'With many test cases, allocate the adjacency lists and visited arrays for this test (size n) instead of clearing a global array of the maximum size maxN, which costs O(t · maxN) over t test cases when t is 3·10^5.',
       'In an undirected graph the edge back to the parent is not a cycle. Skip the parent (by edge id if multi-edges exist), or use the count rule: a component contains a cycle exactly when its edge count is at least its vertex count.',
     ],
     code: `// Components and 2-colouring with an explicit stack (no recursion depth limit).
@@ -48,7 +133,8 @@ bool explore(int n, const vector<vector<int>>& adj, vector<int>& comp, vector<in
     }
     return bipartite;
 }
-// Grid version: cell (r, c) has id r * m + c; neighbours use these offsets.
+// Grid version: an R x C grid has R * C vertices. Cell (r, c) is vertex r * C + c + 1,
+// numbered from 1 like adj; its neighbours use these offsets. Call explore(R * C, ...).
 const int dr[4] = {1, -1, 0, 0}, dc[4] = {0, 0, 1, -1};`,
     resources: [
       { label: 'CP-Algorithms: Depth First Search', url: 'https://cp-algorithms.com/graph/depth-first-search.html' },

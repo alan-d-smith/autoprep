@@ -1,6 +1,6 @@
 // Step-through diagrams: topological sort, Dijkstra and binary lifting.
 
-import { text, row, table, graph, arrow, dot } from '../draw.js';
+import { text, row, table, graph, arrow, arrowHead, dot } from '../draw.js';
 import { frame, range } from './common.js';
 
 // A ring around a vertex: blue or green for "this one", red for "rejected".
@@ -10,10 +10,11 @@ const ring = (x, y, r, cls) => (cls === 'bad'
 const pad = (values, n) => [...values, ...Array(Math.max(0, n - values.length)).fill('')];
 
 function topo() {
-  const nodes = { a: [50, 50], b: [50, 160], c: [160, 50], d: [160, 160], e: [270, 90], f: [270, 190], g: [380, 130] };
-  const edges = [['a', 'c'], ['b', 'c'], ['b', 'd'], ['c', 'e'], ['d', 'e'], ['d', 'f'], ['e', 'g'], ['f', 'g']];
+  // Labels chosen so the order Kahn's algorithm finds is not alphabetical: edges such as b → a point backwards in it.
+  const nodes = { b: [50, 50], e: [50, 160], a: [160, 50], c: [160, 160], g: [270, 90], d: [270, 190], f: [380, 130] };
+  const edges = [['b', 'a'], ['e', 'a'], ['e', 'c'], ['a', 'g'], ['c', 'g'], ['c', 'd'], ['g', 'f'], ['d', 'f']];
   const ids = Object.keys(nodes);
-  const below = new Set(['b', 'd', 'f']); // where a vertex's in-degree is written, clear of its edges
+  const below = new Set(['e', 'c', 'd']); // where a vertex's in-degree is written, clear of its edges
   const indeg = Object.fromEntries(ids.map((k) => [k, 0]));
   for (const [, b] of edges) indeg[b]++;
   const queue = ids.filter((k) => !indeg[k]);
@@ -50,6 +51,7 @@ function topo() {
         : `Delete ${a} → ${b}: in[${b}] drops from ${indeg[b] + 1} to ${indeg[b]}. ${indeg[b] === 1 ? 'One more edge still points' : `${indeg[b]} more edges still point`} into ${b}.`));
     }
   }
+  removed.clear(); // the last picture shows every edge again, so you can see each one point forward
   frames.push(frame(W, H, draw(),
     `Order: ${out.join(', ')}. Every edge points forward in it. If the queue empties before all ${ids.length} are output, the graph has a cycle.`));
   return [{ title: 'Topological sort', frames }];
@@ -77,7 +79,7 @@ function shortestPaths() {
       nodeCls: (id) => (id === cur ? 'current' : done.has(id) ? 'done' : dist[id] < Infinity ? 'wait' : ''),
       edgeCls: (a, b) => (final ? (via[b] === a ? 'good' : 'dim')
         : edge && a === edge[0] && b === edge[1] ? (improved ? 'hl' : 'bad')
-        : via[b] === a && done.has(b) ? 'good'
+        : via[b] === a && (done.has(b) || b === cur) ? 'good' // the edge that fixed b's distance, green from the frame that settles b
         : examined.has(`${a}${b}`) && via[b] !== a ? 'dim' : ''),
     })
     + (edge ? ring(...nodes[edge[1]], 20, improved ? 'hl' : 'bad') : '')
@@ -153,11 +155,10 @@ function binaryLifting() {
   // A jump from one vertex to an ancestor: arcs above the top row, below the bottom row, a straight arrow between rows.
   const arc = (from, to, cls) => {
     const [x1, y1] = pos[from], [x2, y2] = pos[to];
-    const marker = { hl: 'v-arrow-hl', good: 'v-arrow-good', bad: 'v-arrow-bad' }[cls] || 'v-arrow';
     if (y1 === y2) {
       // Leave from left of centre and land right of centre, so a jump out never starts under the arrowhead of a jump in.
       const s = y1 === SPINE ? -1 : 1, h = 14 + ((x1 - x2) / STEP) * 10, a = x1 - 5, b = x2 + 5;
-      return `<path class="v-link ${cls}" d="M${a} ${y1 + s * (R - 1)} C${a} ${y1 + s * (R + h)} ${b} ${y1 + s * (R + h)} ${b} ${y2 + s * (R + 3)}" marker-end="url(#${marker})"/>`;
+      return `<path class="v-link ${cls}" d="M${a} ${y1 + s * (R - 1)} C${a} ${y1 + s * (R + h)} ${b} ${y1 + s * (R + h)} ${b} ${y2 + s * (R + 3)}" marker-end="url(#${arrowHead(cls)})"/>`;
     }
     const len = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / len, uy = (y2 - y1) / len;
     return arrow(x1 + ux * R, y1 + uy * R, x2 - ux * (R + 4), y2 - uy * (R + 4), cls);
@@ -286,7 +287,7 @@ function binaryLifting() {
     cellCls: (r, c) => (r === 0 && (c === a || c === b) ? 'hl' : ''),
   }), a === b ? `Both reached ${a}: that is the LCA.` : `${a} and ${b} are now children of the meeting point, so LCA = up[0][${a}] = ${lca}.`));
   frames.push(frame(W, H, draw({ nodeCls: (x) => (x === lca ? 'current' : onPath.has(x) ? 'done' : 'dim'), path: onPath, rings: [[lca, 'good']] }),
-    `LCA(${deep}, ${branchDeep}) = ${lca}. The path between them has depth[${deep}] + depth[${branchDeep}] − 2·depth[${lca}] = ${depth[deep] + depth[branchDeep] - 2 * depth[lca]} edges.`));
+    `LCA(${deep}, ${branchDeep}) = ${lca}. The path between them has dep[${deep}] + dep[${branchDeep}] − 2·dep[${lca}] = ${depth[deep] + depth[branchDeep] - 2 * depth[lca]} edges.`));
   return [{ title: 'Binary lifting: k-th ancestor and LCA', frames }];
 }
 

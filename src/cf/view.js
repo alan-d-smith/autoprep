@@ -12,7 +12,7 @@ import { CHEVRON_ICON } from '../icons.js';
 import { hintToggle, hintPanel, bindHints } from './hints.js';
 import { rich, highlightCpp } from '../format.js';
 import { STAGE_VISUALS } from '../viz/stages.js';
-import { stepperTpl, bindSteppers } from '../viz/stepper.js';
+import { stepperTpl, slidesTpl, bindSteppers } from '../viz/stepper.js';
 import { listenButton, bindListen } from '../tts.js';
 import { quizConfident } from './quiz.js';
 import { STAGE_SOURCES } from './sources.js';
@@ -230,11 +230,13 @@ export function renderPath(app, stageId) {
 
   function primerTpl(stage) {
     const { primer } = stage;
+    const visuals = STAGE_VISUALS[stage.id]?.() || [];
     return html`
       <section class="primer" aria-label="Primer">
-        <p class="primer-idea" data-read="primer">${rich(primer.idea)}</p>
+        ${slidesTpl(`${stage.id}-how`, primer.slides, visuals)}
         ${primer.terms ? termsTpl(primer.terms) : ''}
-        ${(STAGE_VISUALS[stage.id]?.() || []).map((viz, i) => stepperTpl(`${stage.id}-${i}`, viz))}
+        ${visuals.map((viz, i) => stepperTpl(`${stage.id}-${i}`, viz))}
+        ${primer.worked ? html`<section class="cp-worked card" data-worked-for="${stage.id}" aria-label="Worked question">${workedTpl(stage)}</section>` : ''}
         ${videosTpl(stage.id)}
         <div class="primer-cols">
           <div><h3 data-read="primer">Reach for it when</h3><ul>${primer.spot.map((s) => html`<li data-read="primer">${rich(s)}</li>`)}</ul></div>
@@ -253,11 +255,29 @@ export function renderPath(app, stageId) {
       </section>`;
   }
 
-  // What the names in the idea, code and diagram stand for, each written "name: meaning".
+  // A small question solved with the stage's technique, one step at a time so you can try each first.
+  const workedShown = new Map(); // stage id → steps revealed
+  function workedTpl(stage) {
+    const { title, question, steps } = stage.primer.worked;
+    const shown = workedShown.get(stage.id) || 0;
+    return html`
+      <h3 data-read="primer">Worked question: ${title}</h3>
+      <p class="cp-worked-q" data-read="primer">${rich(question)}</p>
+      <ol class="cp-steps" aria-live="polite">
+        ${steps.slice(0, shown).map((s, i) => html`<li class="${i === steps.length - 1 ? 'final' : ''}" tabindex="-1" data-read="primer"><span>${rich(s)}</span></li>`)}
+      </ol>
+      ${shown < steps.length ? html`
+        <div class="btn-row">
+          <button class="btn btn-small" type="button" data-worked="next">${shown ? 'Next step' : 'Show the first step'}</button>
+          <button class="text-btn small" type="button" data-worked="all">Show all steps</button>
+        </div>` : ''}`;
+  }
+
+  // What the names in the walkthrough, code and diagram stand for, each written "name: meaning".
   function termsTpl(terms) {
     return html`
       <div class="terms">
-        <h3 data-read="primer">What the arrays mean</h3>
+        <h3 data-read="primer">Notation</h3>
         <dl>${terms.map((t) => {
           const at = t.indexOf(': ');
           // The colon is only for reading aloud, so the name and its meaning don't run together.
@@ -375,6 +395,18 @@ export function renderPath(app, stageId) {
 
   // Show or hide the floating stage list without re-rendering (so your place on the page stays put).
   app.addEventListener('click', (e) => {
+    // Reveal worked steps in place, so the page doesn't jump.
+    const reveal = e.target.closest('[data-worked]');
+    if (reveal) {
+      const holder = reveal.closest('[data-worked-for]');
+      const stage = stageById[holder.dataset.workedFor];
+      const total = stage.primer.worked.steps.length;
+      const shown = reveal.dataset.worked === 'all' ? total : (workedShown.get(stage.id) || 0) + 1;
+      workedShown.set(stage.id, shown);
+      mount(holder, workedTpl(stage));
+      (holder.querySelector('[data-worked="next"]') || holder.querySelector('.cp-steps li:last-child'))?.focus();
+      return;
+    }
     const codeStyle = e.target.closest('[data-code-style]');
     if (codeStyle) {
       // Swap just the code block so the page doesn't jump.

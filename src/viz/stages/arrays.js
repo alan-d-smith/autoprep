@@ -37,32 +37,33 @@ function prefixSums() {
   frames.push(frame(W, H, draw({ aCls: (k) => (k >= l && k <= r ? 'good' : 'dim'), pCls: (k) => (k === r + 1 || k === l ? 'good' : 'dim'), extra: span(l, r, `sum = ${P[r + 1] - P[l]}`, { x, y: ya - 4, up: true, cls: 'good' }) }),
     `a[${l}] + … + a[${r}] = P[${r + 1}] − P[${l}] = ${P[r + 1]} − ${P[l]} = ${P[r + 1] - P[l]}. Any range costs one subtraction: O(1).`));
 
-  // Zero-sum blocks: b[l..r] sums to 0 exactly when Q[l] = Q[r + 1].
-  const b = [2, -1, 3, -2, -2, 4];
-  const Q = prefix(b);
+  // A new array and the case k = 0: a[l..r] sums to 0 exactly when P[l] = P[r + 1].
+  // Drawn with the slide's names, a and P, for this second array (a2, P2 here).
+  const a2 = [2, -1, 3, -2, -2, 4];
+  const P2 = prefix(a2);
   const H2 = 190, seen = new Map([[0, [0]]]);
   const seenText = () => text(x - 10, 172, `seen: ${[...seen].map(([v, at]) => `${num(v)}×${at.length}`).join('  ')}`, 'v-note', 'start');
-  const drawB = (j, bCls, qCls, extra = '') =>
-    row(b.map(num), { x, y: ya, name: 'b', index: true, cls: bCls })
-    + row(Q.map((v, i) => (i <= j ? num(v) : '')), { x, y: yp, name: 'Q', index: true, cls: qCls }) + seenText() + extra;
-  frames.push(frame(W, H2, drawB(0, () => '', (k) => (k === 0 ? 'hl' : '')),
-    'Zero-sum blocks: b[l..r] sums to 0 exactly when Q[l] = Q[r + 1]. Walk the prefix sums Q, counting each value seen so far.'));
+  const draw2 = (j, aCls, pCls, extra = '') =>
+    row(a2.map(num), { x, y: ya, name: 'a', index: true, cls: aCls })
+    + row(P2.map((v, i) => (i <= j ? num(v) : '')), { x, y: yp, name: 'P', index: true, cls: pCls }) + seenText() + extra;
+  frames.push(frame(W, H2, draw2(0, () => '', (k) => (k === 0 ? 'hl' : '')),
+    'A new array a, and the case k = 0: a[l..r] sums to 0 exactly when P[l] = P[r + 1]. Walk its prefix sums P, counting in `seen` how often each value has occurred.'));
   let count = 0;
-  for (let j = 1; j <= b.length; j++) {
-    const earlier = seen.get(Q[j]) || [];
+  for (let j = 1; j <= a2.length; j++) {
+    const earlier = seen.get(P2[j]) || [];
     count += earlier.length;
     const first = earlier[0];
-    frames.push(frame(W, H2, drawB(j,
+    frames.push(frame(W, H2, draw2(j,
       (k) => (earlier.length && k >= first && k < j ? 'good' : k === j - 1 ? 'wait' : k < j ? '' : 'dim'),
       (k) => (k === j ? (earlier.length ? 'good' : 'hl') : earlier.includes(k) ? 'good' : k < j ? 'done' : ''),
       earlier.length ? span(first, j - 1, 'sum = 0', { x, y: ya - 4, up: true, cls: 'good' }) : ''),
     earlier.length
-      ? `Q[${j}] = ${num(Q[j])} was seen before, at Q[${first}]: b[${first}..${j - 1}] sums to 0. Blocks so far: ${count}.`
-      : `Q[${j}] = Q[${j - 1}] + b[${j - 1}] = ${num(Q[j])}, a value not seen before: no zero-sum block ends at ${j - 1}.`));
-    seen.set(Q[j], [...earlier, j]);
+      ? `P[${j}] = ${num(P2[j])} was seen before, at P[${first}]: a[${first}..${j - 1}] sums to 0. Blocks so far: ${count}.`
+      : `P[${j}] = P[${j - 1}] + a[${j - 1}] = ${num(P2[j])}, a value not seen before: no zero-sum block ends at ${j - 1}.`));
+    seen.set(P2[j], [...earlier, j]);
   }
-  frames.push(frame(W, H2, drawB(b.length, () => '', (k) => ([...seen.values()].some((at) => at.length > 1 && at.includes(k)) ? 'good' : 'dim')),
-    `${count} zero-sum blocks, one per pair of equal prefix values, found in one pass with a hash map: O(n).`));
+  frames.push(frame(W, H2, draw2(a2.length, () => '', (k) => ([...seen.values()].some((at) => at.length > 1 && at.includes(k)) ? 'good' : 'dim')),
+    `${count} zero-sum blocks, one per pair of equal prefix values, found in one pass with \`seen\`, a map from value to count: O(n log n).`));
   return [{ title: 'Prefix sums', frames }];
 }
 
@@ -75,7 +76,7 @@ function differenceArrays() {
     row(d.map(num), { x, y: yd, name: 'd', index: true, cls: dCls })
     + row(Array.from({ length: n }, (_, i) => (i < a.length ? num(a[i]) : '')), { x, y: ya, name: 'a', index: true, cls: aCls }) + extra;
   const frames = [frame(W, H, draw(() => '', () => 'dim'),
-    'Range updates without touching every cell: record where each one starts and stops in d (n + 1 cells, all 0), then rebuild a once.')];
+    'Range updates without touching every cell. a starts at all 0s, so its difference array d (n + 1 cells) does too; record where each update starts and stops in d, then rebuild a once. If a starts non-zero, add the rebuilt changes to it.')];
   ups.forEach(([l, r, v]) => {
     const bracket = span(l, r, `+${v} on a[${l}..${r}]`, { x, y: yd - 4, up: true, cls: 'wait' });
     d[l] += v;
@@ -91,73 +92,99 @@ function differenceArrays() {
       arrow(cx(i, x), yd + 52, cx(i, x), ya - 3, 'hl')),
     i ? `a[${i}] = a[${i - 1}] + d[${i}] = ${plus(a[i - 1], d[i])} = ${num(a[i])}.` : `Rebuild with a prefix sum over d: a[0] = d[0] = ${num(a[0])}.`));
   }
-  const both = range(n).filter((i) => ups.filter(([l, r]) => l <= i && i <= r).length > 1);
+  // The cells that got two updates (a[1..4] here), with one example of each pair of updates.
+  const from = (i) => ups.filter(([l, r]) => l <= i && i <= r).map(([, , v]) => v);
+  const both = range(n).filter((i) => from(i).length > 1);
+  const examples = both.filter((i, k) => both.findIndex((j) => from(j).join() === from(i).join()) === k);
   frames.push(frame(W, H, draw(() => 'dim', (k) => (both.includes(k) ? 'good' : '')),
-    `Done: ${ups.length} updates at O(1) each, then one O(n) pass. a[${both[0]}] got two updates: ${ups.filter(([l, r]) => l <= both[0] && both[0] <= r).map(([, , v]) => v).join(' + ')} = ${a[both[0]]}.`));
+    `Done: ${ups.length} updates at O(1) each, then one O(n) pass. a[${both[0]}..${both.at(-1)}] (green) each got two updates: ${examples.map((i) => `a[${i}] = ${from(i).join(' + ')} = ${a[i]}`).join(', ')}.`));
   return [{ title: 'Difference arrays', frames }];
 }
 
 function dpBasics() {
+  // Never two neighbours: the template's dp[i][s] with K = 1. Row i covers the first i values;
+  // s = 1 when row i's value was taken, s = 0 when it was skipped (or i = 0, the empty prefix).
   const v = [5, 1, 3, 8, 2, 6];
-  const n = v.length, x = 70, W = 340, H = 196, yd = 60, yv = 120;
-  const dp = [], took = [];
-  const links = (i, cls1, cls2) =>
-    (i >= 1 ? arrow(cx(i - 1, x), yd - 4, cx(i, x) - 4, yd - 4, cls1, 1.6) : '')
-    + (i >= 2 ? arrow(cx(i - 2, x), yd - 6, cx(i, x) - 2, yd - 6, cls2, 2.4) : '');
-  const draw = (dCls, vCls, extra = '') =>
-    row(Array.from({ length: n }, (_, k) => (k < dp.length ? dp[k] : '')), { x, y: yd, name: 'dp', cls: dCls })
-    + row(v, { x, y: yv, name: 'value', index: true, cls: vCls }) + extra;
-  const frames = [frame(W, H, draw(() => '', () => ''), 'Pick values, never two neighbours, to maximise the total. dp[i] is the best you can do with the first i + 1 values.')];
-  for (let i = 0; i < n; i++) {
-    const skip = i ? dp[i - 1] : 0, take = (i >= 2 ? dp[i - 2] : 0) + v[i];
-    const reads = (k) => (k === i ? 'hl' : k === i - 1 || k === i - 2 ? 'wait' : k < i ? 'done' : '');
-    frames.push(frame(W, H, draw(reads, (k) => (k === i ? 'wait' : 'dim'), links(i, 'hl', 'hl')),
-      i === 0
-        ? `dp[0]: skip ${v[0]} and have 0, or take it and have ${v[0]}.`
-        : i === 1
-          ? `dp[1]: skip ${v[1]} and keep dp[0] = ${skip}, or take ${v[1]} alone, since its neighbour ${v[0]} must go: ${take}.`
-          : `dp[${i}]: skip ${v[i]} and keep dp[${i - 1}] = ${skip}, or take it on top of dp[${i - 2}] = ${dp[i - 2]}: ${dp[i - 2]} + ${v[i]} = ${take}.`));
-    dp.push(Math.max(skip, take));
-    took.push(take > skip);
-    frames.push(frame(W, H, draw((k) => (k === i ? (took[i] ? 'good' : 'hl') : k < i ? 'done' : ''), (k) => (k === i ? (took[i] ? 'good' : 'bad') : 'dim'), links(i, took[i] ? 'dim' : 'good', took[i] ? 'good' : 'dim')),
-      `dp[${i}] = max(${skip}, ${take}) = ${dp[i]}: ${took[i] ? `take ${v[i]}` : `skip ${v[i]}`}.`));
+  const n = v.length, size = 32, W = 440, H = 292, xi = 30, xv = 46, xd = 106, y = 56, xs = 190;
+  const dp = [[0, -Infinity]];
+  const fmt = (val) => (val === -Infinity ? '−∞' : String(val));
+  const cell = (r, s) => (dp[r]?.[s] === undefined ? '' : fmt(dp[r][s]));
+  const draw = ({ dCls = () => '', vCls = () => '', side = [] } = {}) =>
+    text(xi, y - 12, 'i', 'v-head') + range(n + 1).map((r) => text(xi, y + r * size + size / 2, r, 'v-idx')).join('')
+    + table(n + 1, 1, (r) => ({ v: r ? v[r - 1] : '', cls: r ? vCls(r) : 'void' }), { x: xv, y, size, colHead: ['value'] })
+    + table(n + 1, 2, (r, s) => ({ v: cell(r, s), cls: dCls(r, s) }), { x: xd, y, size, colHead: ['s=0', 's=1'] })
+    + text(xd + size, y - 34, 'dp[i][s]', 'v-head')
+    + side.map(([s, c], k) => text(xs, y + 16 + k * 24, s, `v-note ${c}`, 'start')).join('')
+    + text(xs, y + 5.5 * size, 's = 1: this row\'s value was taken', 'v-idx', 'start')
+    + text(xs, y + 6.5 * size, 's = 0: it was skipped', 'v-idx', 'start');
+  const frames = [frame(W, H, draw({ dCls: (r) => (r === 0 ? 'done' : '') }),
+    'Never take two neighbours (the template with K = 1). dp[i][s] is the best total from the first i values, with s = 1 if the i-th was taken and s = 0 if not. Row 0 is the empty prefix: 0, and −∞ for s = 1, which is impossible.')];
+  for (let r = 1; r <= n; r++) {
+    const x = v[r - 1], [s0, s1] = dp[r - 1];
+    const skip = Math.max(s0, s1), take = s0 + x;
+    const skipNote = `skip ${x}: max(${fmt(s0)}, ${fmt(s1)}) = ${skip}`, takeNote = `take ${x}: ${s0} + ${x} = ${take}`;
+    dp.push([skip]);
+    frames.push(frame(W, H, draw({
+      dCls: (rr, s) => (rr === r && s === 0 ? 'hl' : rr === r - 1 ? 'wait' : rr < r ? 'done' : ''),
+      vCls: (rr) => (rr <= r ? '' : 'dim'),
+      side: [[skipNote, 'hl']],
+    }), `Skip ${x}: dp[${r}][0] = max(dp[${r - 1}][0], dp[${r - 1}][1]) = max(${fmt(s0)}, ${fmt(s1)}) = ${skip}.`));
+    dp[r][1] = take;
+    frames.push(frame(W, H, draw({
+      dCls: (rr, s) => (rr === r && s === 1 ? 'hl' : rr === r - 1 && s === 0 ? 'wait' : rr <= r ? 'done' : ''),
+      vCls: (rr) => (rr === r ? 'wait' : rr < r ? '' : 'dim'),
+      side: [[skipNote, ''], [takeNote, 'hl']],
+    }), `Take ${x}: it may only follow s = 0, so dp[${r}][1] = dp[${r - 1}][0] + ${x} = ${s0} + ${x} = ${take}.`));
   }
-  // Walk back through the choices.
-  const chosen = new Set();
-  for (let i = n - 1; i >= 0;) {
-    const here = i;
-    if (took[i]) chosen.add(i);
-    const step = took[i] ? 2 : 1;
-    frames.push(frame(W, H, draw((k) => (k === here ? 'hl' : 'dim'), (k) => (k === here ? (took[here] ? 'good' : 'bad') : chosen.has(k) ? 'good' : 'dim')),
-      took[here]
-        ? `Walk back: dp[${here}] took ${v[here]}, so it is in. Its neighbour can't be, so jump to ${here - 2 >= 0 ? `dp[${here - 2}]` : 'the start'}.`
-        : `Walk back: dp[${here}] = dp[${here - 1}] skipped ${v[here]}. Step to dp[${here - 1}].`));
-    i -= step;
+  // Walk back from the larger entry of the last row: s says whether that row's value was taken.
+  const path = [], taken = new Set();
+  const larger = (r) => (dp[r][1] > dp[r][0] ? 1 : 0);
+  for (let r = n, s = larger(n); r > 0;) {
+    const x = v[r - 1], val = dp[r][s];
+    const [nr, ns] = s ? [r - 1, 0] : [r - 1, larger(r - 1)];
+    path.push([r, s]);
+    if (s) taken.add(r);
+    const at = `${path.length === 1 ? `Walk back from the larger entry of the last row, dp[${r}][${s}]` : `dp[${r}][${s}]`} = ${val}`;
+    const next = nr ? `Step to dp[${nr}][${ns}].` : 'Step to dp[0][0], the empty prefix: stop.';
+    const [cr, cs] = [r, s], seenPath = path.map(([pr, ps]) => `${pr},${ps}`);
+    frames.push(frame(W, H, draw({
+      dCls: (rr, ss) => (rr === cr && ss === cs ? 'hl' : rr === nr && ss === ns ? 'wait' : seenPath.includes(`${rr},${ss}`) ? (ss ? 'good' : 'done') : 'dim'),
+      vCls: (rr) => (rr === cr ? (cs ? 'good' : 'bad') : taken.has(rr) ? 'good' : 'dim'),
+    }), s
+      ? `${at}: ${x} was taken, so the value before it was skipped. ${next}`
+      : `${at}: ${x} was skipped, and ${val} is the larger of dp[${nr}][0] = ${fmt(dp[nr][0])} and dp[${nr}][1] = ${fmt(dp[nr][1])}. ${next}`));
+    [r, s] = [nr, ns];
   }
-  frames.push(frame(W, H, draw((k) => (k === n - 1 ? 'good' : 'dim'), (k) => (chosen.has(k) ? 'good' : 'dim')),
-    `Best total: ${[...chosen].sort((p, q) => p - q).map((k) => v[k]).join(' + ')} = ${dp[n - 1]}. O(n) time, and only the last two dp values are ever needed.`));
+  path.push([0, 0]);
+  const onPath = new Set(path.map(([pr, ps]) => `${pr},${ps}`));
+  const picked = [...taken].sort((p, q) => p - q);
+  frames.push(frame(W, H, draw({
+    dCls: (rr, ss) => (onPath.has(`${rr},${ss}`) ? (ss ? 'good' : 'done') : 'dim'),
+    vCls: (rr) => (taken.has(rr) ? 'good' : 'dim'),
+  }), `Best total: ${picked.map((r) => v[r - 1]).join(' + ')} = ${Math.max(...dp[n])}. Each row was built from the row above alone, so two rows of memory and O(n) time are enough.`));
   return [{ title: 'Take or skip', frames }];
 }
 
 function lis() {
-  const a = [3, 1, 8, 2, 5, 9, 4, 7];
-  const W = 400, H = 236, x = 70, base = 128, unit = 11, yt = 166;
+  // The last value, 1, lands in tails[0] after the LIS is complete, so the final tails is not a subsequence.
+  const a = [4, 2, 9, 3, 6, 10, 5, 8, 1];
+  const W = 420, H = 236, x = 70, base = 128, unit = 11, yt = 166;
   const tails = [], tailIdx = [], par = Array(a.length).fill(-1), lenAt = [];
   const bars = (cls) => a.map((v, i) => {
     const bx = cellX(i, { x });
     return `<g class="v-bar ${cls(i)}"><rect x="${bx + 3}" y="${base - v * unit}" width="28" height="${v * unit}" rx="4"/></g>${text(bx + 17, base + 12, v, 'v-idx')}`;
   }).join('');
-  const tailsRow = (cls) => row([...tails, ...Array(Math.max(0, 4 - tails.length)).fill('')], { x, y: yt, name: 'tails', index: true, indexFrom: 1, cls });
+  const tailsRow = (cls) => row([...tails, ...Array(Math.max(0, 4 - tails.length)).fill('')], { x, y: yt, name: 'tails', index: true, cls });
   const cur = (i) => (j) => (j === i ? 'hl' : j < i ? '' : 'dim');
   const frames = [frame(W, H, bars(() => '') + tailsRow(() => ''),
-    'tails[k] holds the smallest value an increasing subsequence of length k can end with. Each new value binary-searches tails.')];
+    'tails[k] holds the smallest value an increasing subsequence of length k + 1 can end with. Each new value binary-searches tails.')];
   a.forEach((v, i) => {
     // lower_bound: the first tail that is at least v.
     let lo = 0, hi = tails.length;
     while (lo < hi) {
       const mid = (lo + hi) >> 1, less = tails[mid] < v, [l0, h0] = [lo, hi];
       frames.push(frame(W, H, bars(cur(i)) + tailsRow((j) => (j === mid ? 'wait' : j < l0 || j >= h0 ? 'dim' : '')),
-        `${v}: is the length-${mid + 1} tail ${tails[mid]} less than ${v}? ${less ? `Yes, so ${v} can go after it: search longer lengths.` : `No: search this length and shorter.`}`));
+        `${v}: is tails[${mid}] = ${tails[mid]}, the length-${mid + 1} tail, less than ${v}? ${less ? `Yes, so ${v} can go after it: search longer lengths.` : `No: search this length and shorter.`}`));
       if (less) lo = mid + 1; else hi = mid;
     }
     const k = lo, append = k === tails.length, old = tails[k];
@@ -166,21 +193,22 @@ function lis() {
     tails[k] = v;
     tailIdx[k] = i;
     frames.push(frame(W, H, bars(cur(i)) + tailsRow((j) => (j === k ? (append ? 'good' : 'hl') : '')),
-      !k && append ? `tails is empty: ${v} starts a subsequence of length 1.`
-        : append ? `${v} is bigger than every tail, so it extends length ${k} (ending ${tails[k - 1]}) to length ${k + 1}.`
-          : `The first tail ≥ ${v} is the length-${k + 1} tail ${old}. Replace it: length ${k + 1} can now end lower, at ${v}.`));
+      !k && append ? `tails is empty: ${v} becomes tails[0], the end of a length-1 subsequence.`
+        : append ? `${v} is bigger than every tail, so it follows tails[${k - 1}] = ${tails[k - 1]} and becomes tails[${k}], the end of a length-${k + 1} subsequence.`
+          : `The first tail ≥ ${v} is tails[${k}] = ${old}, the length-${k + 1} tail. Replace it: length ${k + 1} can now end lower, at ${v}.`));
   });
   // Recover one subsequence by following parent pointers back from the last tail.
   const seq = [];
+  const finalTails = tails.join(', ');
   for (let i = tailIdx[tails.length - 1]; i !== -1; i = par[i]) {
     seq.unshift(i);
     const p = par[i], here = i, picked = new Set(seq);
     frames.push(frame(W, H, bars((j) => (j === here ? 'hl' : picked.has(j) ? 'good' : 'dim')) + tailsRow(() => 'dim'),
-      p === -1 ? `${a[here]} started its subsequence, so stop. Reading forwards: ${seq.map((j) => a[j]).join(', ')}.`
+      p === -1 ? `${a[here]} started its subsequence, so stop. Reading forwards: ${seq.map((j) => a[j]).join(', ')}. tails ends as ${finalTails}, which is not a subsequence: its ${tails[0]} is the last value of a.`
         : `${a[here]} ended a length-${lenAt[here]} subsequence after ${a[p]}, the length-${lenAt[here] - 1} tail when ${a[here]} arrived. Step back to ${a[p]}.`));
   }
   frames.push(frame(W, H, bars((j) => (seq.includes(j) ? 'good' : 'dim')) + tailsRow(() => 'dim'),
-    `LIS length ${tails.length}: ${seq.map((j) => a[j]).join(', ')}. n binary searches: O(n log n). Use upper_bound for non-decreasing.`));
+    `LIS length ${tails.length}: ${seq.map((j) => a[j]).join(', ')}, rebuilt from par, not read off tails. n binary searches: O(n log n). Use upper_bound for non-decreasing.`));
   return [{ title: 'Longest increasing subsequence in O(n log n)', frames }];
 }
 

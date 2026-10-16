@@ -3,9 +3,91 @@ export default {
   id: 'binary-lifting',
   title: 'Binary lifting and LCA',
   track: 'graphs',
-  summary: 'Build jump tables up[k][v] on trees and on "next" pointers to answer k-th ancestor, LCA, distance and path-maximum queries in O(log n), and count how many greedy steps lead from l to r.',
+  summary: 'Build jump tables up[j][v] on trees and on "next" pointers to answer k-th ancestor, LCA, distance and path-maximum queries in O(log n), and count how many greedy steps lead from l to r.',
   primer: {
-    idea: 'Store for every vertex its 2^k-th ancestor, up[k][v] = up[k−1][up[k−1][v]], which takes O(n log n) to build. A jump of any length splits into its binary digits, and "climb as long as a condition still holds" becomes a descent from the largest power of two down, both O(log n). LCA lifts the deeper vertex to the same depth and then lifts both while their ancestors differ; keeping an aggregate (max edge, sum) next to each jump answers path queries the same way. The table works for any function next(x), not only parents: UKIEPC 2023 Fast Forward jumped through "next ad break" pointers exactly like this.',
+    slides: [
+      {
+        title: 'Many queries on one fixed tree',
+        points: [
+          'Queries ask for the k-th ancestor, the LCA of a and b, their distance, or the heaviest edge between them.',
+          'Walking up one parent at a time is O(depth): about 4·10^10 steps on a path of 2·10^5 vertices with 2·10^5 queries.',
+          'Storing every ancestor of every vertex makes jumps O(1), but needs O(n²) memory.',
+        ],
+        say: 'The questions come on a fixed rooted tree, many at a time: the k-th ancestor of v, the lowest common ancestor (LCA) of a and b, the distance between them, the heaviest edge on their path. Walking up one parent at a time answers each in O(depth), and on a path-shaped tree with n = 2·10^5 vertices and 2·10^5 queries that is about 4·10^10 steps. Storing every ancestor of every vertex would make each jump O(1), but needs O(n²) memory.',
+      },
+      {
+        title: 'Any jump is a few power-of-two jumps',
+        points: [
+          'A jump of 13 is a jump of 8, then 4, then 1: its binary digits.',
+          'So it is enough to know where jumps of 1, 2, 4, 8, … land from each vertex.',
+          'Each is built from the one before: a jump of 2^j is two jumps of 2^(j−1).',
+        ],
+        show: [0, 8],
+        note: 'The 5th ancestor of 7: 5 is 101 in binary, so jump 4, then 1.',
+        say: 'The key observation is that every jump length is a sum of distinct powers of two, its binary digits: a jump of 13 is a jump of 8, then 4, then 1. So it is enough to know, for each vertex, where jumps of 1, 2, 4, 8 and so on land, and each of those is easy to build from the one before, because a jump of 2^j is two jumps of 2^(j−1).',
+      },
+      {
+        title: 'Build the jump table by doubling',
+        points: [
+          'up[j][v] is the vertex 2^j steps above v, for levels j < `LOG`. Row 0 holds the parents, and the root points to itself.',
+          'up[j][v] = up[j−1][up[j−1][v]], so each row is filled from the row below, one row at a time: O(n log n) to build.',
+          'kth(v, k) makes one jump v = up[j][v] for each power 2^j in the binary form of k: at most `LOG` jumps.',
+        ],
+        show: [0, 5],
+        note: 'Doubling: up[2][7] = up[1][up[1][7]] = up[1][5] = 3, two jumps of 2 making one of 4; rows 0 and 1 are already full.',
+        say: 'Binary lifting stores up[j][v], the vertex 2^j steps above v, for every level j from 0 to LOG − 1, where 2^LOG is larger than any jump (LOG = 18 when n is up to 2·10^5). Row 0 holds the parents, found by a BFS from the root, with the root pointing to itself so that a jump past the top stops at the root. Every later row follows from the one below it: up[j][v] = up[j−1][up[j−1][v]]. Filling the table one row at a time, for every vertex, costs O(n log n). Then kth(v, k), the k-th ancestor of v, makes one jump v = up[j][v] for each power 2^j in the binary form of k, at most LOG jumps.',
+      },
+      {
+        title: 'LCA: level up, then climb together',
+        points: [
+          'Lift the deeper vertex until both have the same dep[v]; if the two now coincide, that vertex is the LCA.',
+          'Otherwise try j from `LOG` − 1 down to 0, jumping both only when up[j][a] ≠ up[j][b].',
+          'They end as two children of the LCA, up[0][a]. Then dist(a, b) = dep[a] + dep[b] − 2·dep[lca(a, b)].',
+        ],
+        show: [0, 16],
+        note: 'Climbing together: the ancestors 2 steps above 5 and 10 differ, so both jump, and the LCA is higher still.',
+        say: 'For lca(a, b), the deepest vertex that is an ancestor of both, first lift the deeper vertex by the difference in depth, where dep[v] counts the edges from the root to v; if the two now coincide, that vertex is the answer. Otherwise the LCA is some s ≥ 1 steps above both, and their 2^j-th ancestors are equal exactly when 2^j ≥ s. Trying j from LOG − 1 down to 0 and jumping both only when up[j][a] ≠ up[j][b] climbs s − 1 steps, one binary digit at a time, and leaves a and b as two different children of the LCA, which is up[0][a]. Distances follow: dist(a, b) = dep[a] + dep[b] − 2·dep[lca(a, b)].',
+      },
+      {
+        title: 'Descend from the largest jump',
+        points: [
+          'If a condition holds low on v\'s path to the root and fails above, try jumps from the largest down.',
+          'Take each jump that still lands where it holds: the jumps taken spell out, in binary, how far it reaches.',
+          'Store an aggregate with each jump, such as the heaviest of its 2^j edges, to answer path maximum or sum queries.',
+        ],
+        say: 'That descent from the largest power is a general tool. Whenever a condition holds on a bottom part of the path from v towards the root and fails above it, such as "the sum of positive weights climbed is at most x", try the jumps from the largest down and take each one that still lands on a vertex satisfying it: the jumps taken spell out, in binary, how far the condition reaches. Storing an aggregate next to each jump, such as the heaviest edge among those 2^j edges, combines the same way as the jumps and answers path-maximum or path-sum queries during the climb.',
+      },
+      {
+        title: 'No tree needed, only a successor',
+        points: [
+          'For any next(x), set up[0][x] = next(x) and double as before.',
+          '"Where am I after k steps?" needs a level for each bit of k: `LOG` = 60 for k up to 10^18. The template\'s 18 covers only k < 2^18.',
+          '"How many greedy steps lead from l past r?" uses the same descent. Building is O(n·LOG) time and memory, each query O(LOG).',
+        ],
+        say: 'Nothing in the table needs a tree. For any function next(x) that gives each position one successor, setting up[0][x] = next(x) and doubling as before answers "where am I after k steps", as long as there is a level for every bit of k: LOG = 60 for k up to 10^18, while the template\'s LOG = 18 only covers k below 2^18. The same descent answers "how many greedy steps lead from l past r", which never takes more than n steps; UKIEPC 2023 Fast Forward jumped through "next ad break" pointers exactly like this. Building costs O(n·LOG) time and memory, 1.2·10^7 entries for n = 2·10^5 and LOG = 60, and every query O(LOG).',
+      },
+    ],
+    terms: [
+      'up[j][v]: the vertex 2^j steps above v, or the root if v is less than 2^j deep; j is the level, never a step count. Over a function next, it is next applied 2^j times (`tbl[j][v]` in the TRD version, built by `treeJump`).',
+      '`LOG`: the number of levels, j = 0 to LOG − 1; 2^LOG must exceed the longest jump, so 18 for depths below 2^18 and 60 for k up to 10^18 (in the TRD version `treeJump` picks it as the number of rows of `tbl`, which only covers jumps shorter than about 2n, so `stepTable` builds its own 60).',
+      'dep[v]: the number of edges from the root down to v (`depth` in the TRD version).',
+      'kth(v, k): the k-th ancestor of v, one jump for each bit set in k (`jmp(tbl, v, k)` in the TRD version).',
+      'lca(a, b): the lowest common ancestor of a and b, the deepest vertex that has both in its subtree; a vertex counts as its own ancestor (`lca(tbl, depth, a, b)` in the TRD version).',
+      'dist(a, b): the number of edges on the path between a and b (`treeDist` in the TRD version).',
+      'next(x): the successor of position x under any function that gives each position one successor, such as "the furthest point one greedy step reaches"; jumping along it needs no tree (in the TRD version, `stepTable(next)` builds the 60 levels once and `afterSteps(up, x, k)` answers each query).',
+    ],
+    worked: {
+      title: 'the oldest ancestor within an age limit',
+      question: 'A family tree has n = 9 people, rooted at the founder, person 1; the parents of people 2 to 9 are 1, 1, 2, 4, 5, 6, 3 and 7. Person i is a_i years old, with a = (90, 70, 65, 52, 40, 31, 20, 38, 3), so every parent is older than their children. A query (v, x) asks for the oldest person among v and v\'s ancestors whose age is at most x, or −1 if v is older than x. Answer the queries (9, 45) and (8, 70). The real version has n and q up to 2·10^5.',
+      steps: [
+        'Recognise it: ages grow going up, so the people on v\'s root path who are at most x form a run that starts at v and stops below the first older ancestor; the answer is the top of that run, a "climb while the condition holds" query. Walking up one parent at a time is O(depth) per query, about 4·10^10 steps for a family line of 2·10^5 generations and 2·10^5 queries.',
+        'Model it: up[j][v] with LOG = 4, since 2^4 = 16 > 9. Row 0 is the parents, with up[0][1] = 1 so that every jump from the founder stays there. For person 9: up[0][9] = 7, up[1][9] = up[0][7] = 6, up[2][9] = up[1][6] = 4, and up[3][9] = up[2][4] = 1, because 4 is only 2 deep and the jump stops at the founder.',
+        'Query (9, 45): person 9 is aged 3, which is at most 45, so 9 qualifies. Try j = 3, 2, 1, 0 and jump whenever the landing person is at most 45: up[3][9] = 1, aged 90: stay; up[2][9] = 4, aged 52: stay; up[1][9] = 6, aged 31: jump to 6; up[0][6] = 5, aged 40: jump to 5. The answer is 5: three people above 9 qualify (7, 6 and 5), and the jumps taken, 2 then 1, are the binary digits of 3.',
+        'Why it is right: before trying 2^j, fewer than 2^(j+1) qualifying people remain above the current one. Ages only grow going up, so if at least 2^j remain, the jump lands on a qualifying person and leaves fewer than 2^j. If fewer remain, it lands on someone too old, unless it is clamped at the founder and the founder qualifies: then everyone above qualifies, the founder is the answer, and no later jump moves. Either way fewer than 2^j remain after level j, and after j = 0 none do.',
+        'Query (8, 70): person 8 is aged 38, which is at most 70. up[3][8], up[2][8] and up[1][8] are all the founder, aged 90, so stay three times; up[0][8] = 3, aged 65: jump. The answer is 3.',
+        'Answer: 5 and 3. Building the table is O(n log n), 18 levels and 3.6·10^6 entries for n = 2·10^5, and each query is O(log n). Check a_v ≤ x before climbing: if v itself is older than x, the descent never moves and would wrongly return v instead of −1.',
+      ],
+    },
     spot: [
       'Many queries about paths between two vertices of a fixed tree: distances, whether a vertex lies on a path, the heaviest edge on a path.',
       'For each vertex, "the highest ancestor that still satisfies X", where X is monotone along the root path (sums of positive weights, depths).',
@@ -16,42 +98,44 @@ export default {
       'Minimum spanning tree that must contain a given edge → MST weight minus the heaviest MST edge on the path between its endpoints plus its own weight; the path maximum comes from binary lifting (609E)',
       'Fewest pieces or intervals covering [l, r], over many queries → a greedy "furthest reach" pointer next(x), and the answer is how often you apply it: jump tables over next (1516D, 1175E)',
       'Is there one simple path through all these vertices? → the deepest vertex and the deepest vertex off its root path are the ends; check dist(a, x) + dist(x, b) = dist(a, b) with LCA (1702G2)',
-      'For each vertex count the descendants that "reach" it within a budget → each descendant is counted by a contiguous run of ancestors; find the top of the run by lifting and add 1 along it with a tree difference array (739B, 191C)',
+      'For each vertex count the descendants that "reach" it within a budget → each descendant is counted by a contiguous run of ancestors; find the top of the run by lifting and add 1 along it with a tree difference array (739B)',
+      'Many paths in a tree, and for each edge count the paths that use it → +1 at a and at b, −2 at lca(a, b), then subtree sums (191C)',
     ],
     pitfalls: [
-      'LOG must satisfy 2^LOG > the longest jump: depths up to 2·10^5 − 1 need LOG = 18, because 2^17 = 131072 is too small.',
-      'Give the root (or a sentinel such as position n + 1) a jump to itself. Otherwise up[k] of the root reads garbage or index 0, and a "jump while the condition holds" loop walks off the tree.',
-      'Fill up[k][v] only after the ancestors of v are complete: build in BFS order, or make k the outer loop over all vertices. A recursive DFS on a path of 2·10^5 vertices can overflow the stack.',
+      'LOG must satisfy 2^LOG > the longest jump: depths up to 2·10^5 − 1 need LOG = 18, because 2^17 = 131072 is too small, and k up to 10^18 steps needs 60.',
+      'Give the root (or a sentinel such as position n + 1) a jump to itself. Otherwise up[j] of the root reads garbage or index 0, and a "jump while the condition holds" loop walks off the tree.',
+      'Fill row j only after row j − 1 is complete for every vertex (j as the outer loop), or fill all levels of a vertex once its ancestors are done, in BFS order. A recursive DFS on a path of 2·10^5 vertices can overflow the stack.',
     ],
-    code: `const int LOG = 18;                 // 2^LOG > n
+    code: `const int LOG = 18;                 // 2^LOG > n, the longest jump on a tree
 int n;
 vector<vector<int>> adj;
-vector<array<int, LOG>> up;         // up[v][k] = 2^k-th ancestor of v (the root points to itself)
+array<vector<int>, LOG> up;         // up[j][v] = 2^j-th ancestor of v (the root points to itself)
 vector<int> dep;
-void build(int root) {              // BFS, so parents are finished before children
-    up.assign(n + 1, {}); dep.assign(n + 1, -1);
-    vector<int> q = {root};
-    dep[root] = 0; up[root].fill(root);
-    for (size_t i = 0; i < q.size(); i++) {
-        int v = q[i];
-        for (int c : adj[v]) if (dep[c] < 0) {
-            dep[c] = dep[v] + 1; up[c][0] = v;
-            for (int k = 1; k < LOG; k++) up[c][k] = up[up[c][k - 1]][k - 1];
+void build(int root) {
+    up[0].assign(n + 1, root); dep.assign(n + 1, -1);
+    vector<int> q = {root};         // BFS for parents and depths, without recursion
+    dep[root] = 0;
+    for (size_t i = 0; i < q.size(); i++)
+        for (int c : adj[q[i]]) if (dep[c] < 0) {
+            dep[c] = dep[q[i]] + 1; up[0][c] = q[i];
             q.push_back(c);
         }
+    for (int j = 1; j < LOG; j++) {  // row j from row j - 1: two jumps of 2^(j-1)
+        up[j].resize(n + 1);
+        for (int v = 0; v <= n; v++) up[j][v] = up[j - 1][up[j - 1][v]];
     }
 }
-int kth(int v, int k) {             // k-th ancestor of v, k <= dep[v]
-    for (int b = 0; b < LOG; b++) if (k >> b & 1) v = up[v][b];
+int kth(int v, int k) {             // k-th ancestor of v, k <= dep[v]: one jump per set bit of k
+    for (int j = LOG - 1; j >= 0; j--) if (k >> j & 1) v = up[j][v];
     return v;
 }
 int lca(int a, int b) {
     if (dep[a] < dep[b]) swap(a, b);
     a = kth(a, dep[a] - dep[b]);    // lift the deeper vertex to the same depth
     if (a == b) return a;
-    for (int k = LOG - 1; k >= 0; k--)
-        if (up[a][k] != up[b][k]) { a = up[a][k]; b = up[b][k]; }
-    return up[a][0];
+    for (int j = LOG - 1; j >= 0; j--)
+        if (up[j][a] != up[j][b]) { a = up[j][a]; b = up[j][b]; }
+    return up[0][a];
 }
 int dist(int a, int b) { return dep[a] + dep[b] - 2 * dep[lca(a, b)]; }`,
     resources: [
@@ -70,7 +154,7 @@ int dist(int a, int b) { return dep[a] + dep[b] - 2 * dep[lca(a, b)]; }`,
       hints: [
         'Along the path from the root to i, the b-sums of the prefixes only grow, because every b_j ≥ 1. What shape does the set of prefixes with b-sum ≤ A_i have?',
         'Those prefixes end at exactly the root-path vertices u with B_u ≤ A_i, and they form the top part of the path. So r_i is the depth of the deepest ancestor u of i with B_u ≤ A_i: a "climb while the condition fails" query, which binary lifting answers in O(log n).',
-        'Compute A, B and depth for all vertices in BFS order from vertex 1 (a parent can have a larger label than its child) and build up[k][v]. For i: if B_i ≤ A_i then r_i = depth_i; otherwise jump by decreasing powers of two while the landing vertex still has B > A_i, step once more to the parent and print its depth. O(n log n).',
+        'Compute A, B and depth for all vertices in BFS order from vertex 1 (a parent can have a larger label than its child) and build up[j][v]. For i: if B_i ≤ A_i then r_i = depth_i; otherwise jump by decreasing powers of two while the landing vertex still has B > A_i, step once more to the parent and print its depth. O(n log n).',
       ],
       solution: 'Let A_v and B_v be the a-sum and b-sum from the root to v. Since every b ≥ 1, B strictly increases down the path, so the prefixes with b-sum ≤ A_i form a top part of the root-to-i path and r_i is the depth of its deepest vertex. Find that vertex by lifting from i with decreasing powers of two while the landing vertex still has B > A_i, then take one parent step; the root has B = 0 and points to itself, so the walk never leaves the tree. Root the tree with BFS because p_j may exceed j, and keep the sums in long long. Keeping the B values of the current DFS path in an array and binary searching it is an equivalent O(n log n) solution.',
     },
@@ -94,7 +178,7 @@ int dist(int a, int b) { return dep[a] + dep[b] - 2 * dep[lca(a, b)]; }`,
       hints: [
         'Each pair of fools adds 1 to every road on one tree path, and walking each path edge by edge is O(n·k). Is there a tree version of "add 1 to a range in O(1), read everything at the end"?',
         'Root the tree. The path a–b climbs from a to lca(a, b) and descends to b. Put +1 on a and on b and −2 on their LCA; then the number of paths using the road from v to its parent is the sum of these marks over the subtree of v. All you need per pair is one LCA query, which binary lifting answers in O(log n).',
-        'Build depths and up[k][v] with a BFS from city 1, place the three marks for each pair, then add every vertex\'s total into its parent in reverse BFS order. For road i print the total of whichever endpoint is deeper. O((n + k) log n).',
+        'Build depths and up[j][v] with a BFS from city 1, place the three marks for each pair, then add every vertex\'s total into its parent in reverse BFS order. For road i print the total of whichever endpoint is deeper. O((n + k) log n).',
       ],
       solution: 'This is a difference array on a tree: for each pair (a, b) do cnt[a] += 1, cnt[b] += 1, cnt[lca(a, b)] −= 2. After subtree sums, the value at v counts exactly the paths with one end inside the subtree of v and the other outside, which are the paths using the road (v, parent(v)). LCA by binary lifting makes this O((n + k) log n). Print in input order by mapping each road to its deeper endpoint, and accumulate in reverse BFS order rather than with recursion, which can overflow the stack on a path-shaped tree.',
     },
@@ -130,9 +214,9 @@ int dist(int a, int b) { return dep[a] + dep[b] - 2 * dep[lca(a, b)]; }`,
       hints: [
         'Start from one minimum spanning tree T. If an edge (u, v) outside T must be included, adding it closes exactly one cycle. Which edge of that cycle should you drop?',
         'Drop the heaviest edge on the tree path between u and v, so the answer is W(T) − maxOnPath(u, v) + w; for an edge of T the path is the edge itself and the formula gives W(T). So the task is path-maximum queries on a fixed tree, which binary lifting answers by storing the heaviest edge next to each jump.',
-        'Run Kruskal for T. Root T and store up[k][v] together with mx[k][v], the heaviest edge on the 2^k edges above v: mx[k][v] = max(mx[k−1][v], mx[k−1][up[k−1][v]]). For each input edge lift u and v to their LCA, taking the max over every jump used. O(m log m + (n + m) log n).',
+        'Run Kruskal for T. Root T and store up[j][v] together with mx[j][v], the heaviest edge on the 2^j edges above v: mx[j][v] = max(mx[j−1][v], mx[j−1][up[j−1][v]]). For each input edge lift u and v to their LCA, taking the max over every jump used. O(m log m + (n + m) log n).',
       ],
-      solution: 'Build an MST with Kruskal and let W be its weight. Forcing edge (u, v, w) into the tree means removing one tree edge from the cycle it closes, and the best choice is the heaviest edge on the tree path u–v, giving W − maxPath(u, v) + w (this also yields W for the tree edges). Answer each path maximum with binary lifting that stores, beside each 2^k jump, the heaviest edge it covers, and combine those maxima during the LCA climb from both ends. O(m log m + (n + m) log n); W reaches 2·10^14, so it must be long long.',
+      solution: 'Build an MST with Kruskal and let W be its weight. Forcing edge (u, v, w) into the tree means removing one tree edge from the cycle it closes, and the best choice is the heaviest edge on the tree path u–v, giving W − maxPath(u, v) + w (this also yields W for the tree edges). Answer each path maximum with binary lifting that stores, beside each 2^j jump, the heaviest edge it covers, and combine those maxima during the LCA climb from both ends. O(m log m + (n + m) log n); W reaches 2·10^14, so it must be long long.',
     },
     {
       id: '1516D',
@@ -142,7 +226,7 @@ int dist(int a, int b) { return dep[a] + dep[b] - 2 * dep[lca(a, b)]; }`,
       hints: [
         'When is the product of a group equal to its LCM? Think about primes. Then, for a single query, is cutting greedily from left to right optimal?',
         'Product = LCM means no prime divides two elements of the group: they are pairwise coprime. Greedy is optimal, so from a start i the piece extends to just before go(i), the first index that cannot join it. The answer is how many times you apply go from l before passing r: jumping along a "next" pointer, which binary lifting makes O(log n) per query.',
-        'Compute go from right to left: go(i) = min(go(i+1), the next index after i that contains a prime factor of a_i), using a smallest-prime-factor sieve and a "next occurrence" array per prime, with go(n+1) = n+1. Build up[k][i]. Per query, from x = l jump by 2^k while up[k][x] ≤ r and count the steps; the answer is that count + 1. O((n + q) log n).',
+        'Compute go from right to left: go(i) = min(go(i+1), the next index after i that contains a prime factor of a_i), using a smallest-prime-factor sieve and a "next occurrence" array per prime, with go(n+1) = n+1. Build up[j][i]. Per query, from x = l jump by 2^j while up[j][x] ≤ r and count the steps; the answer is that count + 1. O((n + q) log n).',
       ],
       solution: 'A group has product equal to its LCM exactly when its elements are pairwise coprime. From a start i the greedy takes the longest valid piece, which ends just before go(i) = min(go(i + 1), the next index after i sharing a prime with a_i); the min with go(i + 1) is needed because a valid piece starting at i stays valid without a_i. A query is then "how many go-steps from l until the position exceeds r", answered with binary lifting on go by jumping while the target is ≤ r and adding 1 for the last piece. Factorise with an SPF sieve up to 10^5 and make n + 1 a sentinel that points to itself.',
     },
@@ -154,7 +238,7 @@ int dist(int a, int b) { return dep[a] + dep[b] - 2 * dep[lca(a, b)]; }`,
       hints: [
         'For one query, think greedily: [x, cur] is already covered. Which interval should you take next?',
         'Take the interval with l ≤ cur that reaches furthest right: next(cur) = max(cur, max{r : l ≤ cur}). The answer is the number of applications of next needed to reach y, and next is one fixed function on the coordinates 0..5·10^5, so binary lifting counts the steps in O(log C).',
-        'Store the best r for each left end, take prefix maxima so that next(x) = max(x, prefix max at x), and set up[k][x] = up[k−1][up[k−1][x]]. Per query jump by 2^k while up[k][x] < y and add 2^k; then answer count + 1 if next(x) ≥ y, otherwise −1. O((C + m) log C) with C = 5·10^5.',
+        'Store the best r for each left end, take prefix maxima so that next(x) = max(x, prefix max at x), and set up[j][x] = up[j−1][up[j−1][x]]. Per query jump by 2^j while up[j][x] < y and add 2^j; then answer count + 1 if next(x) ≥ y, otherwise −1. O((C + m) log C) with C = 5·10^5.',
       ],
       solution: 'Greedy covering: with [x, cur] covered, take the interval starting at or before cur with the largest right end. Define next(c) = max(c, largest r over intervals with l ≤ c) for every coordinate using a prefix maximum, and build jump tables over next. For a query climb from x by powers of two while the landing point is still < y; then one more step must reach y, otherwise there is a gap and the answer is −1 (a stuck point has next(c) = c, which the jumps preserve). The table has 19 levels of 5·10^5 + 1 ints, about 38 MB, which fits.',
     },

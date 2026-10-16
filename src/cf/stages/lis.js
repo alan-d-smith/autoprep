@@ -5,7 +5,89 @@ export default {
   track: 'dp',
   summary: 'Compute longest increasing, non-decreasing and decreasing subsequences in O(n log n), rebuild one, and recognise LIS behind problems about removing, nesting, crossing or colouring.',
   primer: {
-    idea: 'The longest increasing subsequence (LIS) is the largest set of elements you can keep, in their original order, so that they increase. The O(n²) DP dp[i] = 1 + max dp[j] over j < i with a[j] < a[i] is fine up to n ≈ 5000 and works for any "can follow" test, such as nesting in two dimensions; the O(n log n) method keeps tails[k], the smallest last value of an increasing subsequence of length k + 1, and places each a[i] by binary search. The variants are small switches on this one routine: strict versus non-strict is lower_bound versus upper_bound, decreasing is LIS of the negated values, and by Dilworth\'s theorem the fewest non-decreasing subsequences that cover an array equals its longest strictly decreasing subsequence (and the fewest non-increasing ones equals the LIS).',
+    slides: [
+      {
+        title: 'Keep the most numbers, strictly increasing',
+        points: [
+          'Keep as many of the n numbers as possible, in their order, so that they strictly increase: the LIS.',
+          'Every subset is 2^n, and the DP dp[i] = 1 + max dp[j] over j < i with a[j] < a[i] is O(n²).',
+          'O(n²) is fine up to n ≈ 5000, but about 2·10^10 comparisons at n = 2·10^5.',
+        ],
+        say: 'The question: from a sequence a of n numbers, keep as many as possible, in their original order, so that the kept ones strictly increase. They form a longest increasing subsequence (LIS). Trying every subset costs 2^n, and the DP dp[i] = 1 + max dp[j] over j < i with a[j] < a[i], where dp[i] is the length of the longest increasing subsequence ending at a[i], costs O(n²): fine up to n ≈ 5000, but about 2·10^10 comparisons when n = 2·10^5.',
+      },
+      {
+        title: 'Only the smallest end matters',
+        points: [
+          'Of two increasing subsequences of the same length, the one ending lower is at least as useful.',
+          'Any later element that can extend the other can extend it too.',
+          'So for each length keep one number: the smallest value a subsequence of that length can end with.',
+        ],
+        show: [0, 3],
+        note: 'Partway through the scan: 2 replaces 4 as the end of a length-1 subsequence, leaving more room later.',
+        say: 'That DP remembers more than it needs. Of two increasing subsequences of the same length, the one ending on the smaller value is at least as useful, because any later element that can extend the other can extend it too. So for each length only one number matters: the smallest value an increasing subsequence of that length can end with.',
+      },
+      {
+        title: 'Binary-search the sorted tails',
+        points: [
+          'tails[k] is the smallest end of an increasing subsequence of length k + 1 so far.',
+          '`tails` is strictly increasing, so lower_bound finds the first tail ≥ a[i], at position k.',
+          'a[i] follows tails[k − 1] and replaces tails[k], or is appended when every tail is smaller.',
+        ],
+        show: [0, 16],
+        note: 'Binary search places 5 at k = 2: it replaces tails[2] = 6 as the smallest end of a length-3 subsequence.',
+        say: 'Keep those numbers in an array `tails`, where tails[k] is the smallest end of an increasing subsequence of length k + 1 among the elements read so far (k counts from 0). The array is strictly increasing, because dropping the last element of a subsequence of length k + 2 leaves one of length k + 1 that ends lower. So when a[i] arrives, a binary search with lower_bound finds the first tail ≥ a[i], at position k: a[i] can follow the length-k subsequence that ends at tails[k − 1], so it ends one of length k + 1 and replaces tails[k], or is appended when every tail is smaller.',
+      },
+      {
+        title: 'Follow par back to rebuild it',
+        points: [
+          '`tails` certifies lengths, but its entries can come from different subsequences.',
+          'Keep tailIdx[k], the index of tails[k]; when a[i] lands at k, record par[i] = tailIdx[k − 1].',
+          'Walk `par` back from the element in the last tail, then reverse.',
+        ],
+        show: [0, 27],
+        note: 'Following par back from the last tail gives 2, 3, 5, 8, while `tails` ends as 1, 3, 5, 8, not a subsequence, since its 1 is the last value.',
+        say: 'The array `tails` certifies lengths but is not itself a subsequence, since its entries can come from different subsequences. To rebuild one, keep tailIdx[k], the index of the element now in tails[k], and when a[i] lands at position k record par[i] = tailIdx[k − 1], the element it followed (−1 when k = 0). Walking `par` back from the element in the last tail, then reversing, gives one longest increasing subsequence.',
+      },
+      {
+        title: 'Only tails[k] can improve',
+        points: [
+          'The k tails below a[i] show it can end a subsequence of every length up to k + 1, and none longer.',
+          'Shorter lengths already end below a[i]; for length k + 1 the old tail was ≥ a[i].',
+          'So every entry keeps its meaning, and the final size of `tails` is the LIS length.',
+        ],
+        show: [0, 19],
+        note: '8 replaces tails[3] = 10, the length-4 tail; every other tail keeps its meaning.',
+        say: 'Why `tails` stays exact: the k tails below a[i] show that a[i] can end an increasing subsequence of every length up to k + 1, and of none longer, since no subsequence of length k + 1 ends below a[i]. For the shorter lengths the existing tail is already below a[i], and for length k + 1 the old tail was ≥ a[i], so tails[k] is the only entry that improves. Every entry keeps its meaning after every step, so at the end the size of `tails` is the LIS length.',
+      },
+      {
+        title: 'Variants are switches on one routine',
+        points: [
+          'One binary search per element gives O(n log n); non-decreasing uses upper_bound, and LDS is the LIS of the negated values.',
+          'By Dilworth, the fewest non-decreasing subsequences that cover an array equals the length of its longest strictly decreasing one.',
+          'When "can follow" compares two coordinates, keep the O(n²) DP or sort by one and run LIS on the other.',
+        ],
+        say: 'Each element costs one binary search, O(n log n) in all. The variants are switches on this routine: non-decreasing uses upper_bound, which lets a[i] follow a tail equal to it; the longest decreasing subsequence (LDS) is the LIS of the negated values; and by Dilworth\'s theorem the fewest non-decreasing subsequences that cover an array equals the length of its longest strictly decreasing subsequence (and the fewest non-increasing ones equals the LIS length). When "can follow" compares two coordinates, as in nesting, either keep the O(n²) DP, which accepts any such test, or sort by one coordinate and run LIS on the other.',
+      },
+    ],
+    terms: [
+      'a[i]: the input sequence, indexed from 0, with n elements (`S` in the TRD version).',
+      'dp[i]: in the O(n²) DP, the length of the longest increasing subsequence that ends at a[i].',
+      'tails[k]: the smallest value that an increasing subsequence of length k + 1 can end with, among the elements read so far; it increases strictly with k (in the TRD version, `res` stores each tail paired with its index).',
+      'tailIdx[k]: the index in a of the element currently stored in tails[k] (the index half of each pair in `res` in the TRD version).',
+      'par[i]: the index of the element that a[i] followed when it was placed, or −1 if it started a subsequence (`prev` in the TRD version, which stores 0 there and stops by counting the length down instead).',
+      '`strict`: true for strictly increasing (lower_bound), false for non-decreasing (upper_bound). The TRD version is strict only; its comment says to search for the pair (S[i], i) instead of (S[i], 0) to get non-decreasing.',
+    ],
+    worked: {
+      title: 'bridges across a river',
+      question: 'Eight bridges are proposed across a straight river. Bridge i joins point x_i on the north bank to point y_i on the south bank, and two bridges cross when one has the smaller x and the larger y. The proposals (x, y) are (4, 6), (1, 3), (7, 8), (2, 7), (5, 2), (3, 1), (8, 5) and (6, 4). Build as many as possible with no two crossing. In the real version n ≤ 2·10^5, coordinates are up to 10^9, and no two bridges share an end.',
+      steps: [
+        'Recognise it: two bridges are compatible exactly when their orders on the two banks agree, so a non-crossing set, listed by x, has increasing y. The task is the LIS of the y values in x order. Checking subsets is 2^n, and the O(n²) DP is about 2·10^10 steps at full size, so use `tails`.',
+        'Model it: sort by x and let a[i] be the y of the i-th bridge in that order: a = 3, 7, 1, 6, 2, 4, 8, 5. No two y are equal, so strict and non-strict agree; use lower_bound.',
+        'Run `tails`: 3 starts it; 7 extends it to 3, 7; 1 replaces 3, giving 1, 7; 6 replaces 7, giving 1, 6; 2 replaces 6, giving 1, 2; 4 extends it to 1, 2, 4; 8 extends it to 1, 2, 4, 8; and 5 replaces 8, giving 1, 2, 4, 5. Notice that after the 1, `tails` held 1, 7, which is not a subsequence, since the 1 comes after the 7 in a: `tails` tracks lengths, not one sequence.',
+        'Rebuild with `par`: 5 landed at k = 3, after the element then in tails[2], the 4; the 4 had landed after the 2, the 2 after the 1, and the 1 started its subsequence (its `par` is −1). Reading forwards gives 1, 2, 4, 5, the bridges (3, 1), (5, 2), (6, 4) and (8, 5).',
+        'Answer: 4 bridges, for example (3, 1), (5, 2), (6, 4) and (8, 5); swapping (8, 5) for (7, 8) gives another. Sorting plus n binary searches is O(n log n), and the coordinates fit in int. If bridges could share an end, sort equal x by y descending and keep lower_bound when sharing is forbidden, or sort ties by y ascending and use upper_bound when touching is allowed.',
+      ],
+    },
     spot: [
       'Keep, or remove, as many items as possible so that what is left is in order',
       'Items are pairs such as (width, height) or (entry hole, exit hole), and one item fits inside, follows or crosses another',

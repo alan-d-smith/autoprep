@@ -34,10 +34,13 @@ export function span(i, j, label, { x = 0, y = 0, size = 34, gap = 4, cls = 'hl'
   return `<path class="v-bracket ${cls}" d="M${x1} ${y} v${d} H${x2} v${-d}"/>${label ? text((x1 + x2) / 2, y + (up ? -16 : 16), label, `v-note ${cls}`) : ''}`;
 }
 
+// The arrowhead (a <marker> in index.html) for a line of state class `cls`. Markers don't take the
+// line's CSS, so a dimmed line needs its own faint arrowhead, or a deleted edge still looks live.
+export const arrowHead = (cls) => ({ hl: 'v-arrow-hl', good: 'v-arrow-good', bad: 'v-arrow-bad', dim: 'v-arrow-dim' })[cls] || 'v-arrow';
+
 export function arrow(x1, y1, x2, y2, cls = '', curve = 0) {
   const mx = (x1 + x2) / 2 + curve * (y2 - y1) * 0.25, my = (y1 + y2) / 2 - curve * (x2 - x1) * 0.25;
-  const marker = { hl: 'v-arrow-hl', good: 'v-arrow-good', bad: 'v-arrow-bad' }[cls] || 'v-arrow';
-  return `<path class="v-link ${cls}" d="M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}" marker-end="url(#${marker})"/>`;
+  return `<path class="v-link ${cls}" d="M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}" marker-end="url(#${arrowHead(cls)})"/>`;
 }
 
 // A table with row and column headers. `cell(r, c)` returns { v, cls }.
@@ -63,7 +66,7 @@ export function graph(nodes, edges, { nodeCls = () => '', edgeCls = () => '', no
     const ux = (x2 - x1) / len, uy = (y2 - y1) / len;
     const sx = x1 + ux * r, sy = y1 + uy * r, ex = x2 - ux * (r + (directed ? 3 : 0)), ey = y2 - uy * (r + (directed ? 3 : 0));
     const cls = edgeCls(a, b, i);
-    const marker = directed ? ` marker-end="url(#${{ hl: 'v-arrow-hl', good: 'v-arrow-good', bad: 'v-arrow-bad' }[cls] || 'v-arrow'})"` : '';
+    const marker = directed ? ` marker-end="url(#${arrowHead(cls)})"` : '';
     out += `<line class="v-edge ${cls}" x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}"${marker}/>`;
     if (w !== undefined) {
       const mx = x1 + (x2 - x1) * weightAt - uy * 11, my = y1 + (y2 - y1) * weightAt + ux * 11;

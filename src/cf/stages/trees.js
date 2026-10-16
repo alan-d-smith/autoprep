@@ -5,16 +5,88 @@ export default {
   track: 'graphs',
   summary: 'Root a tree in O(n), use depth, subtree sizes and DFS order to answer subtree questions, write bottom-up DP on subtrees, reroot it to get an answer for every vertex, and find a diameter with two BFS passes.',
   primer: {
-    idea: 'Rooting the tree once gives every vertex a parent, a depth and a subtree (the vertex and everything below it). One DFS from the root visits the vertices in preorder; walking that order backwards finishes every child before its parent, so a DP over subtrees is a single O(n) pass. A DFS finishes a subtree before it leaves it, so each subtree is a contiguous block of the preorder, order[tin[v] .. tin[v] + size[v] − 1], which turns "everything below v" into an array range. When the statement wants an answer for every vertex as the root, compute it for one root and move the root across each edge with an O(1) update (rerooting): O(n) in total instead of O(n²).',
+    slides: [
+      {
+        title: 'Asking about everything below v',
+        points: [
+          'Sizes, totals and best answers inside a subtree come up constantly.',
+          'Walking down from each vertex separately is O(n) per vertex, O(n²) in all.',
+          'Fix one shape for the tree and reuse each answer instead.',
+        ],
+        show: [0, 0],
+        note: 'The diagram\'s tree, rooted at 1, before any par, depth, tin or size is filled in.',
+        say: 'Many tree questions are about "everything below v": how many vertices it holds, their total weight, the best answer found inside it. Working that out by walking down from each vertex separately costs O(n) per vertex and O(n²) in all, too slow for n = 2·10^5. The way out is to fix one shape for the tree and reuse each answer instead of recomputing it.',
+      },
+      {
+        title: 'Root the tree',
+        points: [
+          'Pick a root r. Every other vertex gets one parent par[v] and a depth depth[v].',
+          'v\'s subtree is v plus everything below it: v plus its children\'s subtrees.',
+        ],
+        show: [0, 5],
+        note: 'Rooted at 1: 2\'s children 4 and 5 get par = 2 and depth = depth[2] + 1 = 2.',
+        say: 'So first root the tree: pick any vertex r as the root. Every other vertex now has exactly one parent par[v], its neighbour on the way back to r, a depth depth[v], and a subtree: v together with everything below it. "Below" was meaningless in an unrooted tree; now it is well defined, and a vertex\'s subtree is just itself plus its children\'s subtrees.',
+      },
+      {
+        title: 'Children before parents',
+        points: [
+          'A DFS lists the vertices in preorder, `order`; each comes after its parent.',
+          'Walk `order` backwards and every child is finished first, so size[v] and any subtree DP down[v] take one O(n) pass.',
+        ],
+        show: [0, 15],
+        note: 'Walking `order` backwards: 2\'s children 4 and 5 come later and have already been added, so size[2] = 5 is final.',
+        say: 'Next, an order that finishes children before parents. A DFS from r writes the vertices down in the order it enters them, the preorder `order`. Every vertex appears after its parent, so walking `order` backwards meets each child before its parent. When the backward walk reaches v, every child\'s answer is already final, so size[v] = 1 + the sizes of v\'s children, and any subtree DP down[v] built from its children\'s values takes one O(n) pass.',
+      },
+      {
+        title: 'A subtree is a block of the preorder',
+        points: [
+          'The DFS doesn\'t leave v until it has seen everything below it.',
+          'So v\'s subtree is order[tin[v] .. tin[v] + size[v] − 1], and subtree questions become range questions.',
+        ],
+        show: [0, 18],
+        note: '2\'s subtree {2, 4, 5, 7, 8} is the block order[3..7]. The stack took 3\'s subtree first, as 3 was pushed last; any child order keeps blocks.',
+        say: 'The same order makes subtrees easy to query. A DFS that enters v does not leave until it has seen everything below v, so v\'s subtree sits in consecutive slots of `order`: from tin[v], v\'s own slot, for size[v] entries. "Is u inside v\'s subtree?" becomes tin[v] ≤ tin[u] < tin[v] + size[v], and "the total over v\'s subtree" becomes a range sum over `order`, which prefix sums or a Fenwick tree answer quickly.',
+      },
+      {
+        title: 'Every vertex as the root',
+        points: [
+          'Compute ans[r] once for one root.',
+          'Moving the root across one edge, from p to its child v, changes the answer by an O(1) correction.',
+          'Walking `order` forwards gives every answer in O(n): rerooting.',
+        ],
+        say: 'Some problems ask for an answer with every vertex as the root. Recomputing per root is O(n²) again. Instead compute ans[r] for one root, then move the root one edge at a time, from a parent p to its child v. Only p and v swap roles, v becoming p\'s parent; every other vertex keeps its parent, so ans[v] follows from ans[p] with an O(1) correction: take out what v\'s subtree contributed and add what the rest of the tree now contributes through p. This is rerooting, and walking `order` forwards gives every vertex its answer in O(n) total.',
+      },
+      {
+        title: 'The diameter in two BFS passes',
+        points: [
+          'BFS from any vertex; the farthest vertex a is an end of a longest path.',
+          'BFS again from a; the farthest vertex b gives the diameter a to b.',
+        ],
+        say: 'One more classic: the diameter, the longest path in the tree. A BFS from any vertex ends at a vertex a that is an end of some longest path, and a second BFS from a reaches the farthest vertex b; the path from a to b is a diameter. Two O(n) passes.',
+      },
+    ],
     terms: [
       'par[v]: v\'s parent once the tree is rooted; the root has none (−1).',
       'depth[v]: the number of edges from the root down to v (`dep` in the TRD version).',
-      '`order`: the vertices in DFS preorder, the order in which a DFS from the root first reaches them (in the TRD version, `rootTree` builds a BFS order and `preorder()` fills `tin`).',
+      '`order`: the vertices in DFS preorder, the order in which a DFS from the root enters them (in the TRD version, `rootTree` builds a BFS order and `preorder()` fills `tin`).',
+      '`st`: the template\'s stack. A vertex gets par and depth when it is pushed and tin when it is popped, so it enters `order` then; the child pushed last comes off first.',
       'tin[v]: the position of v in `order`, also called its entry time.',
       'size[v]: how many vertices are in v\'s subtree, v included (`sub` in the TRD version).',
       'down[v]: in a subtree DP, the answer for v\'s subtree on its own, filled children first.',
       'ans[v]: in rerooting, the answer with v as the root, filled parents first from ans[par[v]].',
     ],
+    worked: {
+      title: 'sums of distances',
+      question: 'A tree has n = 6 vertices and the edges 1–2, 1–3, 2–4, 2–5 and 3–6. For every vertex v, find the sum of the distances from v to all the other vertices, where a distance counts edges. The real version has n up to 2·10^5.',
+      steps: [
+        'Recognise it: one answer per vertex, where each answer is "the same quantity with v as the root". A BFS from every vertex is O(n²), about 4·10^10 steps at full size, so this is rerooting.',
+        'Root the tree at 1 and fill depth[] and size[] with one DFS. Depths: vertex 1 is 0, vertices 2 and 3 are 1, vertices 4, 5 and 6 are 2. Sizes, children first: size[4] = size[5] = size[6] = 1, size[2] = 1 + 1 + 1 = 3, size[3] = 1 + 1 = 2, size[1] = 6.',
+        'The answer for the root is the sum of the depths: ans[1] = 0 + 1 + 1 + 2 + 2 + 2 = 8.',
+        'Move the root from p to a child v. The size[v] vertices in v\'s subtree each get one edge closer, and the other n − size[v] each get one edge farther, so ans[v] = ans[p] − size[v] + (n − size[v]) = ans[p] + n − 2·size[v].',
+        'Apply it parents first: ans[2] = 8 + 6 − 6 = 8, ans[3] = 8 + 6 − 4 = 10, ans[4] = ans[5] = 8 + 6 − 2 = 12, ans[6] = 10 + 6 − 2 = 14. Check one directly: from 6 the distances are 2, 3, 1, 4 and 4, which sum to 14.',
+        'Answer: 8, 8, 10, 12, 12, 14. One DFS plus one pass in preorder is O(n), and the sums reach about n²/2 ≈ 2·10^10, so store them as long long.',
+      ],
+    },
     spot: [
       'n vertices and n − 1 edges, "connected and acyclic", or parents given as p_i < i: it is a tree, and once rooted every vertex has a well-defined subtree.',
       'The value at a vertex depends only on what lies below it (counts, sums, the best choice among children): a subtree DP processed children-first.',
@@ -24,7 +96,7 @@ export default {
     disguises: [
       'A command or search spreading from v in DFS order, asked for its k-th step → the preorder slice of length size[v] starting at tin[v]; one DFS from the root answers every query (1006E).',
       'Pick k cities whose envoys walk to the capital and score the unpicked cities they pass → each city is worth depth − (subtree size − 1); sort and take the k largest (1336A).',
-      'Choose the best centre for a weighted sum of distances → compute the sum for root 1, then reroot: moving from p to its child v changes it by S − 2·sub(v), where S is the total of all the weights and sub(v) the total inside v\'s subtree (1092F). This is the "move to a neighbour with an O(1) update" step in UKIEPC 2024 Jabber Network.',
+      'Choose the best centre for a weighted sum of distances → compute the sum for root 1, then reroot: moving from p to its child v changes it by S − 2·W(v), where S is the total of all the weights and W(v) the total weight inside v\'s subtree (1092F). This is the "move to a neighbour with an O(1) update" step in UKIEPC 2024 Jabber Network.',
       'Infection spreading down from the root while you delete one vertex per step → a subtree DP that decides at each vertex which child to sacrifice (1689C).',
     ],
     pitfalls: [
@@ -33,7 +105,8 @@ export default {
       'In the rerooting pass, the upward value for child v must use the parent\'s full answer with v\'s own contribution removed (for example ans[p] − max(0, down[v])), not down[p], which ignores everything above p. Distance sums like Σ dist·a_i reach 10^15 and need long long.',
     ],
     code: `// Root the tree at r without recursion. order is a DFS preorder, so the subtree of v
-// is the contiguous block order[tin[v] .. tin[v] + size[v] - 1].
+// is the contiguous block order[tin[v] .. tin[v] + size[v] - 1]. The stack pops the child
+// pushed last first, so children come in reverse order of g[v]; any order keeps the blocks.
 struct RootedTree {
     vector<int> par, depth, size, tin, order;
     RootedTree(const vector<vector<int>>& g, int r)
@@ -49,8 +122,8 @@ struct RootedTree {
     }
     bool inSubtree(int u, int v) const { return tin[v] <= tin[u] && tin[u] < tin[v] + size[v]; }
 };
-// Rerooting: compute f(root) directly, then walk order[1..] (parents before children) and
-// get f(v) from f(par[v]) in O(1), e.g. sum of distances: f(v) = f(par) + n - 2 * size[v].
+// Rerooting: compute ans[r] directly, then walk order[1..] (parents before children) and get
+// ans[v] from ans[par[v]] in O(1), e.g. sum of distances: ans[v] = ans[par[v]] + n - 2 * size[v].
 
 // BFS from s; the last vertex dequeued is a farthest one. Diameter: farthest(farthest(any)).
 pair<int, int> farthest(const vector<vector<int>>& g, int s, vector<int>& d) {
@@ -150,10 +223,10 @@ pair<int, int> farthest(const vector<vector<int>>& g, int s, vector<int>& d) {
       tier: 'challenge',
       hints: [
         'Computing the cost for v = 1 is one DFS. If you then move v across one edge to a neighbour, which distances grow by one and which shrink by one?',
-        'This is rerooting with an O(1) update: moving the chosen vertex from p to its child v brings every vertex in v\'s subtree one step closer and pushes everything else one step away, so cost(v) = cost(p) + S − 2·sub(v), where S = Σ a_i and sub(v) is the sum of a over v\'s subtree.',
-        'Root at 1, compute depths and subtree sums in one pass, set cost(1) = Σ depth(i)·a_i, then walk the DFS order applying cost(v) = cost(par(v)) + S − 2·sub(v) and take the maximum. Use long long; O(n).',
+        'This is rerooting with an O(1) update: moving the chosen vertex from p to its child v brings every vertex in v\'s subtree one step closer and pushes everything else one step away, so cost(v) = cost(p) + S − 2·W(v), where S = Σ a_i and W(v) is the sum of a over v\'s subtree.',
+        'Root at 1, compute depths and subtree sums in one pass, set cost(1) = Σ depth(i)·a_i, then walk the DFS order applying cost(v) = cost(par(v)) + S − 2·W(v) and take the maximum. Use long long; O(n).',
       ],
-      solution: 'Compute cost(1) = Σ dist(i, 1)·a_i and the subtree sums sub(v) with vertex 1 as root. Moving from parent p to child v changes the cost by (S − sub(v)) − sub(v), so in DFS order cost(v) = cost(p) + S − 2·sub(v); the answer is the maximum over all v. Costs exceed 10^15, so everything must be long long, and n = 1 prints 0. O(n).',
+      solution: 'Compute cost(1) = Σ dist(i, 1)·a_i and the subtree sums W(v) with vertex 1 as root. Moving from parent p to child v changes the cost by (S − W(v)) − W(v), so in DFS order cost(v) = cost(p) + S − 2·W(v); the answer is the maximum over all v. Costs exceed 10^15, so everything must be long long, and n = 1 prints 0. O(n).',
     },
     {
       id: '1294F',

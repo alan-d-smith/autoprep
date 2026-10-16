@@ -5,22 +5,109 @@ export default {
   track: 'graphs',
   summary: 'Maintain components under edge additions with union-find, answer threshold questions by adding edges offline in sorted order, and build minimum spanning trees with Kruskal or dense Prim, including the virtual-vertex trick for "build here or connect" costs.',
   primer: {
-    idea: 'A disjoint set union stores each component as a tree pointing to one representative; with path compression (here path halving) and union by size, find and unite take amortised O(α(n)), effectively constant. Kruskal sorts the edges by weight and keeps an edge exactly when it joins two different components, which yields a minimum spanning tree in O(m log m). The same "add edges in sorted order" loop answers threshold questions offline: after all edges of weight ≤ q are in, the DSU holds exactly the components of the graph restricted to weight ≤ q.',
+    slides: [
+      {
+        title: 'Growing graphs and cheapest connections',
+        points: [
+          'Edges are only added, and between additions you ask: are two vertices connected, how big, how many components?',
+          'A fresh search after each of 2·10^5 additions costs about 8·10^10 steps.',
+          'Or keep some edges so all n vertices stay connected at the least total weight; trying subsets is hopeless.',
+        ],
+        say: 'Two kinds of question meet in this stage. In the first, edges (friendships, merges, cables) are only ever added, and between additions you must say whether two vertices are connected, how big a component is or how many there are; re-running a search after each of 2·10^5 additions on a graph with 2·10^5 vertices costs about 8·10^10 steps. In the second, you must keep some of the m edges so that all n vertices stay connected at the least total weight, and trying subsets of edges is out of the question.',
+      },
+      {
+        title: 'Components only merge: use a DSU',
+        points: [
+          'A disjoint set union stores each component as a rooted tree: p[x] is x\'s parent, and a root has p[x] = x.',
+          'find(x) climbs to the root, so u and v are connected exactly when find(u) == find(v).',
+          'unite(a, b) finds both roots and, if they differ, hangs one under the other.',
+        ],
+        show: [0, 3],
+        note: 'In the Kruskal run used on this page, the first union is the lightest edge D–F: D and F are separate roots, so F goes under D.',
+        say: 'When edges are only added, components only ever merge, so all you need is a fast answer to "which component is x in?" and a fast merge. A disjoint set union (DSU) stores each component as a rooted tree whose root is its representative: p[x] is x\'s parent, and a root has p[x] = x. find(x) follows parents up to the root, so u and v are connected exactly when find(u) == find(v), and unite(a, b) finds both roots and, if they differ, hangs one under the other.',
+      },
+      {
+        title: 'Two tricks keep the trees shallow',
+        points: [
+          'Union by size: the smaller tree, by sz[r], goes under the larger, so every depth stays at most log n.',
+          'Path halving: find(x) repoints the vertex it is on to its grandparent and jumps there, x = p[x] = p[p[x]].',
+          'Together, find and unite cost amortised O(α(n)), and α(n) ≤ 4 in practice: effectively constant.',
+        ],
+        show: [0, 14],
+        note: 'find(F) climbs F → D → A in the DSU\'s trees at the bottom, not along graph edges, and path halving repoints F to its grandparent A (green arrow).',
+        say: 'Two tricks keep the trees shallow. Union by size: sz[r] counts the vertices in the tree rooted at r, and the smaller tree goes under the larger, so a vertex only gets deeper when its tree at least doubles, which keeps every depth at most log n. Path halving, a form of path compression: as find(x) climbs, it repoints the vertex it is on to its grandparent and jumps there, x = p[x] = p[p[x]], which roughly halves the path for later calls. Together they make find and unite amortised O(α(n)), where α is the inverse Ackermann function, at most 4 for any n you will meet: effectively constant.',
+      },
+      {
+        title: 'Kruskal: lightest edges first, skip cycles',
+        points: [
+          'A minimum spanning tree (MST) connects all n vertices with n − 1 edges of least total weight.',
+          'Sort the edges by weight and keep one exactly when unite returns true: its ends were in different components.',
+          'An edge inside one component would close a cycle, so skip it; stop once n − 1 edges are kept.',
+        ],
+        show: [0, 18],
+        note: 'A–B (6) is the 5th kept edge, n − 1, so the run stops; the dashed E–F (5) was skipped, as E and F already shared the root A.',
+        say: 'A spanning tree keeps n − 1 of the edges and still connects all n vertices; a minimum spanning tree (MST) is one of least total weight. Kruskal builds one greedily with a DSU: sort the edges by weight and, from the lightest up, keep an edge exactly when unite returns true, that is, when its ends are still in different components. An edge whose ends are already connected would only close a cycle, so it is skipped, and the loop can stop once n − 1 edges are kept.',
+      },
+      {
+        title: 'Some MST contains every kept edge',
+        points: [
+          'When Kruskal keeps an edge e, it joins two components; call either of them C. No lighter edge leaves C.',
+          'Suppose an MST T holds every edge kept before e, but not e. Adding e closes a cycle that leaves C again by an edge f, not kept and no lighter than e.',
+          'Swapping f for e gives an MST holding every kept edge so far; step by step, the kept edges end up as an MST.',
+        ],
+        say: 'Why the greedy choice is safe: when Kruskal reaches an edge e that joins two different components, every lighter edge has already been kept or skipped, so no lighter edge leaves C, either of the two components e joins. If an MST contains the edges kept so far but not e, adding e closes a cycle that must leave C again through some other edge f, which is not lighter than e; swapping f for e gives a spanning tree, no heavier, that contains them all. So at every step some MST contains every kept edge, and at the end the kept edges are an MST.',
+      },
+      {
+        title: 'Sweeping sorted edges answers threshold queries',
+        points: [
+          'Sort queries by q and sweep with the edges: once every edge ≤ q is in, the DSU holds that graph\'s components.',
+          '"Pay c_i to serve i alone, or connect it" becomes an MST once a vertex 0 joins each i at weight c_i.',
+          'Kruskal is O(m log m); on a complete graph with n ≈ 2000, O(n²) Prim avoids sorting n²/2 edges.',
+        ],
+        show: [0, 12],
+        note: 'Partway through the sweep: with only the edges of weight ≤ 4, B is still on its own. It joins at weight 6.',
+        say: 'Sorting dominates, so Kruskal is O(m log m). The same "add edges in sorted order" loop answers threshold questions offline: once every edge of weight ≤ q is in, the DSU holds exactly the components of the graph restricted to those edges, so sort the queries by q and sweep them together with the edges, counting x·y new connected pairs whenever components of sizes x and y merge. "Pay c_i to serve i on its own, or connect it to something served" becomes an ordinary MST after adding a virtual vertex 0 joined to every i by an edge of weight c_i. On a complete graph with n ≈ 2000, skip sorting n²/2 edges and use O(n²) Prim instead: grow one tree from any vertex, keep for every outside vertex its cheapest edge into the tree, and repeatedly attach the outside vertex whose edge is cheapest.',
+      },
+    ],
+    terms: [
+      'p[x]: x\'s parent in the tree that stores its set; a root has p[x] = x and is the set\'s representative (in the TRD\'s `UF`, e[x] holds the parent, or minus the set\'s size when x is a root).',
+      'sz[r]: the number of vertices in the set whose root is r, only meaningful while r is a root (−e[r] in the TRD version, read with size(x)).',
+      'find(x): the root of x\'s set, so a and b are connected exactly when find(a) == find(b).',
+      'unite(a, b): merges the sets of a and b and returns true, or returns false if they were already one set (`join` in the TRD version).',
+      'α(n): the inverse Ackermann function, at most 4 for any practical n; DSU operations cost amortised O(α(n)).',
+      '`kruskal`: sorts the edges, stored as {w, u, v} with weight w first, and returns the total weight of the kept edges, or of a spanning forest if the graph is disconnected (the TRD version returns −1 then).',
+      'best[v], from[v]: in O(n²) Prim for dense graphs, the cheapest edge from v, not yet in the tree, into the tree, and that edge\'s tree end. Repeatedly attach the outside v with the smallest best[v], then update every other best[] through v.',
+      'vertex 0: the virtual vertex of the "build here or connect" trick, joined to every i by an edge whose weight c_i is the cost of serving i on its own (vertex n in the TRD\'s `withVirtualSource`, with the costs in `build`).',
+    ],
+    worked: {
+      title: 'trucks on bridges',
+      question: 'There are n = 6 islands and m = 7 bridges, each joining two islands and carrying trucks of weight up to its limit: 1–2 (limit 5), 2–3 (3), 3–4 (8), 4–5 (2), 5–6 (6), 1–3 (4) and 2–6 (1). Answer k = 3 queries, each a truck of weight x starting on island s: how many islands can it reach, its own included? The queries are (s = 1, x = 4), (s = 4, x = 6) and (s = 6, x = 1). In the real version n, m and k are up to 2·10^5 and the weights up to 10^9.',
+      steps: [
+        'Recognise it: a truck of weight x may use exactly the bridges with limit ≥ x, so each query asks for the size of one component of the graph made of those bridges. A BFS per query is O(n + m), about 8·10^10 steps for 2·10^5 queries. But every bridge usable at weight x is also usable by any lighter truck, so answering the queries from the heaviest truck to the lightest means bridges are only ever added: a DSU sweep, threshold style.',
+        'Model it: sort the bridges by limit from high to low (8, 6, 5, 4, 3, 2, 1) and the queries by weight from high to low (6, 4, 1), remembering each query\'s position. Before answering a query with weight x, unite the ends of every bridge with limit ≥ x not yet added; the answer is then sz[find(s)].',
+        'Query x = 6: add 3–4 (8), so p[4] = 3 and sz[3] = 2, and 5–6 (6), so p[6] = 5 and sz[5] = 2. Island 4 has root 3, so the answer is 2.',
+        'Query x = 4: add 1–2 (5), giving p[2] = 1 and sz[1] = 2, then 1–3 (4), which finds the roots 1 and 3 of two sets of size 2, so p[3] = 1 and sz[1] = 4. Island 1 is a root of size 4: the answer is 4.',
+        'Query x = 1: for 2–3 (3), find(2) = 1 and find(3) = 1, so it is skipped. For 4–5 (2), find(4) walks 4 → 3 → 1 and path halving sets p[4] = 1, while find(5) = 5; the larger set wins, so p[5] = 1 and sz[1] = 6. 2–6 (1) is skipped too, since find(6) walks 6 → 5 → 1. Island 6 has root 1: the answer is 6.',
+        'The bridges that merged two sets, with limits 8, 6, 5, 4 and 2, are exactly the ones Kruskal keeps for a maximum spanning tree (heaviest first), and the two skipped bridges each closed a cycle. The lightest of them, 2, is the heaviest truck that can travel between every pair of islands.',
+        'Answer: 4, 2 and 6, printed in the original query order. Sorting is O(m log m + k log k) and the sweep O((m + k) α(n)). Add the bridges whose limit equals x before answering, because they carry that truck; every answer is at most n, so int is enough.',
+      ],
+    },
     spot: [
       'Edges or "same group" relations are only ever added, and you need connectivity, component sizes or the number of components along the way.',
       '"Connect everything at minimum total cost", or keep a subset of edges so everything stays connected and the total is minimal: a minimum spanning tree.',
-      'A threshold in the question, such as "using only edges of weight ≤ q" or "the largest edge on the path is at most q": sort the edges (and the queries) and union in increasing order.',
+      'A threshold in the question, such as "using only edges of weight ≤ q" or "the largest edge on the path is at most q": sort the edges and the queries so that edges are only ever added, increasing for "weight ≤ q" and decreasing for "limit ≥ x" (as in the worked question).',
       'Each object either pays its own fixed cost or links to another object that is already served: add a virtual vertex 0 with an edge (0, i) of weight c_i.',
     ],
     disguises: [
       'Guests each want two shared items and you minimise the unhappy ones → items are vertices, guests are edges, and the unhappy guests are the edges that close a cycle in the DSU (1209D).',
-      'Count pairs (u, v) whose path maximum is ≤ q → union edges in increasing weight; merging components of sizes x and y adds x·y pairs, the same loop as Kruskal (1213G). UKIEPC 2025 Fell Walking fixed the minimum and then added edges in this Kruskal order.',
+      'Count pairs (u, v) whose path maximum is ≤ q → union edges in increasing weight; merging components of sizes x and y adds x·y pairs, the same loop as Kruskal (1213G).',
+      'Minimise (highest − lowest) height on a walk between two hills → try each lowest allowed height, then add the allowed trails by their higher end with a DSU until the two hills join (UKIEPC 2025 Fell Walking).',
       'Every city builds a power station for c_i or wires to a powered neighbour → an MST on n + 1 vertices with a virtual power-station vertex (1245D).',
-      'A complete graph where connecting x and y costs a_x + a_y → only the star from the vertex with the smallest a can be in an MST, so the graph shrinks to O(n + m) edges (1095F).',
+      'A complete graph where connecting x and y costs a_x + a_y → an MST never needs an a_x + a_y edge outside the star from the vertex with the smallest a, so the star plus the m offers, O(n + m) edges, is enough (1095F).',
     ],
     pitfalls: [
       'Comparing p[a] with p[b] instead of find(a) with find(b), or merging a and b instead of their roots, silently corrupts the sets.',
-      'Pair counts (x·y, s(s − 1)/2) and MST totals overflow int long before n reaches 2·10^5; keep them in long long.',
+      'Pair counts (x·y, or s(s − 1)/2 for a component of size s) and MST totals overflow int long before n reaches 2·10^5; keep them in long long.',
       'Materialising all n(n − 1)/2 edges of a dense graph costs memory and a large sort; for complete graphs with n ≈ 2000 use O(n²) Prim with plain arrays, or prove that only O(n) of the edges can ever be chosen.',
     ],
     code: `struct DSU {
@@ -47,8 +134,8 @@ long long kruskal(int n, vector<array<long long, 3>> edges) {  // {w, u, v}
     for (auto& [w, u, v] : edges) if (d.unite(u, v)) total += w;
     return total;
 }
-// Virtual source: "open a station at i for c_i" = edge (0, i, c_i) to an extra vertex 0,
-// then the answer is an ordinary MST on n + 1 vertices.`,
+// Virtual source: "open a station at i for c_i" is an edge to an extra vertex 0. Number the
+// real vertices 1..n, push {c_i, 0, i} for every i (weight first), and call kruskal(n + 1, edges).`,
     resources: [
       { label: 'CP-Algorithms: Disjoint Set Union', url: 'https://cp-algorithms.com/data_structures/disjoint_set_union.html' },
       { label: 'CP-Algorithms: Minimum spanning tree, Kruskal with DSU', url: 'https://cp-algorithms.com/graph/mst_kruskal_with_dsu.html' },

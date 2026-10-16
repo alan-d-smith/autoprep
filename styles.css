@@ -446,7 +446,48 @@ a.chip:hover { color: var(--text); border-color: rgba(255, 255, 255, 0.3); }
 .stage-status .meter { width: 140px; }
 
 .primer { margin-top: 36px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
-.primer-idea { font-size: 16px; line-height: 1.7; max-width: 46rem; }
+/* How it works as slides: a title and a few short lines, a picture where one helps, and the full
+   explanation as the voiceover (shown as text by Transcript). */
+.slides { padding: 22px 24px 16px; }
+.slides-label { font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 14px; }
+.slide-deck { display: grid; }
+.slide { grid-area: 1 / 1; display: grid; gap: 24px; align-items: center; visibility: hidden; }
+.slide.active { visibility: visible; }
+.slide.has-visual { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); }
+.slide.active .slide-text { animation: quiz-in 0.22s ease-out; }
+.slide-title { font-size: 21px; font-weight: 600; line-height: 1.3; letter-spacing: -0.015em; margin-bottom: 12px; }
+.slide-points { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; max-width: 34rem; }
+.slide-points li { position: relative; padding-left: 18px; font-size: 16px; line-height: 1.6; color: var(--text-2); }
+.slide-points li::before { content: ''; position: absolute; left: 0; top: 0.8em; width: 7px; height: 1.5px; background: var(--text-3); }
+.slide-visual { margin: 0; }
+.slide-visual svg { display: block; width: 100%; max-width: 440px; height: auto; margin: 0 auto; font-family: var(--mono); overflow: visible; }
+.slide-note { max-width: 440px; margin: 10px auto 0; color: var(--text-3); font-size: 13px; line-height: 1.5; text-align: center; }
+.slide-says .slide-say { display: none; }
+.slides.transcript .slide-say.active {
+  display: block; max-width: 46rem; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line);
+  color: var(--text-2); font-size: 14.5px; line-height: 1.65;
+}
+.slide-dots { display: flex; align-items: center; gap: 2px; }
+.slide-dot { width: 20px; height: 24px; padding: 0; border: 0; background: none; cursor: pointer; display: grid; place-items: center; }
+.slide-dot::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--line-2); transition: background-color 0.15s, transform 0.15s; }
+.slide-dot:hover::before { background: var(--text-3); }
+.slide-dot[aria-current='step']::before { background: var(--text); transform: scale(1.15); }
+.slides [data-viz-transcript][aria-pressed='true'] { background: var(--raise-2); color: var(--text); border-color: rgba(255, 255, 255, 0.22); }
+@media (max-width: 760px) {
+  .slide.has-visual { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { .slide.active .slide-text { animation: none; } .slide-dot::before { transition: none; } }
+
+/* A worked question, revealed a step at a time. */
+.cp-worked { display: grid; gap: 12px; max-width: 50rem; }
+.cp-worked-q { font-size: 15.5px; line-height: 1.65; }
+.cp-steps { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; counter-reset: step; }
+.cp-steps:empty { display: none; }
+.cp-steps li { display: grid; grid-template-columns: 26px minmax(0, 1fr); color: var(--text-2); font-size: 15px; line-height: 1.65; counter-increment: step; outline: none; animation: quiz-in 0.2s ease-out; }
+.cp-steps li::before { content: counter(step); color: var(--text-3); font-family: var(--mono); font-size: 12px; padding-top: 3px; }
+.cp-steps li.final { color: var(--text); }
+.cp-steps li:focus-visible { box-shadow: 0 0 0 2px var(--focus); border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) { .cp-steps li { animation: none; } }
 /* The names a stage uses, defined in one place. */
 .terms { max-width: 46rem; }
 .terms h3 { margin-bottom: 10px; }
@@ -850,8 +891,9 @@ input.answer.miss { color: var(--signal); border-bottom-color: var(--signal); }
 .v-bar rect { fill: rgba(255, 255, 255, 0.14); }
 .v-bar.hl rect { fill: #60a5fa; }
 .v-bar.good rect { fill: #4ade80; }
+.v-bar.bad rect { fill: #ff6b5e; }
 .v-bar.dim rect { fill: rgba(255, 255, 255, 0.06); }
-.v-bar.hl text, .v-bar.good text { fill: #0b1220; font-weight: 600; }
+.v-bar.hl text, .v-bar.good text, .v-bar.bad text { fill: #0b1220; font-weight: 600; }
 .v-line { fill: none; stroke: rgba(255, 255, 255, 0.5); stroke-width: 2; }
 .v-line.hl { stroke: #60a5fa; stroke-width: 2.4; }
 .v-line.good { stroke: #4ade80; stroke-width: 2.4; }

@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TRACKS, STAGES, TIERS, stageById } from '../src/cf/curriculum.js';
 import { UKIEPC } from '../src/cf/ukiepc.js';
+import { STAGE_VISUALS } from '../src/viz/stages.js';
 import { problemUrl, ratingBand, stageProgress, currentStage, nextProblem, belowLevel, covered, trackStages } from '../src/cf/roadmap.js';
 
 const nonEmpty = (s) => typeof s === 'string' && s.trim().length > 0;
@@ -20,9 +21,22 @@ test('stages have a full primer', () => {
   for (const s of STAGES) {
     assert.ok(nonEmpty(s.title) && nonEmpty(s.summary), s.id);
     const p = s.primer;
-    assert.ok(nonEmpty(p.idea), `${s.id} idea`);
-    // Optional definitions of the names a stage uses, each "name: meaning".
+    // How it works as narrated slides, the names they use, and a worked question.
+    assert.ok(Array.isArray(p.slides) && p.slides.length >= 3, `${s.id} slides`);
+    const visuals = STAGE_VISUALS[s.id]?.() || [];
+    for (const slide of p.slides) {
+      assert.ok(nonEmpty(slide.title) && nonEmpty(slide.say) && slide.points.length >= 1 && slide.points.length <= 3 && slide.points.every(nonEmpty), `${s.id}: ${slide.title}`);
+      if (slide.show) {
+        assert.ok(visuals[slide.show[0]]?.frames[slide.show[1]], `${s.id}: ${slide.title} shows a frame that doesn't exist`);
+        // The picture appears without its diagram caption, so a note has to say what it shows.
+        assert.ok(nonEmpty(slide.note), `${s.id}: ${slide.title} has a picture but no note`);
+      }
+    }
     for (const t of p.terms || []) assert.match(t, /^\S[^:]*: \S/, `${s.id} term: ${t}`);
+    if (p.worked) {
+      assert.ok(nonEmpty(p.worked.title) && nonEmpty(p.worked.question) && p.worked.steps.length >= 3 && p.worked.steps.every(nonEmpty), `${s.id} worked question`);
+      assert.match(p.worked.steps.at(-1), /^Answer:/, `${s.id}: the last worked step gives the answer`);
+    }
     for (const key of ['spot', 'disguises', 'pitfalls']) {
       assert.ok(Array.isArray(p[key]) && p[key].length >= 2 && p[key].every(nonEmpty), `${s.id} ${key}`);
     }

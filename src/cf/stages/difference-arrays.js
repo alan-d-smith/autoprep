@@ -5,7 +5,88 @@ export default {
   track: 'dp',
   summary: 'Apply many range updates in O(1) each and read the result with one prefix pass, stack two levels when the updates come in ranges themselves, and sweep sorted events when coordinates are too large for an array.',
   primer: {
-    idea: 'A difference array stores d[i] = a[i] − a[i−1]. Adding v to a[l..r] changes only two entries (d[l] += v, d[r+1] −= v), and one prefix-sum pass turns d back into a, so m range updates followed by reads cost O(n + m) instead of O(n·m). Stack it twice when the updates themselves come in ranges (a range of operations, or adding 1, 2, …, k to a segment). When coordinates reach 10^9 or 10^18, keep the same +v / −v events but sort them and sweep: the value is constant between consecutive event coordinates, so you add up lengths instead of indexing an array.',
+    slides: [
+      {
+        title: 'Many range updates, one read at the end',
+        points: [
+          'Each update adds v to every element from l to r, and the array is read only at the end.',
+          'Cell by cell, that is up to n steps per update: about 4·10^10 in all.',
+          'Inside a range every cell changes just like its neighbour, so most of that work records nothing new.',
+        ],
+        say: 'The typical question applies many updates of the form "add v to every element from l to r" and reads the array only once they are all done. Applied cell by cell, each update costs up to n steps, so m updates on n elements, both 2·10^5, take about 4·10^10. Yet inside a range every cell changes in exactly the same way as its neighbour, so most of that work records nothing new.',
+      },
+      {
+        title: 'A range update changes two differences',
+        points: [
+          'Adding v to a block makes the step into it, from l − 1 to l, larger by v.',
+          'The step out of it, from r to r + 1, gets smaller by v.',
+          'Inside the block neighbours rise together, so their differences do not change.',
+        ],
+        show: [0, 2],
+        note: 'd holds the steps between neighbours (next slide): +3 on a[1..4] raises the step into a[1], d[1], and lowers the step out after a[4], d[5].',
+        say: 'So look at the differences between neighbours instead of the values. Adding v to the block from l to r makes the step into it, from position l − 1 to l, larger by v and the step out of it, from r to r + 1, smaller by v, while inside the block both neighbours rise together and their difference does not change. A range update, however long, changes only two differences.',
+      },
+      {
+        title: 'Two writes in d per update',
+        points: [
+          'The difference array is d[i] = a[i] − a[i−1], with d[0] = a[0].',
+          'Adding v to a[l..r] is d[l] += v and d[r+1] −= v, so d needs a spare cell past the end.',
+          'To read a, take prefix sums of d in one left-to-right pass (`build`).',
+        ],
+        show: [0, 8],
+        note: 'd after +3 on a[1..4], +2 on a[3..6] and +1 on a[0..2], six writes (d[3] = 2 − 1); rebuilding, a[1] = a[0] + d[1] = 1 + 3 = 4.',
+        say: 'Store those differences in the difference array d: d[i] = a[i] − a[i−1], with d[0] = a[0] as if a[−1] were 0. Adding v to a[l..r] is then two writes, d[l] += v and d[r+1] −= v, and the second one lands just past the range, possibly one past the end of a, so d needs a spare cell. To read the array, take prefix sums of d: a[i] = d[0] + d[1] + … + d[i], one left-to-right pass with a running total (`build` in the template).',
+      },
+      {
+        title: 'The prefix sums telescope',
+        points: [
+          'In d[0] + … + d[i], every earlier a[j] is added once and taken away once, leaving a[i].',
+          'So d[l] += v adds v to every a[i] with i ≥ l, and d[r+1] −= v takes it back from i ≥ r + 1.',
+          'Updates only add, so they can arrive in any order and simply add up in d.',
+        ],
+        show: [0, 12],
+        note: 'Still rebuilding: a[5] = a[4] + d[5] = 5 − 3 = 2.',
+        say: 'Why it is right: the prefix sums telescope, d[0] + … + d[i] = a[0] + (a[1] − a[0]) + … + (a[i] − a[i−1]) = a[i]. Seen from that pass, d[l] += v adds v to every a[i] with i ≥ l, and d[r+1] −= v takes it back from every i ≥ r + 1, so exactly a[l..r] gains v. Updates only add, so they can arrive in any order and simply add up in d.',
+      },
+      {
+        title: 'O(n + m), and the trick stacks',
+        points: [
+          'm updates cost O(1) each plus one O(n) pass: O(n + m) instead of O(n·m).',
+          'If a query runs a range of operations, a difference array over operation numbers counts how often each one runs.',
+          'Adding 1, 2, …, k to a segment is second order: record it in dd and take prefix sums twice (`addProgression`).',
+        ],
+        show: [0, 15],
+        note: 'The finished array after 3 updates and one prefix pass; a[1..4] (green) each collected two, such as a[1] = 3 + 1 and a[3] = 3 + 2.',
+        say: 'That makes m updates cost O(1) each plus one O(n) pass, O(n + m) instead of O(n·m). When the updates themselves come in ranges, stack the trick: if a query runs a whole range of operations, a first difference array over operation numbers counts how often each operation runs, and only after its prefix pass is each operation applied, once, with that weight. Adding the progression 1, 2, …, k to a segment is second order: its differences are constant on the segment, so record them in dd, a difference array of d, and take prefix sums twice (`addProgression`).',
+      },
+      {
+        title: 'Huge coordinates: sort the events and sweep',
+        points: [
+          'With coordinates up to 10^18 there is no array, so keep the events: +v at l and −v at r + 1.',
+          'Sort them and sweep: each gap between events is a block of identical points, so add its length.',
+          '`coverage` tracks `cover` and fills len[c], the points covered by exactly c segments, in O(m log m).',
+        ],
+        say: 'When coordinates reach 10^9 or 10^18 there is no array to index. Keep the same events, +v at l and −v at r + 1, sort them by coordinate and sweep: between two consecutive event coordinates nothing changes, so each gap is a block of identical points and you add its length instead of visiting its points. `coverage` does this for m segments in O(m log m), tracking `cover`, the number of segments over the current point, and filling len[c], the number of points covered by exactly c segments.',
+      },
+    ],
+    terms: [
+      'a[i]: the array being updated, indexed from 0, and read only after all the updates; a[l..r] is the block from index l to index r, both ends included.',
+      'd[i]: the difference array, d[i] = a[i] − a[i−1] with d[0] = a[0]; adding v to a[l..r] is d[l] += v and d[r+1] −= v (`add` in the template), and its prefix sums give back a (`build`). The template sizes it n + 2; the TRD version, `applyRanges`, uses n + 1 and rebuilds a inside d with `partial_sum`.',
+      'dd[i]: a second-order difference array, the differences of d: one prefix pass turns it into d and a second turns it into a. `addProgression` adds 1, 2, …, r − l + 1 on [l, r] with three writes to it.',
+      '`cover`: during a sweep, the number of segments that contain the current point.',
+      'len[c]: in `coverage`, how many integer points are covered by exactly c of the segments. The TRD version, `coveredLength`, merges the segments with IntervalContainer.h and returns only the total length covered at least once; it takes half-open int pairs, so an inclusive [l, r] goes in as {l, r + 1}, and coordinates up to 10^18 need `coverage`\'s event sweep instead.',
+    ],
+    worked: {
+      title: 'the busiest stretch of a train',
+      question: 'A train calls at stations 1 to n in order. Group j of passengers has c_j people, who board at station s_j and get off at station t_j, where s_j < t_j. Find the largest number of people on board between two consecutive stations. Example: n = 6, and the groups (s, t, c) are (1, 4, 3), (2, 6, 2), (3, 5, 4) and (4, 6, 1). The real version has n and the number of groups m up to 2·10^5, and c_j up to 10^9.',
+      steps: [
+        'Recognise it: each group adds its size to every stretch of track it rides, a range update, and the loads are only read once all the groups are in. Adding group by group is O(n·m), about 4·10^10 steps at full size, so record the groups in a difference array.',
+        'Model it: let stretch i run from station i to station i + 1, for i = 1 to n − 1, and let a[i] be the number of people on it. Group j rides stretches s_j to t_j − 1, so it adds c_j to a[s_j..t_j − 1]: d[s_j] += c_j, and the closing write lands one past the last stretch it rides, at d[t_j].',
+        'The four groups write d[1] += 3 and d[4] −= 3, d[2] += 2 and d[6] −= 2, d[3] += 4 and d[5] −= 4, d[4] += 1 and d[6] −= 1. That leaves d[1] to d[6] as 3, 2, 4, −2, −4, −3, where d[4] = −3 + 1 and d[6] = −2 − 1 each collect two writes.',
+        'One prefix pass rebuilds the loads: a[1] = 3, a[2] = 3 + 2 = 5, a[3] = 5 + 4 = 9, a[4] = 9 − 2 = 7, a[5] = 7 − 4 = 3, and one more step would give 0 at station 6, where everyone has got off. Check stretch 3 directly: groups 1, 2 and 3 are on board, and 3 + 2 + 4 = 9.',
+        'Answer: 9 people, between stations 3 and 4. Two writes per group and one pass make it O(n + m). Since t_j can be n, d needs an index n, and a load can reach 2·10^5 · 10^9 = 2·10^14, so use long long.',
+      ],
+    },
     spot: [
       'Many "add v to every element from l to r" operations, and the values are only read after all of them.',
       'For each point, how many intervals cover it, or how many points are covered by exactly k intervals.',
@@ -19,7 +100,7 @@ export default {
       'A process where each source is used up by consecutive consumers → prefix sums plus binary search find where each source runs out, and a difference array records the range of consumers it served in full',
     ],
     pitfalls: [
-      'The closing update d[r+1] lands one past the last index; size the array n+2 (or the largest coordinate + 2).',
+      'The closing update d[r+1] lands one past the last index, so d needs n + 1 cells when a is indexed from 0, and n + 2 (or the largest coordinate + 2) when it is indexed from 1. The template allocates n + 2, which also fits the r + 2 write of `addProgression`.',
       'Coordinates up to 10^9 or 10^18 do not fit in an array: switch to sorted (coordinate, ±v) events with r+1 as the closing point, and keep r+1 and the lengths in long long.',
       'With two levels (how often each operation runs, then what the operations do), finish the prefix pass of the first level before you apply the second.',
     ],

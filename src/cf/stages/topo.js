@@ -5,7 +5,90 @@ export default {
   track: 'graphs',
   summary: 'Turn "x before y" constraints into a directed graph, find an order or prove none exists, and run DP along that order for longest paths, path counts and minimal layer numbers.',
   primer: {
-    idea: 'A directed graph can be listed so that every edge points forward exactly when it has no cycle, and Kahn\'s algorithm finds such an order in O(n + m): repeatedly remove a vertex with no remaining incoming edges (reversed DFS finishing order works too). If some vertices are never removed, they lie on or behind a cycle, which is your IMPOSSIBLE or "infinite" case. Once you have the order, any DP whose transitions follow edges (longest or shortest path, number of paths, earliest layer) is one pass over it, because every predecessor of a vertex is final before the vertex is used.',
+    slides: [
+      {
+        title: 'Rules that say x before y',
+        points: [
+          'Prerequisites, dependencies and unknown alphabets give rules "x must come before y".',
+          'The task: an order obeying every rule, proof that none exists, or a value computed along the rules.',
+          'Trying orders is hopeless (26 letters have about 4·10^26); label order needn\'t obey the rules, and re-sweeping them can take 10^10 steps.',
+        ],
+        say: 'Some statements hand you rules of the form "x must come before y": prerequisites, dependencies, a list sorted under an unknown alphabet. They ask for an order that obeys every rule, or a proof that none exists, or something computed along the rules, such as the longest chain or the number of routes from a start. Trying orders one by one is hopeless: 26 letters alone can be ordered in about 4·10^26 ways. A computation along the rules must handle each item after everything that has to precede it, and input order or label order does not promise that; sweeping over all the rules again and again until nothing changes can take n sweeps, about 10^10 steps for n = 10^5 items and m = 10^5 rules.',
+      },
+      {
+        title: 'Without a cycle, something can go first',
+        points: [
+          'Each rule "x before y" is an edge x → y; a topological order has every edge pointing forward.',
+          'One exists exactly when there is no cycle: on a cycle, each vertex would have to precede itself.',
+          'With no cycle, some vertex has no incoming edges: otherwise walking backwards would repeat a vertex and close a cycle. It goes first.',
+        ],
+        show: [0, 0],
+        note: 'b and e have no incoming edges, so Kahn\'s queue starts with them; a, first in the alphabet, must wait for both.',
+        say: 'Make each item a vertex and each rule "x before y" a directed edge x → y. An order of the vertices in which every edge points forward is a topological order, and one exists exactly when the graph has no cycle: on a cycle, each vertex would have to come before itself. The key observation is that a graph without a cycle always has a vertex with no incoming edges, because walking backwards along incoming edges would otherwise repeat a vertex within n steps and close a cycle. Such a vertex can safely go first.',
+      },
+      {
+        title: 'Kahn\'s algorithm places ready vertices',
+        points: [
+          'Keep adj[v], indeg[v] (edges in from unplaced vertices) and a queue `q` of vertices whose `indeg` is 0.',
+          'Pop v, append it to `order`, and for each u in adj[v] decrease indeg[u], pushing u when it reaches 0.',
+          'Each vertex and edge is handled once: O(n + m). Reversed DFS finishing order also works.',
+        ],
+        show: [0, 5],
+        note: 'Placing e deletes e → a and e → c (b → a went when b was placed), so a and c reach in 0 and join the queue.',
+        say: 'Kahn\'s algorithm applies that observation over and over. Keep adj[v], the vertices that v has an edge to; indeg[v], the number of edges into v from vertices not yet placed; and a queue q of the vertices whose indeg has reached 0. Pop a vertex v, append it to `order`, and delete its outgoing edges: for each u in adj[v], decrease indeg[u] and push u when it reaches 0. Each vertex and each edge is handled once, so this is O(n + m); listing the vertices in reverse order of when a DFS finishes them also gives a topological order.',
+      },
+      {
+        title: 'Fewer than n placed means a cycle',
+        points: [
+          'A vertex is placed only after every vertex pointing into it, so every edge points forward.',
+          'Removing a vertex from a graph with no cycle still leaves no cycle, so another vertex is ready and the queue never runs dry early.',
+          'On a cycle no vertex reaches `indeg` 0, nor does anything after it: `order` ends short, the "impossible" or −1 case.',
+        ],
+        show: [0, 16],
+        note: 'All 7 vertices placed, in the order b, e, a, c, g, d, f, with every edge pointing forward; alphabetical order would break b → a.',
+        say: 'Why it works: a vertex enters `order` only once all its incoming edges are deleted, that is, after every vertex that points into it, so every edge points forward. Removing a vertex from a graph with no cycle leaves a graph that still has no cycle, so by the observation another vertex is always ready, the queue never runs dry early, and all n vertices are placed. With a cycle, no vertex on it ever reaches indeg 0, and neither does anything reachable from it, so `order` ends with fewer than n vertices: that is the "impossible", −1 or "infinite" case, detected for free.',
+      },
+      {
+        title: 'One DP pass along the order',
+        points: [
+          'Visit each v in `order` and push its value along each edge v → u.',
+          'len[u] = max(len[u], len[v] + 1) gives the longest path ending at u; ways[u] += ways[v] counts paths from `src`.',
+          'Everything pointing into u comes earlier, so u\'s value is final before u passes it on.',
+        ],
+        say: 'Once you have `order`, any DP whose transitions follow edges takes one pass over it. Visit each v in `order` and push its value along each edge v → u: len[u] = max(len[u], len[v] + 1) gives the longest path, counted in edges, ending at u, and ways[u] += ways[v] (mod 10^9 + 7) counts the paths from a start vertex `src`. Every vertex that points into u comes earlier in `order`, so u\'s value is final before u passes it on, the same argument as the children-first pass on a rooted tree.',
+      },
+      {
+        title: 'Vary what the pass pushes along edges',
+        points: [
+          'Costs of 0 or 1 per edge count rounds. After merging equal items with DSU, the smallest values obeying every a < b are longest-path layers.',
+          'Shortest paths from `src`: start at 0 there and ∞ elsewhere, skip vertices still at ∞, and push min instead of max. Negative weights are fine.',
+          'A min-heap in place of the queue gives the lexicographically smallest order, in O((n + m) log n).',
+        ],
+        say: 'Each pass is O(n + m), and the variations in this stage change what is pushed along an edge, and sometimes where the values start. A cost of 0 or 1 per edge counts passes or rounds, and once the items that must be equal are merged with DSU, the smallest values that satisfy every rule a < b are longest-path layers. For shortest paths from `src` in a DAG, start with 0 at `src` and infinity everywhere else, skip any vertex still at infinity when its turn comes, and push min instead of max; negative weights are fine, because a vertex is only used once everything before it is final. A min-heap in place of the queue gives the lexicographically smallest order, in O((n + m) log n).',
+      },
+    ],
+    terms: [
+      'adj[v]: the vertices u with an edge v → u, that is, the items that v must come before (`gr` in the TRD version).',
+      'indeg[v]: how many edges into v come from vertices not yet placed; v can be placed once it is 0 (in[v] in the diagram).',
+      '`q`: the queue of vertices whose indeg has reached 0 and that wait to be placed (in the TRD version\'s `topoSort`, one list `q` is both the queue and the returned order).',
+      '`order`: the topological order, the vertices in the order Kahn\'s algorithm removes them; it has fewer than n entries exactly when the graph has a cycle (returned by `topoSort` in the TRD version).',
+      'len[v]: the most edges on any path that ends at v (`dp` in the TRD version\'s `longestPath`).',
+      'ways[v]: the number of paths from `src` to v, mod 10^9 + 7.',
+      '`src`: the start vertex; ways[v] counts the paths that begin there.',
+      'finish[v]: in the worked question, the earliest time task v can be finished, filled along `order` like len[v].',
+    ],
+    worked: {
+      title: 'the earliest finish of a project',
+      question: 'A project has n = 6 tasks. Task i takes t_i days, with t = (2, 4, 3, 1, 5, 2), and any number of tasks can run at once. Some tasks must finish before others start: 3 before 1, 3 before 2, 1 before 4, 2 before 4, 5 before 2, 4 before 6 and 5 before 6. Print the earliest day by which every task can be finished, or −1 if the rules contradict each other. The real version has up to 2·10^5 tasks and 2·10^5 rules, with t_i up to 10^9.',
+      steps: [
+        'Recognise it: "a before b" rules form a directed graph, a contradiction is a cycle, and since tasks run in parallel, each one starts the moment its last prerequisite ends, so the answer is the heaviest chain of tasks: a longest path in a DAG. Label order will not do, because task 1 waits for task 3 and task 2 for task 5, and sweeping over all the rules until nothing changes can take n sweeps, about 4·10^10 steps at full size.',
+        'Model it: an edge a → b for each rule "a before b", indeg[v] counted from the rules, and finish[v] = t_v plus the latest finish among v\'s prerequisites. Start with finish[v] = t_v. When Kahn\'s algorithm removes v, finish[v] is final, and each edge v → u sets finish[u] = max(finish[u], finish[v] + t_u).',
+        'Run Kahn\'s algorithm: indeg is 1, 2, 0, 2, 0, 2 for tasks 1 to 6, so the queue starts as 3, 5. Remove 3 (finish 3): finish[1] = max(2, 3 + 2) = 5 and task 1 is ready; finish[2] = max(4, 3 + 4) = 7, but 2 still waits for 5. Remove 5 (finish 5): finish[2] = max(7, 5 + 4) = 9 and 2 is ready; finish[6] = max(2, 5 + 2) = 7.',
+        'Remove 1: finish[4] = max(1, 5 + 1) = 6. Remove 2: finish[4] = max(6, 9 + 1) = 10 and 4 is ready. Remove 4: finish[6] = max(7, 10 + 2) = 12 and 6 is ready. Remove 6. All 6 tasks were removed, in the order 3, 5, 1, 2, 4, 6, so the rules have no cycle.',
+        'Had the rules also said 4 before 2, then 2 and 4 would wait for each other: after removing 3, 5 and 1 the queue is empty with 3 of 6 tasks placed, and task 6, which is on no cycle but waits for 4, is stuck behind it. That case prints −1.',
+        'Answer: 12, the largest finish, from the chain 5 → 2 → 4 → 6 (5 + 4 + 1 + 2 days). Kahn\'s algorithm with the DP is O(n + m). Finish times reach 2·10^5 · 10^9 = 2·10^14, so store them as long long.',
+      ],
+    },
     spot: [
       'The statement gives pairwise constraints: "a must come before b", "x is smaller than y", prerequisites, dependencies, or a list that is sorted under some unknown order.',
       'You must answer "impossible", -1 or "infinite" when the requirements contradict each other or a walk could repeat forever: that is cycle detection.',
@@ -121,7 +204,7 @@ bool dagDP(const vector<vector<int>>& adj, int src, vector<int>& len, vector<lon
       hints: [
         'Fix a threshold X and allow only vertices with a_i ≤ X. Can you decide quickly whether k − 1 moves are possible? How does the answer change as X grows?',
         'If X works, every larger X works too, so binary search on X. For a fixed X the allowed vertices form a subgraph: if it contains a cycle the coin can move forever, and if it is a DAG the longest possible walk is its longest path, a DP in topological order.',
-        'Binary search over the sorted distinct values of a. check(X): run Kahn\'s algorithm on the vertices with a_i ≤ X; if some allowed vertex is never removed there is a cycle, so return true; otherwise compute the longest path in vertices, len[u] = max(len[u], len[v] + 1), and return max len ≥ k. If check(max a) fails print -1. O((n + m) log n).',
+        'Binary search over the sorted distinct values of a. check(X): run Kahn\'s algorithm on the vertices with a_i ≤ X; if some allowed vertex is never removed there is a cycle, so return true; otherwise compute the longest path in vertices, starting len = 1 at every allowed vertex (the template starts at 0 because it counts edges), with len[u] = max(len[u], len[v] + 1), and return max len ≥ k. If check(max a) fails print -1. O((n + m) log n).',
       ],
       solution: 'The answer is the smallest X for which the subgraph on vertices with a_i ≤ X contains a walk through k vertices. That holds if the subgraph has a cycle (k is up to 10^18, so only a cycle can give such long walks) or if its longest path has at least k vertices, and one Kahn pass with a longest-path DP answers both. The predicate is monotone in X, so binary search over the distinct a values costs O((n + m) log n). Keep k in 64 bits, and note that k = 1 needs just one vertex, so the answer is never -1 when n ≥ 1 and k = 1.',
     },

@@ -5,7 +5,87 @@ export default {
   track: 'dp',
   summary: 'Design DP states over grid cells, over segments dp[l][r] filled by length, and over small tuples such as the last item on each line, and spot the reorder or delete problems that collapse into one of them.',
   primer: {
-    idea: 'On a grid, the best value at a cell depends only on the cells you could have come from, so one pass in row order solves a path problem in O(nm); running the same pass from other corners lets you glue path pieces together at a meeting cell. On a sequence that gets merged, deleted or folded in place, the answer for the segment l..r depends only on shorter segments inside it, so dp[l][r] filled in order of increasing length gives O(n^2) states and usually O(n^3) time, which is why these problems have n ≤ 500. The real work is choosing the state: the smallest description of a partial solution that still decides every future move, such as the segment still on the table, the count of 2s so far, or the last item placed on each of three lines (UKIEPC 2025 Klaus); UKIEPC 2023 Clearing Space was a DP over points on a circle.',
+    slides: [
+      {
+        title: 'Listing every walk or merge is hopeless',
+        points: [
+          'Two shapes: a right-or-down walk across a grid, or a row of items merged, deleted or folded in place.',
+          'A 20 × 20 grid has about 3.5·10^10 corner-to-corner paths; 20 piles merge in about 1.2·10^17 different orders.',
+        ],
+        say: 'The questions here come in two shapes. One is a walk across a grid that moves only right or down and is scored by the cells it visits; the other is a row of items that is merged, deleted or folded in place, where the neighbours close up after every step. Listing the possibilities is hopeless: a 20 × 20 grid has about 3.5·10^10 right/down paths from corner to corner, and a row of 20 piles can be merged into one by about 1.2·10^17 different sequences of merges.',
+      },
+      {
+        title: 'Most possibilities share their future',
+        points: [
+          'A walk at a cell goes on the same way however it got there, and it arrived from above or the left.',
+          'In a row whose neighbours close up, each item comes from a contiguous segment l..r, decided only by its own items.',
+          'The last step on l..r splits it into shorter segments that never interact again.',
+        ],
+        say: 'Most of those possibilities share their future. A walk that has reached a cell can go on in exactly the same ways however it got there, and it can only have arrived from the cell above or the cell to the left. In a row whose neighbours close up, every item on the table is built from a contiguous segment of the original row, so what happens to the segment l..r depends only on the items inside it, and the last step on it splits it into shorter segments that never interact again.',
+      },
+      {
+        title: 'best[i][j] from the cell above or left',
+        points: [
+          'best[i][j] = g[i][j] + max(best[i−1][j], best[i][j−1]).',
+          'Filling row by row has both neighbours ready in time: O(nm) for n rows and m columns.',
+          'Passes from the other corners let two paths that meet be glued together at the meeting cell.',
+        ],
+        say: 'For a grid, let best[i][j] be the best value of a path from the top-left cell (0, 0) to the cell (i, j), and g[i][j] the value written in that cell. Then best[i][j] = g[i][j] + max(best[i−1][j], best[i][j−1]), and filling the table row by row has both neighbours ready in time, O(nm) for n rows and m columns. Running the same pass from the other corners gives the best piece from each corner to every cell, so two paths that meet can be glued together at the meeting cell.',
+      },
+      {
+        title: 'A row splits at its last merge',
+        points: [
+          'dp[l][r] is the cheapest way to merge piles l..r into one, where each merge costs the new pile\'s size.',
+          'The last merge joins l..k and k+1..r, so dp[l][r] = min over k of dp[l][k] + dp[k+1][r], plus the total pre[r+1] − pre[l].',
+          'Fill every segment of one length `len` before any longer one, so the shorter segments are final.',
+        ],
+        show: [0, 12],
+        note: 'The diagram finds the longest palindromic subsequence of AGBCBA, not merge costs, but fills in the same order: every shorter segment is final before dp[1][4].',
+        say: 'For a row, let dp[l][r] be the best answer for the items l..r on their own. In the template, piles a[0..n−1] are merged until one is left, and each merge costs the size of the new pile. The last merge of l..r joins l..k and k+1..r for some split point k and costs the whole segment\'s total, pre[r+1] − pre[l] from prefix sums, so dp[l][r] is the minimum over k of dp[l][k] + dp[k+1][r], plus that total. The template fills every segment of one length `len` before any longer one, so the shorter segments it reads are already final.',
+      },
+      {
+        title: 'Every merge order has a last merge',
+        points: [
+          'Any way of merging l..r ends with a last merge at some k, after each half was merged independently.',
+          'So for each k the cheapest halves give the cheapest way, and trying every k covers every way.',
+          'A state is the smallest description that decides every future move: equal states finish alike, so keep the better.',
+        ],
+        say: 'Why this is right: every way of merging l..r has some last merge at some k, and the two halves before it were merged independently, so the cheapest way with that k uses the cheapest way for each half, and trying every k covers every way. The same test decides any state: it must be the smallest description of a partial solution that still decides every future move, because two partial solutions with equal states can be finished in exactly the same ways and only the better needs keeping. Examples are the cell a walk has reached, the segment still on the table, or the last item placed on each of three lines (UKIEPC 2025 Klaus).',
+      },
+      {
+        title: 'Usually O(n³), so n ≤ 500',
+        points: [
+          'O(n²) segments, each trying O(n) split points, make O(n³).',
+          'When a segment only looks at its two ends, as for palindromes, it is O(n²) and n can reach 5000.',
+          'Cut a circle at one point to get a row; each choice then splits an arc into smaller independent arcs.',
+        ],
+        show: [0, 21],
+        note: 'dp[0][5] = 5: the longest palindromic subsequence of AGBCBA is ABCBA. Each segment took O(1) work, so O(n²) in all.',
+        say: 'There are O(n²) segments and trying every split costs O(n) each, so interval DP is usually O(n³), which is why these problems have n ≤ 500. When a segment only looks at its two ends, as for palindromes or a block that grows at one end, it is O(n²) and n can reach 5000. Points on a circle become a row once the circle is cut at one point, and each choice then splits an arc into independent smaller arcs. UKIEPC 2023 Clearing Space also cuts its circle, at the first chosen post, but then runs a chain DP over (last post, posts used) instead of splitting arcs.',
+      },
+    ],
+    terms: [
+      'best[i][j]: in a grid DP, the best value of a path from the top-left cell (0, 0) to the cell (i, j) that moves only right or down.',
+      'g[i][j]: the value in the grid cell in row i and column j, both counted from 0.',
+      'dp[l][r]: in an interval DP, the best answer for the items l..r on their own, as if nothing outside them existed; l and r are the first and last index, both included.',
+      'a[i]: item i of the row, counted from 0; in the template, the size of pile i. a[l..r] is the part from index l to index r, both included.',
+      's[l..r]: the substring of a string s from index l to index r, both included.',
+      'k: the split point, so that the last step joins l..k and k+1..r. In a deletion problem k is instead the later element that is removed together with element l.',
+      '`len`: the length r − l + 1 of a segment; every segment of one length is filled before any longer one.',
+      'pre[i]: the prefix sum a[0] + … + a[i−1], so the items l..r total pre[r+1] − pre[l] (`P` in the TRD version).',
+    ],
+    worked: {
+      title: 'merging piles',
+      question: 'Four piles of stones stand in a row, holding 6, 4, 5 and 5 stones. A move merges two neighbouring piles into one and costs the number of stones in the new pile. Find the smallest total cost of merging all the piles into one. In the real version n ≤ 400 and a pile holds up to 10^9 stones.',
+      steps: [
+        'Recognise it: after each merge the neighbours close up, so every pile on the table is made from a contiguous segment of the original row, and n ≤ 400 allows O(n³). Trying every sequence of merges is hopeless, since 20 piles already allow about 1.2·10^17 of them. The obvious greedy fails too: merging the cheapest neighbouring pair first takes 4 + 5, then 9 + 5, then 6 + 14, and pays 9 + 14 + 20 = 43.',
+        'Model it: dp[l][r] is the cheapest way to merge piles l..r (counted from 0) into one pile, and dp[i][i] = 0. The last merge joins l..k and k+1..r for some split k and costs the segment\'s total pre[r+1] − pre[l], so dp[l][r] is the minimum over k of dp[l][k] + dp[k+1][r], plus that total. Here pre = 0, 6, 10, 15, 20.',
+        'Length 2, where the only split is down the middle: dp[0][1] = 6 + 4 = 10, dp[1][2] = 4 + 5 = 9 and dp[2][3] = 5 + 5 = 10.',
+        'Length 3: dp[0][2] = min(dp[0][0] + dp[1][2], dp[0][1] + dp[2][2]) + 15 = min(9, 10) + 15 = 24, and dp[1][3] = min(dp[1][1] + dp[2][3], dp[1][2] + dp[3][3]) + 14 = min(10, 9) + 14 = 23.',
+        'Length 4, the whole row, with total 20: splitting after pile 0, 1 or 2 gives 0 + 23 = 23, 10 + 10 = 20 or 24 + 0 = 24, so dp[0][3] = 20 + 20 = 40. The best last merge joins 6 + 4 with 5 + 5, which the greedy ruled out when it merged the 4 with a 5.',
+        'Answer: 40, by merging 6 and 4 (cost 10), then 5 and 5 (cost 10), then the two piles of 10 (cost 20). There are O(n²) segments with up to n − 1 splits each, so the DP is O(n³), about 1.1·10^7 split checks at n = 400. One merge can cost up to 4·10^11, so use long long.',
+      ],
+    },
     spot: [
       'n ≤ 500 (or n ≤ 5000 with an O(n^2) DP) and an operation that removes or merges a contiguous block, after which the neighbours close up.',
       'A grid walk with right/down moves where you optimise or test something about the path, or two walkers whose paths interact.',
@@ -13,7 +93,7 @@ export default {
       'Points on a circle or a polygon where choices must not cross: cut the circle once, and each choice splits an arc into independent smaller arcs.',
     ],
     disguises: [
-      'Delete palindromes or blocks of equal letters until nothing is left → dp[l][r] where the first element either goes alone or is deleted together with a later equal element k, splitting the segment into l+1..k-1 and the part from k on',
+      'Delete palindromes or blocks of equal letters until nothing is left → dp[l][r] where the first element, l, either goes alone or goes with a later equal element k once l+1..k-1 is cleared. What is left is k+1..r when the pair closes a palindrome (607B, where an adjacent pair still costs 1), or k..r when element l rides along with element k\'s later deletion (1132F)',
       'Choose an order that minimises a sum of (max - min) over prefixes → sort first; the items placed so far are always a contiguous block of the sorted array, so dp[l][r] grows the block at one end',
       'Fewest trailing zeros of a product along a grid path → two independent min-sum grid DPs, one counting factors of 2 and one counting factors of 5',
       'Assign items in input order to one of several lines, where the cost depends on the previous item on the same line → dp over the index of the last item on each line; one of them is always the current index - 1, which removes a dimension',

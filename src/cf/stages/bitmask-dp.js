@@ -5,7 +5,88 @@ export default {
   track: 'dp',
   summary: 'Read n ≤ 20 (or n ≤ 40) as an invitation to enumerate subsets, and write dp[mask], dp[mask][last], submask loops, sum-over-subsets and meet-in-the-middle solutions.',
   primer: {
-    idea: 'When n is around 15 to 20, a set of chosen items fits in an int, and a DP indexed by that set replaces n! orderings with 2^n · n states, because the future depends only on which items are used and which one came last: dp[mask][last] runs in O(2^n · n^2). Splitting every mask into two disjoint parts costs O(3^n) in total with the submask loop, and sum over subsets (SOS) aggregates over all submasks of every mask in O(B · 2^B). When n is around 35 to 40, 2^n is too slow but 2^(n/2) is fine: enumerate each half on its own and combine the two lists by sorting and binary search (meet in the middle); UKIEPC 2023 Enchanted Fortress combined bitmasks with exactly this.',
+    slides: [
+      {
+        title: 'Trying every order costs n!',
+        points: [
+          'Find the best order of n items when each step\'s cost depends on the item before it.',
+          'n! is about 2.4·10^18 at n = 20, and already 6.2·10^9 at n = 13.',
+          'n ≤ 20 is the hint: each item can have one bit of an int.',
+        ],
+        say: 'Some problems ask for the best order of n items, where the cost of each step depends on the item before it: visit every city once, or play every song next to a compatible one. Trying every order means n! of them, about 2.4·10^18 for n = 20 and already 6.2·10^9 for n = 13. The constraint is the hint: n ≤ 20 is small enough to give every item one bit of an int.',
+      },
+      {
+        title: 'What is used, and what came last',
+        points: [
+          'Partial orders of the same items that end at the same item can be finished in exactly the same ways.',
+          'So keep only the cheaper one: n! orders collapse into 2^n · n situations, about 2·10^7 at n = 20.',
+        ],
+        show: [0, 6],
+        note: 'The orders 1 → 0 → 2 and 0 → 1 → 2 use the same items and both end at 2: one situation, so the cheaper, 6, replaces 11.',
+        say: 'Partway through an order, the rest of it depends on only two facts: which items are already used, and which one came last. Two partial orders of the same items that end at the same item can be finished in exactly the same ways, so only the cheaper one needs keeping. That collapses n! orders into 2^n · n situations, about 2·10^7 at n = 20.',
+      },
+      {
+        title: 'Store the used items as a mask',
+        points: [
+          'Bit i of mask is 1 when item i is used: `1 << u` holds only u, and `mask | 1 << u` adds u.',
+          'dp[mask][v] is the cheapest path visiting exactly mask and ending at v, starting from dp[1 << v][v] = 0.',
+          'Going on to an unused u offers dp[mask][v] + w[v][u] to dp[mask | 1 << u][u]; the answer is at the full mask.',
+        ],
+        show: [0, 5],
+        note: 'Rows are masks, columns v. dp[011₂][0] = 4, the order 1 → 0, goes on to u = 2 and offers 4 + w[0][2] = 11 to dp[111₂][2].',
+        say: 'Store the used items as a mask, an int whose bit i is 1 when item i is used: `1 << u` is the set holding only u, `mask | 1 << u` adds u, and `(mask >> u & 1)` tests it. Let dp[mask][v] be the cheapest path that visits exactly the items in mask and ends at v, starting from dp[1 << v][v] = 0 for every v. Going on to an unused item u costs w[v][u], so dp[mask | 1 << u][u] takes the minimum with dp[mask][v] + w[v][u], and the answer is the smallest dp over the full mask (1 << n) − 1, which holds every item.',
+      },
+      {
+        title: 'Masks only grow, so loop upwards',
+        points: [
+          'Adding an item turns a bit on, so every move goes to a numerically larger mask.',
+          'Looping over masks in increasing order finishes each dp[mask][v] before it is extended, and every order is a chain of such moves.',
+          'If the cost depends only on how many items are used, drop the last item: the second diagram\'s dp[mask] assigns jobs to workers.',
+        ],
+        show: [0, 14],
+        note: 'Every move went down the table to a larger mask, so the rows could be filled in order. The cheapest path, 2 → 1 → 0, costs 6.',
+        say: 'Adding an item turns a bit on, so a state only ever moves to a numerically larger mask, and looping over masks in increasing order finishes every dp[mask][v] before it is extended. Every order is a chain of such extensions, so its cost is among the candidates, and each state keeps the cheapest chain that reaches it. When the cost depends only on how many items are already used, the last item can be dropped from the state: in the second diagram, dp[mask] is the cheapest way for the first popcount(mask) workers to take the jobs in mask.',
+      },
+      {
+        title: 'Splitting masks into submasks costs 3^n',
+        points: [
+          'dp[mask][v] has 2^n · n states with n moves each: O(2^n · n²), fine up to about n = 18 to 20.',
+          's = (s − 1) & mask walks every non-empty submask s of mask; over all masks that is 3^n steps.',
+          'Sum over subsets (SOS) totals f over every mask\'s submasks in O(B · 2^B) instead of 3^B, one bit at a time.',
+        ],
+        say: 'dp[mask][v] has 2^n · n states with n moves each, so it runs in O(2^n · n²), fine up to about n = 18 to 20. Some DPs split a mask into two disjoint parts: starting from s = mask, the step s = (s − 1) & mask visits every non-empty submask s of mask, and over all masks that is 3^n steps, because each item is outside mask, in mask but not in s, or in s. Sum over subsets (SOS) replaces each f[mask] by the total of f over all submasks of mask in O(B · 2^B) instead of 3^B, by taking one bit b at a time and, for every mask that contains b, adding f[mask ^ (1 << b)] to f[mask].',
+      },
+      {
+        title: 'Meet in the middle for 40 items',
+        points: [
+          'At n ≈ 40, 2^n ≈ 10^12 is too slow, but 2^(n/2) ≈ 10^6 is fine.',
+          'List each half\'s subsets with their totals, sort one list, and binary-search it for each other subset\'s best partner.',
+          'That is meet in the middle, O(2^(n/2) · n).',
+        ],
+        say: 'When n is around 35 to 40, 2^n, about 10^12, is too slow but 2^(n/2), about 10^6, is fine. Split the items into two halves, list every subset of each half with its total, sort one list, and for each subset of the other half find its best partner by binary search: this is meet in the middle, O(2^(n/2) · n). UKIEPC 2023 Enchanted Fortress split its symbols the same way, but pairs across the halves add to the score, so it scores every left and right pair in O(1), 2^30 in all, instead of binary-searching for a partner.',
+      },
+    ],
+    terms: [
+      'mask: a set of items stored in the bits of an int, bit i being 1 when item i is in the set.',
+      'dp[mask][v]: the cheapest path that visits exactly the items in mask and ends at item v; written dp[mask][last] when the point is that last is the item placed most recently.',
+      'w[v][u]: the cost of going from item v straight to item u (`d` in the TRD version).',
+      'popcount(mask): the number of 1 bits in mask, which is how many items the set holds.',
+      's: a submask of mask, a set whose items all lie in mask.',
+      'f[mask]: in sum over subsets (SOS), a value per mask; afterwards f[mask] holds the total of the original values over all submasks of mask (`D` in the TRD version).',
+      'B: the number of bits SOS runs over, so the masks go from 0 to 2^B − 1 (`K` in the TRD version).',
+    ],
+    worked: {
+      title: 'a delivery round',
+      question: 'A van starts at the depot, stop 0, and must visit shops 1, 2 and 3 once each, in any order, finishing at whichever shop comes last. The driving times in minutes are 0–1: 4, 0–2: 5, 0–3: 7, 1–2: 2, 1–3: 3 and 2–3: 9, the same in both directions. Find the shortest total driving time. The real version has up to 17 shops and times up to 10^9.',
+      steps: [
+        'Recognise it: the route is an order of all the shops, and each leg depends only on where the van is now. There are 17! ≈ 3.6·10^14 orders at full size, but 17 shops and the depot fit in the bits of an int, so this is dp[mask][last]. Driving to the nearest shop each time does not work: it goes 0 → 1 → 2 → 3 and pays 4 + 2 + 9 = 15.',
+        'Model it: bit i of mask is 1 when stop i has been visited, and masks are written in binary with stop 0 on the right, so 0101₂ is the depot and shop 2. dp[mask][v] is the shortest time to leave the depot, visit exactly the stops in mask and stand at v, and w[v][u] is the time from v to u. Unlike the template, only the depot is a start, so dp[0001₂][0] = 0, and each step sets dp[mask | 1 << u][u] to dp[mask][v] + w[v][u] when that is smaller.',
+        'One shop visited: dp[0011₂][1] = 4, dp[0101₂][2] = 5 and dp[1001₂][3] = 7.',
+        'Two shops visited, each reached from the other shop in its mask: dp[0111₂][1] = 5 + 2 = 7 and dp[0111₂][2] = 4 + 2 = 6; dp[1011₂][1] = 7 + 3 = 10 and dp[1011₂][3] = 4 + 3 = 7; dp[1101₂][2] = 7 + 9 = 16 and dp[1101₂][3] = 5 + 9 = 14.',
+        'All shops, mask 1111₂. Ending at shop 3 means coming from mask 0111₂: min(dp[0111₂][1] + 3, dp[0111₂][2] + 9) = min(10, 15) = 10. Ending at shop 2 comes from 1011₂, min(10 + 2, 7 + 9) = 12, and ending at shop 1 from 1101₂, min(16 + 2, 14 + 3) = 17. This is where the orders 0 → 1 → 2 → 3 and 0 → 2 → 1 → 3 meet in one state, and only the cheaper survives.',
+        'Answer: 10, by 0 → 2 → 1 → 3 (5 + 2 + 3). The DP is O(2^n · n²) for n stops; with the depot that is 18 stops and at most 2^18 · 18² ≈ 8.5·10^7 steps. A route can take 1.7·10^10 minutes, so use long long.',
+      ],
+    },
     spot: [
       'n ≤ 16, 18 or 20 with an ordering or a selection to optimise: 2^20 · 20 ≈ 2·10^7, so the constraint itself is the hint.',
       'n ≤ 35 or 40 with a subset to choose, where 2^n is hopeless but 2^(n/2) ≈ 2·10^5 to 10^6 is not.',
