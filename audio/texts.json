@@ -7725,19 +7725,19 @@
    "text": "Only one protein joins the chosen set per step, so each candidate's minimum distance to the set can be updated with a single new distance. Keep best of v is min distance from v to the chosen proteins (farthest-point sampling)."
   },
   {
-   "key": "hcuv65u8zo",
+   "key": "19u6ltf662d",
    "where": "ukiepc/2024/F",
-   "text": "Choose p(1) as the farthest from protein 1 and set best of v is D(v, p(1)). Then repeatedly pick the first v (scanning in input order with strict >) with the largest best of v, print it, and update best of v is min(best of v, D(v, new)) for all v. O of k times n times l about 2.6 times 10 to the 8 cheap operations."
+   "text": "Choose p(1) as the farthest from protein 1 and set best of v is D(v, p(1)). Then repeatedly pick the first v not yet chosen (scanning in input order with strict >) with the largest best of v, print it, and update best of v is min(best of v, D(v, new)) for all v. O of k times n times l about 2.6 times 10 to the 8 cheap operations."
   },
   {
-   "key": "1h498vahxjm",
+   "key": "ba55vjuym1",
    "where": "ukiepc/2024/F",
-   "text": "The rule picks the protein maximising its minimum distance to the chosen set, and that minimum only ever shrinks by one new distance per step. Maintain it in an array: after each choice, one pass over all n proteins computes D(v, new) in O of l and updates the minimum. Ties go to the earliest protein, so scan in input order with a strict comparison. Total O of k times n times l, well within 5 s."
+   "text": "The rule picks the protein maximising its minimum distance to the chosen set, and that minimum only ever shrinks by one new distance per step. Maintain it in an array: after each choice, one pass over all n proteins computes D(v, new) in O of l and updates the minimum. Only proteins not yet chosen are candidates (with duplicate embeddings, a chosen one could otherwise tie at distance 0). Ties go to the earliest protein, so scan in input order with a strict comparison. Total O of k times n times l, well within 5 s."
   },
   {
-   "key": "xkyohqjofw",
+   "key": "1amxms99v4l",
    "where": "ukiepc/2024/G",
-   "text": "Comparing the key at every position costs rk times ck per position, up to 10 to the 13 steps. You need each position checked in O of 1, and then a fast way to mark every cell that lies inside some match."
+   "text": "Comparing the key at every position costs rk times ck per position, about 10 to the 12 steps at worst. You need each position checked in O of 1, and then a fast way to mark every cell that lies inside some match."
   },
   {
    "key": "1fny20tk84k",
@@ -7873,9 +7873,9 @@
    "text": "Put K is floor of N over 2 antichain essays first (deviation i and quality i for i is 1 … K), then N minus K essays with word count exactly W and qualities 501, 502, …. These form a chain that dominates the whole antichain, so each round marks only the best remaining chain essay, while every antichain essay scans the rest of the antichain before meeting the chain: about N cubed/16 at least N cubed/20 comparisons."
   },
   {
-   "key": "1axo74jnbtu",
+   "key": "ybwqbfe0e",
    "where": "ukiepc/2023/A",
-   "text": "Make the first half pairwise incomparable and the second half a chain that dominates all of them. In every round each antichain essay compares with all later antichain essays and is then postponed by the first chain essay, each chain essay but the last is postponed by its successor, and only the best chain essay is marked, so for N over 2 rounds each round costs about K squared over 2 comparisons, N cubed/16 in total (about 6.3 times 10 to the 7 for N is 1000, above the 5 times 10 to the 7 needed). Use word counts W plus i, or W minus i when W plus K greater than 10 to the 4, so all values stay in range and all pairs are distinct. The jury construction follows the same plan: commit at most a couple of essays per round while many essays do linear work."
+   "text": "Make the first half pairwise incomparable and the second half a chain that dominates all of them. In every round each antichain essay compares with all later antichain essays and is then postponed by the first chain essay, each chain essay but the last is postponed by its successor, and only the best chain essay is marked, so for N over 2 rounds each round costs about K squared over 2 comparisons, N cubed/16 in total (about 6.3 times 10 to the 7 for N is 1000, above the 5 times 10 to the 7 needed). Use word counts W plus i, or W minus i when W plus K greater than 10 to the 4, so all values stay in range and all pairs are distinct. The jury's slides use the mirror image: their remaining N minus K essays are dominated by the last N minus K antichain essays instead of dominating the antichain, so each round marks two essays, one from each group. Either way there are O of N rounds of O of N squared comparisons."
   },
   {
    "key": "1fch2qy9nmt",
