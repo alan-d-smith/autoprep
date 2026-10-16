@@ -254,9 +254,9 @@ export const UKIEPC = [
         hints: [
           'Recomputing each candidate\'s distance to every chosen protein costs O(k·l) per candidate per step, around 6·10^10 operations in total. What changes between one step and the next?',
           'Only one protein joins the chosen set per step, so each candidate\'s minimum distance to the set can be updated with a single new distance. Keep best[v] = min distance from v to the chosen proteins (farthest-point sampling).',
-          'Choose p(1) as the farthest from protein 1 and set best[v] = D(v, p(1)). Then repeatedly pick the first v (scanning in input order with strict >) with the largest best[v], print it, and update best[v] = min(best[v], D(v, new)) for all v. O(k·n·l) ≈ 2.6·10^8 cheap operations.',
+          'Choose p(1) as the farthest from protein 1 and set best[v] = D(v, p(1)). Then repeatedly pick the first v not yet chosen (scanning in input order with strict >) with the largest best[v], print it, and update best[v] = min(best[v], D(v, new)) for all v. O(k·n·l) ≈ 2.6·10^8 cheap operations.',
         ],
-        solution: 'The rule picks the protein maximising its minimum distance to the chosen set, and that minimum only ever shrinks by one new distance per step. Maintain it in an array: after each choice, one pass over all n proteins computes D(v, new) in O(l) and updates the minimum. Ties go to the earliest protein, so scan in input order with a strict comparison. Total O(k·n·l), well within 5 s.',
+        solution: 'The rule picks the protein maximising its minimum distance to the chosen set, and that minimum only ever shrinks by one new distance per step. Maintain it in an array: after each choice, one pass over all n proteins computes D(v, new) in O(l) and updates the minimum. Only proteins not yet chosen are candidates (with duplicate embeddings, a chosen one could otherwise tie at distance 0). Ties go to the earliest protein, so scan in input order with a strict comparison. Total O(k·n·l), well within 5 s.',
       },
       {
         letter: 'G',
@@ -265,7 +265,7 @@ export const UKIEPC = [
         stages: ['difference-arrays'],
         techniques: ['2D rolling hash', '2D difference array'],
         hints: [
-          'Comparing the key at every position costs rk·ck per position, up to 10^13 steps. You need each position checked in O(1), and then a fast way to mark every cell that lies inside some match.',
+          'Comparing the key at every position costs rk·ck per position, about 10^12 steps at worst. You need each position checked in O(1), and then a fast way to mark every cell that lies inside some match.',
           'A 2D rolling (polynomial) hash checks each position in O(1): hash every length-ck window of each row, then roll a second hash down each column over rk of those row hashes. Marking cells covered by at least one match is adding 1 on rectangles: a 2D difference array.',
           'Compute the key\'s hash the same way and compare it with the block hash at every top-left corner (use mod 2^61 − 1 or two moduli). For each match add +1 and −1 at the four corners of its rectangle, take 2D prefix sums, and print the haystack character where the count is positive, "." elsewhere. O(rh·ch).',
         ],
@@ -353,7 +353,7 @@ export const UKIEPC = [
           'Construction: essays that do not dominate each other (an antichain in deviation versus quality) never postpone each other, so each one scans all later ones. Add essays that dominate the antichain, arranged so that only one essay gets marked per round.',
           'Put K = ⌊N/2⌋ antichain essays first (deviation i and quality i for i = 1 … K), then N − K essays with word count exactly W and qualities 501, 502, …. These form a chain that dominates the whole antichain, so each round marks only the best remaining chain essay, while every antichain essay scans the rest of the antichain before meeting the chain: about N³/16 ≥ N³/20 comparisons.',
         ],
-        solution: 'Make the first half pairwise incomparable and the second half a chain that dominates all of them. In every round each antichain essay compares with all later antichain essays and is then postponed by the first chain essay, each chain essay but the last is postponed by its successor, and only the best chain essay is marked, so for N/2 rounds each round costs about K²/2 comparisons, N³/16 in total (about 6.3·10^7 for N = 1000, above the 5·10^7 needed). Use word counts W + i, or W − i when W + K > 10^4, so all values stay in range and all pairs are distinct. The jury construction follows the same plan: commit at most a couple of essays per round while many essays do linear work.',
+        solution: 'Make the first half pairwise incomparable and the second half a chain that dominates all of them. In every round each antichain essay compares with all later antichain essays and is then postponed by the first chain essay, each chain essay but the last is postponed by its successor, and only the best chain essay is marked, so for N/2 rounds each round costs about K²/2 comparisons, N³/16 in total (about 6.3·10^7 for N = 1000, above the 5·10^7 needed). Use word counts W + i, or W − i when W + K > 10^4, so all values stay in range and all pairs are distinct. The jury\'s slides use the mirror image: their remaining N − K essays are dominated by the last N − K antichain essays instead of dominating the antichain, so each round marks two essays, one from each group. Either way there are O(N) rounds of O(N²) comparisons.',
       },
       {
         letter: 'B',
