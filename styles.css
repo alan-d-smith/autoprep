@@ -309,22 +309,30 @@ a.chip:hover { color: var(--text); border-color: rgba(255, 255, 255, 0.3); }
 
 /* ---------- Home ---------- */
 
-.today { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+/* The path card holds three tracks to the maths card's one, so it gets the wider column. */
+.today { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: start; }
 .today .card { display: flex; flex-direction: column; gap: 20px; padding: 28px; }
 .today h2 { font-size: 18px; }
 .big-number { font-family: var(--mono); font-size: 64px; line-height: 1; font-weight: 500; letter-spacing: -0.04em; }
 .score-line { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
 .trail { display: flex; gap: 10px; font-family: var(--mono); font-size: 13px; color: var(--text-3); }
 .trail span:first-child { color: var(--text); }
+/* Before the first round, an example question stands where the score will go. */
+.sample-question { display: grid; gap: 12px; }
+.sample-question .big-number { font-size: clamp(40px, 9vw, 56px); color: var(--text-2); white-space: nowrap; }
 
 .fix-next { display: grid; gap: 2px; padding-left: 14px; border-left: 2px solid var(--signal); }
 .fix-next strong { font-size: 17px; font-weight: 600; }
 
+.home-quiz { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.home-quiz p { color: var(--text-2); font-size: 15px; }
 .track-list { list-style: none; padding: 0; display: grid; }
-.track-list li { display: grid; gap: 6px; padding: 14px 0; border-top: 1px solid var(--line); }
+.track-list li { display: grid; gap: 8px; padding: 16px 0; border-top: 1px solid var(--line); }
 .track-list li:first-child { border-top: 0; padding-top: 0; }
-.track-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
-.track-head span { color: var(--text-2); font-size: 13px; }
+.track-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; color: var(--text-2); font-size: 13px; }
+.track-stage { display: flex; justify-content: space-between; gap: 4px 12px; align-items: baseline; flex-wrap: wrap; margin-top: 4px; }
+.track-stage a { font-size: 16px; font-weight: 600; color: var(--text); }
+.track-stage span { color: var(--text-2); font-size: 13px; }
 .next-problem { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
 .next-problem a { font-weight: 500; }
 
