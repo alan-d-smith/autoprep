@@ -1043,7 +1043,7 @@ dialog.quiz::backdrop { background: rgba(0, 0, 0, 0.62); -webkit-backdrop-filter
   font-size: 14px;
   color: var(--text-2);
 }
-.consent strong { color: var(--text); font-weight: 600; }
+.consent strong { display: block; margin-bottom: 4px; color: var(--text); font-weight: 600; }
 
 /* ---------- Toast ---------- */
 
