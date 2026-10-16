@@ -1148,8 +1148,9 @@ dialog.quiz::backdrop { background: rgba(0, 0, 0, 0.62); -webkit-backdrop-filter
   :root { --gutter: 16px; }
   h1 { font-size: 34px; }
   main { padding-top: 100px; }
-  .glass-nav { top: 10px; height: 50px; padding: 0 5px; gap: 8px; justify-content: center; }
-  .wordmark { display: none; }
+  .glass-nav { top: 10px; height: 50px; padding: 0 5px 0 16px; gap: 8px; }
+  /* Room for the wordmark: it already leads home, so the Today tab goes. */
+  .nav a[data-nav=""] { display: none; }
   .nav a { padding: 7px 11px; font-size: 13px; }
   .big-number { font-size: 52px; }
   .problem-row { grid-template-columns: 22px 42px minmax(0, 1fr); }
@@ -1162,6 +1163,13 @@ dialog.quiz::backdrop { background: rgba(0, 0, 0, 0.62); -webkit-backdrop-filter
   .skill-table .hide-sm { display: none; }
   .stage-head h2 { font-size: 28px; }
   .lesson-text h1 { font-size: 32px; }
+}
+
+/* The narrowest phones: tighter tabs so the wordmark and three tabs still fit. */
+@media (max-width: 370px) {
+  .glass-nav { padding-left: 13px; gap: 4px; }
+  .wordmark { font-size: 15px; }
+  .nav a { padding: 7px 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

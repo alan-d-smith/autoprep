@@ -30,10 +30,11 @@ let firstRender = true;
 
 const lens = $('.lens');
 
-// On a page outside the main nav (the policies), the lens fades out.
+// On a page outside the main nav (the policies), or Today on a phone, where the wordmark stands in
+// for its tab, the lens fades out.
 function placeLens(instant) {
   const active = nav.querySelector('a[aria-current="page"]');
-  if (active) moveLens(lens, active, { instant });
+  if (active?.getClientRects().length) moveLens(lens, active, { instant });
   else lens.style.opacity = '0';
 }
 
