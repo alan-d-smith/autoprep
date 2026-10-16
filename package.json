@@ -7,7 +7,8 @@
     "dev": "node scripts/serve.js",
     "test": "node --test \"tests/**/*.test.js\"",
     "verify:curriculum": "node scripts/verify-curriculum.js",
-    "audio:texts": "node scripts/audio-texts.js"
+    "audio:texts": "node scripts/audio-texts.js",
+    "verify:sources": "node scripts/verify-sources.js"
   },
   "devDependencies": {
     "playwright-core": "1.58.2"

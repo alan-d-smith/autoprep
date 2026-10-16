@@ -10,8 +10,24 @@ import { covered, problemUrl } from './roadmap.js';
 import { bindHints } from './hints.js';
 import { bindListen } from '../tts.js';
 import { syncControls, problemRow, bindSolveBoxes } from './view.js';
+import { UKIEPC_SOURCES } from './sources.js';
 
 const DIFFICULTY = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+
+// The organisers' problem sets and the jury's solution slides for each year, folded away.
+const sourcesTpl = () => html`
+  <details class="sources uk-sources">
+    <summary><h3>Sources</h3><span class="sources-count">${UKIEPC_SOURCES.length}</span></summary>
+    <p class="small faint">The problems and the jury's solution outlines come from each year's official downloads. The hints here are written for autoprep from those outlines; where a hint takes another route, it says what the jury did.</p>
+    <ol>
+      ${UKIEPC_SOURCES.map((s) => html`
+        <li>
+          <a href="${s.problems}" target="_blank" rel="noopener">UKIEPC ${s.year} problem set</a> and
+          <a href="${s.solutions}" target="_blank" rel="noopener">solution slides</a>
+          <span>Every problem's statement and the jury's outline of its solution, from the <a href="${s.contest}" target="_blank" rel="noopener">UKIEPC ${s.year} page</a>. ${s.note}</span>
+        </li>`)}
+    </ol>
+  </details>`;
 
 export function renderUkiepc(app) {
   const open = new Set();
@@ -76,7 +92,8 @@ export function renderUkiepc(app) {
         <span class="small faint">Off by default, so the list doesn't tell you what each problem needs.</span>
       </div>
       <p class="muted uk-summary">${solved} of ${all.length} solved.${ready ? ` ${ready} more ${ready === 1 ? 'is' : 'are'} covered by stages you've completed.` : ''}</p>
-      ${UKIEPC.map(contestTpl)}`);
+      ${UKIEPC.map(contestTpl)}
+      ${sourcesTpl()}`);
     sync.bind();
   }
 

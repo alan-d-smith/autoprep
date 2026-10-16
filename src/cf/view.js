@@ -15,6 +15,7 @@ import { STAGE_VISUALS } from '../viz/stages.js';
 import { stepperTpl, bindSteppers } from '../viz/stepper.js';
 import { listenButton, bindListen } from '../tts.js';
 import { quizConfident } from './quiz.js';
+import { STAGE_SOURCES } from './sources.js';
 
 // Problems whose accepted submissions we keep after a sync: the path plus the UKIEPC sets.
 export const TRACKED_IDS = new Set([
@@ -247,7 +248,19 @@ export function renderPath(app, stageId) {
           <h3>Read more</h3>
           <div class="resources">${primer.resources.map((r) => html`<a href="${r.url}" target="_blank" rel="noopener">${r.label}</a>`)}</div>
         </div>
+        ${sourcesTpl(STAGE_SOURCES[stage.id])}
       </section>`;
+  }
+
+  // Pages checked to contain what this stage teaches, each with what it backs. Folded away by default.
+  function sourcesTpl(sources) {
+    if (!sources?.length) return '';
+    return html`
+      <details class="sources">
+        <summary><h3>Sources</h3><span class="sources-count">${sources.length}</span></summary>
+        <p class="small faint">The primer, diagram and hints are written for autoprep. These pages cover the same material, and each was checked to contain what it's listed for.</p>
+        <ol>${sources.map((s) => html`<li><a href="${s.url}" target="_blank" rel="noopener">${s.title}</a><span>${s.supports}</span></li>`)}</ol>
+      </details>`;
   }
 
   function problemsTpl(stage) {

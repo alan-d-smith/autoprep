@@ -25,6 +25,8 @@ Each stage also links one or two short explainer videos from well-known channels
 
 Path opens on an overview of its three tracks (dynamic programming, graphs, and geometry with searching the answer): stages and problems done, a progress rail with a segment per stage, where you are, and a button to continue. "Not sure where to start?" opens a short quiz: each technique appears in turn to be dragged (or clicked, or sorted with 1, 2 and 3) into never heard of, heard of but not confident, or confident. Stages you're confident in are then passed over when the path works out where you are (`src/cf/overview.js`, `src/cf/quiz.js`).
 
+Each stage page has a Sources section, folded away under its heading. It lists pages, mostly from the USACO Guide, CP-Algorithms and Wikipedia, that cover what the stage teaches, each with a sentence on what it backs (`src/cf/sources.js`). Every one was opened and checked to contain what it's listed for, and keeps the exact passages that show it; `npm run verify:sources` re-checks those passages against the live pages. The UKIEPC page cites each year's official problem set and the jury's solution slides. The primers, diagrams and hints themselves are written for autoprep.
+
 The path's stage list floats on the left and can be hidden for a wider page. Each track folds away, and each stage opens to list its problems; clicking one jumps to it. Hints and primers show notation like `dp[i][j]`, `O(n log n)` and `10^9` as inline code and superscripts (`src/format.js`). Templates get C++ syntax highlighting.
 
 ## Run it

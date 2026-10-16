@@ -499,6 +499,25 @@ code.ic {
 .chip.kactl { color: #fbbf24; border-color: rgba(251, 191, 36, 0.4); }
 .template .faint { margin: -2px 0 10px; }
 .resources { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; }
+/* Sources: a header that opens to the list. */
+.sources { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.sources > summary { display: flex; align-items: center; gap: 10px; padding: 14px 4px; list-style: none; cursor: pointer; border-radius: 8px; }
+.sources > summary::-webkit-details-marker { display: none; }
+.sources > summary::before {
+  content: ''; width: 7px; height: 7px; flex: none; margin-right: 2px;
+  border-right: 1.5px solid var(--text-2); border-bottom: 1.5px solid var(--text-2);
+  transform: rotate(-45deg); transition: transform 0.2s;
+}
+.sources[open] > summary::before { transform: rotate(45deg); }
+.sources > summary h3 { margin: 0; }
+.sources > summary:hover h3 { color: var(--text); }
+.sources-count { color: var(--text-3); font-family: var(--mono); font-size: 12px; }
+.uk-sources { margin-top: 40px; }
+.sources > p { margin: 0 0 12px 22px; max-width: 46rem; }
+.sources ol { display: grid; gap: 12px; padding-left: 42px; margin: 0 0 18px; max-width: 48rem; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { .sources > summary::before { transition: none; } }
+.sources li::marker { color: var(--text-3); font-family: var(--mono); font-size: 12px; }
+.sources li span { display: block; margin-top: 2px; color: var(--text-2); font-size: 13.5px; line-height: 1.5; }
 
 .problems { margin-top: 56px; }
 .tier { margin-top: 28px; }

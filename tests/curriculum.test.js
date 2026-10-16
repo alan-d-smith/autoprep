@@ -129,3 +129,18 @@ test('the where-to-start quiz asks about every stage once, in path order', async
   assert.deepEqual(QUIZ_ITEMS.map((item) => item.stage), TRACKS.flatMap((t) => t.stages));
   for (const item of QUIZ_ITEMS) assert.ok(nonEmpty(item.name) && nonEmpty(item.hint), item.stage);
 });
+
+test('every stage cites sources, each with what it backs and passages that show it', async () => {
+  const { STAGE_SOURCES, UKIEPC_SOURCES } = await import('../src/cf/sources.js');
+  for (const stage of STAGES) {
+    const sources = STAGE_SOURCES[stage.id];
+    assert.ok(sources?.length >= 3, `${stage.id} has ${sources?.length || 0} sources`);
+    for (const s of sources) {
+      assert.match(s.url, /^https:\/\//, s.title);
+      assert.ok(nonEmpty(s.title) && nonEmpty(s.supports), `${stage.id}: ${s.url}`);
+      assert.ok(s.quotes.length >= 2 && s.quotes.every((q) => q.split(/\s+/).length >= 5), `${stage.id}: ${s.title} needs passages`);
+    }
+  }
+  assert.deepEqual(UKIEPC_SOURCES.map((s) => s.year).sort(), UKIEPC.map((c) => c.year).sort());
+  for (const s of UKIEPC_SOURCES) for (const key of ['contest', 'problems', 'solutions']) assert.match(s[key], /^https:\/\//, `${s.year} ${key}`);
+});
