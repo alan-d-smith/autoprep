@@ -55,7 +55,7 @@ Small samples are handled conservatively. Each estimate is pulled toward your ov
 - Tracks and stage order: `src/cf/curriculum.js`.
 - A stage's primer, problems and hints: `src/cf/stages/<stage>.js`. Problem IDs are `contestId + index` (e.g. `1201C`). Run `npm test` and `npm run verify:curriculum` after changes.
 - UKIEPC problems: `src/cf/ukiepc.js`.
-- Mental-maths skills, lessons and worked steps: `src/math/skills.js`. The tests check that every skill's worked steps end at the right answer, for both default and wide ranges.
+- Mental-maths skills, lessons and worked steps: `src/math/skills.js`. The tests check that every skill's worked steps end at the right answer, for both default and wide ranges, and that each lesson's picture shows the same numbers as its steps (`tests/math-pictures.test.js`).
 - After changing any text that's read aloud, re-record it (see below). Until then, changed paragraphs are read by the browser's voice.
 
 ## Recording the voice

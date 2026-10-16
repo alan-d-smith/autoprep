@@ -3,36 +3,70 @@
 
 import { parseDecimal, formatDecimal, alignDecimals } from './zetamac.js';
 
-const PLACES = ['ones', 'tens', 'hundreds', 'thousands', 'ten-thousands', 'hundred-thousands'];
+// The helpers below are shared with the lesson pictures (src/viz/maths.js), so a picture always
+// splits a question the same way its worked steps do.
+
+export const PLACES = ['ones', 'tens', 'hundreds', 'thousands', 'ten-thousands', 'hundred-thousands'];
 
 // 4207 → [4000, 200, 7]
-function placeParts(n) {
+export function placeParts(n) {
   const parts = [];
   for (let p = 1; n > 0; p *= 10, n = Math.floor(n / 10)) if (n % 10) parts.unshift((n % 10) * p);
   return parts;
 }
 
-function stripZeros(n) {
+export function stripZeros(n) {
   let zeros = 0;
   while (n >= 10 && n % 10 === 0) { n /= 10; zeros++; }
   return [n, zeros];
 }
 
+export const zerosWord = (zeros) => (zeros === 1 ? 'a zero' : `${zeros} zeros`);
 const zerosLine = (zeros, result) => `put back ${zeros === 1 ? 'the zero' : `${zeros} zeros`}: ${result}`;
 
-// Splits a multiplication into its zero-free core: 120 × 70 → small 7, big 12, 2 zeros.
-function mulCore(x, y) {
+// Splits a multiplication into its zero-free core: 120 × 70 → 12 × 7 (small 7, big 12), 2 zeros.
+export function mulCore(x, y) {
   const [p, pz] = stripZeros(x), [q, qz] = stripZeros(y);
   const [small, big] = p <= q ? [p, q] : [q, p];
-  return { small, big, zeros: pz + qz };
+  return { p, q, small, big, zeros: pz + qz };
+}
+
+// The leftmost column, its two digits and their sum, when that column makes 10 or more (72 + 51:
+// the tens, 7 and 5, make 12). Addition without carrying allows this: there is nothing left to carry into.
+export function leadingCarry(x, y) {
+  const i = Math.max(String(x).length, String(y).length) - 1;
+  const digits = [x, y].map((n) => Math.floor(n / 10 ** i) % 10);
+  const sum = digits[0] + digits[1];
+  return sum >= 10 ? { place: PLACES[i] || `column ${i + 1}`, digits, sum } : null;
+}
+
+// How far to round the number taken away up: to the next ten, or, if it already ends in 0, the next
+// hundred, and so on (29 → 30 is 1 too many, 140 → 200 is 60 too many).
+export function roundUpBy(y) {
+  let unit = 10;
+  while (y && y % unit === 0) unit *= 10;
+  return (unit - (y % unit)) % unit;
+}
+
+// 100 − y by pairing digits: the tens make 9 and the ones make 10 (or, for a whole number of tens, the tens make 10).
+function complementTo100(y) {
+  const t = Math.floor(y / 10), o = y % 10;
+  return o
+    ? `100 − ${y}: tens make 9 (${t} and ${9 - t}), ones make 10 (${o} and ${10 - o}), so ${100 - y}`
+    : `100 − ${y}: tens make 10 (${t} and ${10 - t}), so ${100 - y}`;
 }
 
 // Anchor tricks for single-digit facts, in the order we prefer to use them.
 const ANCHOR_ORDER = [2, 11, 5, 9, 4, 12, 3, 6, 8, 7];
 
-function factSteps(a, b) {
+// The fact as m lots of n, where m is the factor with the handiest anchor: 7 × 8 → 8 lots of 7.
+export function factAnchor(a, b) {
   const m = ANCHOR_ORDER.find((k) => k === a || k === b) ?? a;
-  const n = m === a ? b : a;
+  return [m, m === a ? b : a];
+}
+
+function factSteps(a, b) {
+  const [m, n] = factAnchor(a, b);
   switch (m) {
     case 2: return [`double ${n} = ${2 * n}`];
     case 3: return [`double ${n} = ${2 * n}`, `${2 * n} + ${n} = ${3 * n}`];
@@ -56,8 +90,9 @@ function splitSteps(by, big) {
   return [...parts.map((p, i) => `${p} × ${big} = ${products[i]}`), `${products.join(' + ')} = ${by * big}`];
 }
 
-function withZeros(steps, zeros, result) {
-  return zeros ? [...steps, zerosLine(zeros, result)] : steps;
+// Working on the zero-free core: drop the zeros first and put them back at the end, as division does.
+function withZeros(steps, { p, q, zeros }, result) {
+  return zeros ? [`drop ${zerosWord(zeros)}: ${p} × ${q}`, ...steps, zerosLine(zeros, result)] : steps;
 }
 
 // Divide by peeling off the largest place-value chunk of the quotient at a time.
@@ -79,10 +114,10 @@ function chunkSteps(x, d, q) {
 }
 
 // Cancels zeros shared by the dividend and divisor (840 ÷ 20 → 84 ÷ 2).
-function divCore(x, y) {
+export function divCore(x, y) {
   const [d, dz] = stripZeros(y);
-  const steps = dz ? [`cancel ${dz === 1 ? 'a zero' : `${dz} zeros`} from both: ${x / 10 ** dz} ÷ ${d}`] : [];
-  return { x: x / 10 ** dz, d, q: x / y, steps };
+  const steps = dz ? [`cancel ${zerosWord(dz)} from both: ${x / 10 ** dz} ÷ ${d}`] : [];
+  return { x: x / 10 ** dz, d, dz, q: x / y, steps };
 }
 
 function chunkedDivision({ x, y }) {
@@ -101,7 +136,7 @@ export const SKILLS = {
     lesson: {
       title: 'Add the tens, then the ones',
       idea: 'Start from the bigger number and add the other one place by place, biggest place first. Each step is a single-digit addition, and the answer comes out in the order you type it.',
-      when: 'No column adds up to 10 or more, like 43 + 25.',
+      when: 'No column adds up to 10 or more, like 43 + 25. The leftmost column may, as there is nothing further left to carry into: in 72 + 51 the tens make 12, and you just write 12 in front of the 3.',
     },
     steps({ x, y }) {
       const [a, b] = x >= y ? [x, y] : [y, x];
@@ -171,12 +206,11 @@ export const SKILLS = {
     sample: [84, 29],
     lesson: {
       title: 'Round the number you take away',
-      idea: 'Borrowing digit by digit means holding a change in your head while you work. Instead, round the number you are subtracting up to the next ten, subtract that, and add back the extra. Both steps are clean.',
+      idea: 'Borrowing digit by digit means holding a change in your head while you work. Instead, round the number you are subtracting up to the next ten (if it already ends in 0, the next hundred, and so on), subtract that, and add back the extra. Both steps are clean.',
       when: 'A digit on top is smaller than the one underneath, like 84 − 29 or 72 − 36. It is quickest when the number you take away ends in 7, 8 or 9.',
     },
     steps({ x, y }) {
-      const up = (10 - (y % 10)) % 10;
-      if (!up) return [`${x} − ${y} = ${x - y}`];
+      const up = roundUpBy(y);
       return [`round ${y} up to ${y + up} (that's ${up} too many)`, `${x} − ${y + up} = ${x - y - up}`, `${x - y - up} + ${up} = ${x - y}`];
     },
   },
@@ -193,7 +227,11 @@ export const SKILLS = {
     steps({ x, y }) {
       const hundreds = Math.floor(x / 100) * 100;
       const rest = x - hundreds;
-      if (!rest) return [`${x} − ${y} = ${x - y}`];
+      // A whole number of hundreds: take y from the last hundred, by pairing digits.
+      if (!rest) {
+        if (x === 100) return [complementTo100(y)];
+        return [`${x} = ${x - 100} + 100`, complementTo100(y), `${x - 100} + ${100 - y} = ${x - y}`];
+      }
       return [`${x} = ${hundreds} + ${rest}`, `${hundreds} − ${y} = ${hundreds - y}`, `${hundreds - y} + ${rest} = ${x - y}`];
     },
   },
@@ -208,8 +246,8 @@ export const SKILLS = {
       when: 'Both numbers are 12 or below once you ignore trailing zeros (7 × 60 is 7 × 6 with a zero on the end).',
     },
     steps({ x, y }) {
-      const { small, big, zeros } = mulCore(x, y);
-      return withZeros(factSteps(small, big), zeros, x * y);
+      const core = mulCore(x, y);
+      return withZeros(factSteps(core.small, core.big), core, x * y);
     },
   },
   'mul-split': {
@@ -220,16 +258,17 @@ export const SKILLS = {
     lesson: {
       title: 'Split the big number by place value',
       idea: 'Multiply the biggest place first, then the next, then add. Going left to right means you hold one running total while you work out small products, and the answer builds in the order you type it.',
-      when: 'A single digit times a bigger number, like 7 × 64. Most of a default Zetamac round is this kind of question.',
+      when: 'A single digit times a bigger number, like 7 × 64. In a default Zetamac round, about three in five multiplication questions are this kind.',
     },
     steps({ x, y }) {
-      const { small, big, zeros } = mulCore(x, y);
+      const core = mulCore(x, y);
+      const { small, big } = core;
       const parts = placeParts(big);
       const products = parts.map((p) => p * small);
       const steps = parts.length === 1
         ? [`${small} × ${big} = ${small * big}`]
         : [...parts.map((p, i) => `${small} × ${p} = ${products[i]}`), `${products.join(' + ')} = ${small * big}`];
-      return withZeros(steps, zeros, x * y);
+      return withZeros(steps, core, x * y);
     },
   },
   'mul-1112': {
@@ -239,15 +278,16 @@ export const SKILLS = {
     sample: [12, 47],
     lesson: {
       title: 'Times ten, plus a bit',
-      idea: '11 × n is 10 × n plus one more n. 12 × n is 10 × n plus double n. Putting a zero on the end is free, so the only real work is one addition.',
+      idea: '11 × n is 10 × n plus one more n. 12 × n is 10 × n plus double n. Putting a zero on the end is free, so the only real work is one addition (and, for × 12, a doubling).',
       when: 'An 11 or 12 times a bigger number, like 11 × 47 or 12 × 38.',
     },
     steps({ x, y }) {
-      const { small, big, zeros } = mulCore(x, y);
+      const core = mulCore(x, y);
+      const { small, big } = core;
       const steps = small === 11
         ? [`${big} × 10 = ${10 * big}`, `${10 * big} + ${big} = ${11 * big}`]
         : [`${big} × 10 = ${10 * big}`, `${big} × 2 = ${2 * big}`, `${10 * big} + ${2 * big} = ${12 * big}`];
-      return withZeros(steps, zeros, x * y);
+      return withZeros(steps, core, x * y);
     },
   },
   'mul-2x2': {
@@ -261,8 +301,8 @@ export const SKILLS = {
       when: 'Both numbers are 13 or more, like 23 × 47. This only appears when you widen the multiplication ranges.',
     },
     steps({ x, y }) {
-      const { small, big, zeros } = mulCore(x, y);
-      return withZeros(splitSteps(small, big), zeros, x * y);
+      const core = mulCore(x, y);
+      return withZeros(splitSteps(core.small, core.big), core, x * y);
     },
   },
   'div-facts': {
@@ -280,7 +320,7 @@ export const SKILLS = {
       const [q, qz] = stripZeros(core.q);
       const inner = core.x / 10 ** qz;
       const steps = [...core.steps];
-      if (qz) steps.push(`drop ${qz === 1 ? 'a zero' : `${qz} zeros`}: ${inner} ÷ ${core.d}`);
+      if (qz) steps.push(`drop ${zerosWord(qz)}: ${inner} ÷ ${core.d}`);
       steps.push(`${core.d} × ? = ${inner}`, `${core.d} × ${q} = ${inner}, so ${q}`);
       return qz ? [...steps, zerosLine(qz, core.q)] : steps;
     },
@@ -316,20 +356,44 @@ export const SKILLS = {
     sample: [1081, 23],
     lesson: {
       title: 'Estimate the tens, then fix the ones',
-      idea: 'Round the divisor to estimate the tens of the answer: 1081 ÷ 23 is a bit under 1081 ÷ 20 ≈ 54, so try 40. 23 × 40 = 920 leaves 161, and 23 × 7 = 161. The answer is 47.',
+      idea: 'Round the divisor to estimate the tens of the answer: 1081 ÷ 23 is a bit under 1081 ÷ 20 ≈ 54, and 23 × 50 = 1150 is already too big, so the tens digit is 4. 23 × 40 = 920 leaves 161, and 23 × 7 = 161. The answer is 47.',
       when: 'The divisor is 13 or more, like 1081 ÷ 23. This only appears when you widen the multiplication ranges.',
     },
     steps: chunkedDivision,
   },
 };
 
-const PLACE_NAMES = ['units', 'tenths', 'hundredths', 'thousandths', 'ten-thousandths'];
+export const PLACE_NAMES = ['units', 'tenths', 'hundredths', 'thousandths', 'ten-thousandths'];
 const placesWord = (n) => (n === 1 ? 'one decimal place' : `${n} decimal places`);
+// "64 tenths", "1 tenth"
+export const inPlaces = (n, places) => `${n} ${n === 1 ? PLACE_NAMES[places].slice(0, -1) : PLACE_NAMES[places]}`;
 
 // Moves the decimal point k places right: shift("4.48", 1) = "44.8".
-function shift(x, k) {
+export function shift(x, k) {
   const [units, places] = parseDecimal(x);
   return places >= k ? formatDecimal(units, places - k) : String(units * 10 ** (k - places));
+}
+
+// Puts the point in without dropping zeros at the end: (310, 1) → "31.0", where formatDecimal gives "31".
+export function withPoint(units, places) {
+  const digits = String(units).padStart(places + 1, '0');
+  return places ? `${digits.slice(0, -places)}.${digits.slice(-places)}` : digits;
+}
+
+// "31.0 = 31" when zeros at the end are dropped, else just the number.
+function pointed(units, places) {
+  const full = withPoint(units, places), short = formatDecimal(units, places);
+  return full === short ? short : `${full} = ${short}`;
+}
+
+// How a decimal division is worked: make the divisor whole, then, if the answer isn't whole, count
+// the dividend in tenths or hundredths. 4.48 ÷ 0.7 → 44.8 ÷ 7 → 448 tenths ÷ 7 = 64 tenths = 6.4.
+export function decDivPlan(x, y, answer) {
+  const [, py] = parseDecimal(y);
+  const dividend = shift(x, py), divisor = Number(shift(y, py));
+  const [, pq] = parseDecimal(answer);
+  const whole = pq ? Number(shift(dividend, pq)) : null;
+  return { py, dividend, divisor, pq, whole, q: pq ? whole / divisor : null };
 }
 
 Object.assign(SKILLS, {
@@ -346,7 +410,7 @@ Object.assign(SKILLS, {
     steps({ op, x, y }) {
       const [a, b, p] = alignDecimals(x, y);
       const r = op === 'fadd' ? a + b : a - b;
-      return [`in ${PLACE_NAMES[p]}: ${a} ${op === 'fadd' ? '+' : '−'} ${b} = ${r}`, `put the point back: ${formatDecimal(r, p)}`];
+      return [`in ${PLACE_NAMES[p]}: ${a} ${op === 'fadd' ? '+' : '−'} ${b} = ${r}`, `put the point back: ${pointed(r, p)}`];
     },
   },
   'dec-mul': {
@@ -361,7 +425,7 @@ Object.assign(SKILLS, {
     },
     steps({ x, y }) {
       const [a, pa] = parseDecimal(x), [b, pb] = parseDecimal(y);
-      return [`ignore the points: ${a} × ${b} = ${a * b}`, `${placesWord(pa + pb)} in the question: ${formatDecimal(a * b, pa + pb)}`];
+      return [`ignore the points: ${a} × ${b} = ${a * b}`, `${placesWord(pa + pb)} in the question: ${pointed(a * b, pa + pb)}`];
     },
   },
   'dec-div': {
@@ -371,18 +435,14 @@ Object.assign(SKILLS, {
     sample: ['44.8', '0.7'],
     lesson: {
       title: 'Make the divisor whole first',
-      idea: 'Moving the decimal point the same number of places in both numbers doesn\'t change the answer, so move it until the divisor is whole: 44.8 ÷ 0.7 becomes 448 ÷ 7 = 64. If the number you\'re dividing still has a point, work in tenths or hundredths and put the point back at the end.',
-      when: 'A division where either number has a decimal point, like 44.8 ÷ 0.7 or 4.48 ÷ 7.',
+      idea: 'Moving the decimal point the same number of places in both numbers doesn\'t change the answer, so move it until the divisor is whole: 44.8 ÷ 0.7 becomes 448 ÷ 7 = 64. If the division then doesn\'t come out whole, work in tenths or hundredths: 4.48 ÷ 7 is 448 hundredths ÷ 7 = 64 hundredths, so 0.64.',
+      when: 'A division with a decimal point in either number or in the answer, like 44.8 ÷ 0.7, 4.48 ÷ 7 or 13 ÷ 2.',
     },
     steps({ x, y, answer }) {
-      const [, py] = parseDecimal(y);
-      const dividend = shift(x, py);
-      const divisor = Number(shift(y, py));
-      const [, pq] = parseDecimal(answer);
+      const { py, dividend, divisor, pq, whole, q } = decDivPlan(x, y, answer);
       const steps = py ? [`move both points ${py === 1 ? 'one place' : `${py} places`} right: ${dividend} ÷ ${divisor}`] : [];
       if (!pq) return [...steps, `${dividend} ÷ ${divisor} = ${answer}`];
-      const whole = Number(shift(dividend, pq));
-      return [...steps, `in ${PLACE_NAMES[pq]}: ${whole} ÷ ${divisor} = ${whole / divisor}`, `put the point back: ${answer}`];
+      return [...steps, `${dividend} is ${inPlaces(whole, pq)}: ${whole} ÷ ${divisor} = ${q}`, `${inPlaces(q, pq)} = ${answer}`];
     },
   },
 });
