@@ -31,7 +31,7 @@ ll countSubarrays(const vector<ll>& a, ll k) {
 	return res;
 }
 
-// S[i][j] = sum of g[0..i)[0..j); any rectangle by inclusion-exclusion.
+// S[i][j] = sum of g[0..i-1][0..j-1], the top-left i-by-j block; any rectangle by inclusion-exclusion.
 vector<vector<ll>> prefix2D(const vector<vector<ll>>& g) {
 	int n = sz(g), m = sz(g[0]);
 	vector<vector<ll>> S(n + 1, vector<ll>(m + 1));
@@ -52,7 +52,8 @@ vector<ll> applyRanges(int n, const vector<tuple<int, int, ll>>& ups) {
 }
 
 // Covered length of a union of half-open intervals [L, R), merged as they
-// arrive by IntervalContainer.h.
+// arrive by IntervalContainer.h. Pairs are int: for an inclusive [l, r] pass {l, r + 1};
+// coordinates up to 10^18 need the event sweep instead.
 ll coveredLength(const vector<pii>& segs) {
 	set<pii> is;
 	for (auto [L, R] : segs) addInterval(is, L, R);
@@ -368,8 +369,15 @@ void preorder(int r = 0) {
 	}
 }
 
-// O(1) LCA queries: KACTL's LCA.h, built from adjacency lists with root 0.
-int lcaQuery(vector<vi>& C, int a, int b) { LCA L(C); return L.lca(a, b); }`,
+// LCA queries with KACTL's LCA.h, from adjacency lists with root 0: build it once in
+// O(n log n), then each query is O(1). Its DFS recurses, so on a path of 2·10^5 vertices
+// raise the stack limit first.
+vi lcaAll(vector<vi>& C, const vector<pii>& queries) {
+	LCA L(C); // once
+	vi res;
+	for (auto [a, b] : queries) res.push_back(L.lca(a, b));
+	return res;
+}`,
   },
 
   'dsu-mst': {
@@ -402,7 +410,7 @@ bool hasCycle(const vector<vi>& gr) { return sz(topoSort(gr)) < sz(gr); }
 // Longest path (in edges) ending at each node of a DAG: relax in topological order.
 vi longestPath(const vector<vi>& gr) {
 	vi order = topoSort(gr), dp(sz(gr));
-	for (int u : order) for (int v : gr[u]) dp[v] = max(dp[v], dp[u] + 1);
+	for (int v : order) for (int u : gr[v]) dp[u] = max(dp[u], dp[v] + 1);
 	return dp; // only meaningful when order has every node
 }
 
@@ -411,7 +419,7 @@ string alphabet(const vector<pair<char, char>>& before) {
 	vector<vi> gr(26);
 	for (auto [a, b] : before) gr[a - 'a'].push_back(b - 'a');
 	vi order = topoSort(gr);
-	if (sz(order) < 26) return "IMPOSSIBLE";
+	if (sz(order) < 26) return ""; // no valid order: print the problem's own word (510C wants "Impossible")
 	string s;
 	for (int c : order) s += char('a' + c);
 	return s;
@@ -426,10 +434,11 @@ ll shortest(int s, int t) {
 	return dist[t] == LLONG_MAX ? -1 : dist[t];
 }
 
-// State graphs: node (city, k) becomes city * K + k in adj, then the same dijkstra.
-int stateId(int city, int k, int K) { return city * K + k; }
+// State graphs: node (city, c) becomes city * K + c in adj. Before calling dijkstra, set
+// n = N * K, and keep N * K below MAXN (raise MAXN, e.g. to 1e6 + 5, for big state graphs).
+int stateId(int city, int c, int K) { return city * K + c; }
 
-// All pairs for n up to about 400: KACTL's FloydWarshall.h.
+// All pairs for n up to about 500: KACTL's FloydWarshall.h.
 // m[i][j] = edge weight or inf; afterwards shortest distances (-inf through a negative cycle).
 vector<vector<ll>> allPairs(int N, const vector<tuple<int, int, ll>>& edges) {
 	vector<vector<ll>> m(N, vector<ll>(N, inf));
@@ -450,10 +459,16 @@ int treeDist(vector<vi>& tbl, vi& depth, int a, int b) {
 	return depth[a] + depth[b] - 2 * depth[lca(tbl, depth, a, b)];
 }
 
-// The same table works for any "next" function (a functional graph): x after k steps.
-int afterSteps(vi& next, int x, int k) {
-	vector<vi> tbl = treeJump(next);
-	return jmp(tbl, x, k);
+// Any "next" function (a functional graph), x after k steps for k up to 10^18: treeJump
+// only builds about log2(n) levels, so build 60 levels once and reuse them for every query.
+vector<vi> stepTable(const vi& next, int levels = 60) {
+	vector<vi> up(levels, next);
+	rep(j,1,levels) rep(x,0,sz(next)) up[j][x] = up[j-1][up[j-1][x]];
+	return up;
+}
+int afterSteps(const vector<vi>& up, int x, ll k) {
+	rep(j,0,sz(up)) if (k >> j & 1) x = up[j][x];
+	return x;
 }`,
   },
 
@@ -495,8 +510,9 @@ double argminReal(double lo, double hi, auto f) {
 // sideOf.h: 1 for a left turn, 0 collinear, -1 for a right turn.
 int turn(P a, P b, P c) { return sideOf(a, b, c); }
 
-// PolygonArea.h returns twice the signed area (counter-clockwise is positive).
-double area(vector<P>& poly) { return abs(polygonArea2(poly)) / 2.0; }
+// PolygonArea.h returns twice the signed area (counter-clockwise is positive). Keep it an
+// integer: the area is area2 / 2, plus .5 when area2 is odd (a double loses digits past 2^53).
+ll area2(vector<P>& poly) { return abs(polygonArea2(poly)); }
 
 // InsidePolygon.h and OnSegment.h; strict = false counts the boundary as inside.
 bool inside(vector<P>& poly, P q) { return inPolygon(poly, q, false); }
@@ -517,8 +533,9 @@ ll diameter2(const vector<P>& pts) {
 	return (a - b).dist2();
 }
 
-// Convex hull trick, dp[i] = max over j of k[j] * x[i] + m[j]:
-// KACTL's LineContainer.h keeps the upper envelope of the lines.
+// Convex hull trick, dp[i] = max over j of k[j] * x[i] + m[j], where m is the intercept:
+// KACTL's LineContainer.h keeps the upper envelope. For a minimum, as in MonoCHT, add(-k, -m)
+// and negate the query.
 ll bestLine(LineContainer& lc, ll x) { return lc.query(x); }`,
   },
 };
