@@ -16,6 +16,7 @@ const routes = [
   [/^\/path$/, () => renderOverview, 'Codeforces path'],
   [/^\/path\/([\w-]+)$/, (m) => (app) => renderPath(app, m[1]), 'Codeforces path'],
   [/^\/ukiepc$/, () => renderUkiepc, 'UKIEPC practice'],
+  [/^\/ukiepc\/ready$/, () => (app) => renderUkiepc(app, { readyOnly: true }), 'UKIEPC practice'],
   [/^\/math$/, () => renderMath, 'Mental maths'],
   [/^\/math\/learn\/([\w-]+)$/, (m) => (app) => renderLesson(app, m[1]), 'Mental maths'],
   [/^\/privacy$/, () => renderPrivacy, 'Privacy policy'],

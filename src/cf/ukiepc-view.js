@@ -29,11 +29,17 @@ const sourcesTpl = () => html`
     </ol>
   </details>`;
 
-export function renderUkiepc(app) {
+const allProblems = () => UKIEPC.flatMap((c) => c.problems.map((p) => ({ ...p, key: `${c.gym}${p.letter}` })));
+const readyKeys = () => allProblems().filter((p) => !isSolved(p.key) && problemReady(p, isSolved)).map((p) => p.key);
+
+// readyOnly (#/ukiepc/ready) lists just the problems your completed stages cover, fixed when the page
+// opens so that ticking one off doesn't make it vanish.
+export function renderUkiepc(app, { readyOnly = false } = {}) {
   const open = new Set();
   const listeners = new AbortController();
   const sync = syncControls(app, draw);
   const ui = state.ui;
+  const shown = readyOnly ? new Set(readyKeys()) : null;
 
   function metaTpl(p, key) {
     if (!ui.ukiepcDifficulty && !ui.ukiepcTopics) return '';
@@ -51,7 +57,9 @@ export function renderUkiepc(app) {
 
   function contestTpl(contest) {
     const solved = contest.problems.filter((p) => isSolved(`${contest.gym}${p.letter}`)).length;
-    const isOpen = ui.ukiepcOpen.includes(contest.year);
+    const problems = shown ? contest.problems.filter((p) => shown.has(`${contest.gym}${p.letter}`)) : contest.problems;
+    if (!problems.length) return '';
+    const isOpen = shown || ui.ukiepcOpen.includes(contest.year);
     return html`
       <details class="contest" data-year="${contest.year}" ${isOpen ? 'open' : ''}>
         <summary>
@@ -60,7 +68,7 @@ export function renderUkiepc(app) {
         </summary>
         <p class="contest-link small"><a href="https://codeforces.com/gym/${contest.gym}" target="_blank" rel="noopener">Open the ${contest.year} gym on Codeforces</a></p>
         <ul class="problem-list">
-          ${contest.problems.map((p) => {
+          ${problems.map((p) => {
             const key = `${contest.gym}${p.letter}`;
             return problemRow({
               key,
@@ -77,10 +85,19 @@ export function renderUkiepc(app) {
       </details>`;
   }
 
-  function draw() {
-    const all = UKIEPC.flatMap((c) => c.problems.map((p) => ({ ...p, key: `${c.gym}${p.letter}` })));
+  function summaryTpl() {
+    const all = allProblems();
     const solved = all.filter((p) => isSolved(p.key)).length;
-    const ready = all.filter((p) => !isSolved(p.key) && problemReady(p, isSolved)).length;
+    if (shown) {
+      return html`<p class="muted uk-summary">${shown.size
+        ? `Showing the ${shown.size === 1 ? 'problem' : `${shown.size} problems`} covered by stages you've completed. `
+        : 'No unsolved problem is covered by your completed stages yet. '}<a href="#/ukiepc">Show every problem</a></p>`;
+    }
+    const ready = readyKeys().length;
+    return html`<p class="muted uk-summary">${solved} of ${all.length} solved.${ready ? html` <a href="#/ukiepc/ready">${ready} more ${ready === 1 ? 'is' : 'are'} covered</a> by stages you've completed.` : ''}</p>`;
+  }
+
+  function draw() {
     mount(app, html`
       <div class="page-head">
         <h1>UKIEPC practice</h1>
@@ -92,7 +109,7 @@ export function renderUkiepc(app) {
         <label class="switch"><input type="checkbox" role="switch" data-ui="ukiepcTopics" ${ui.ukiepcTopics ? 'checked' : ''} /> Show topics</label>
         <span class="small faint">Off by default, so the list doesn't tell you what each problem needs.</span>
       </div>
-      <p class="muted uk-summary">${solved} of ${all.length} solved.${ready ? ` ${ready} more ${ready === 1 ? 'is' : 'are'} covered by stages you've completed.` : ''}</p>
+      ${summaryTpl()}
       ${UKIEPC.map(contestTpl)}
       ${sourcesTpl()}`);
     sync.bind();
@@ -110,7 +127,8 @@ export function renderUkiepc(app) {
   // <details> toggle events don't bubble, so listen in the capture phase.
   app.addEventListener('toggle', (e) => {
     const year = Number(e.target.dataset?.year);
-    if (!year) return;
+    // The filtered list opens every year it shows; that isn't a choice to remember.
+    if (!year || shown) return;
     ui.ukiepcOpen = e.target.open ? [...new Set([...ui.ukiepcOpen, year])] : ui.ukiepcOpen.filter((y) => y !== year);
     save();
   }, { capture: true, signal: listeners.signal });
