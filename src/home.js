@@ -4,7 +4,6 @@ import { html, mount, ago } from './dom.js';
 import { state, benchmarkRounds, isSolved } from './store.js';
 import { diagnose } from './math/diagnose.js';
 import { SKILLS } from './math/skills.js';
-import { nextQuestion, OPS } from './math/zetamac.js';
 import { focusReason } from './math/view.js';
 import { TRACKS } from './cf/curriculum.js';
 import { UKIEPC } from './cf/ukiepc.js';
@@ -18,14 +17,9 @@ const newcomer = () => !state.math.rounds.length && !anySolved() && !state.cf.qu
 function mathCard() {
   const rounds = benchmarkRounds();
   if (!rounds.length) {
-    const sample = nextQuestion(OPS, null);
     return html`
       <h2 id="today-math">Mental maths</h2>
-      <div class="sample-question">
-        <span class="big-number">${sample.text}</span>
-        <span class="muted">A typical question. A round is two minutes of these, as many as you can.</span>
-      </div>
-      <p class="muted">Afterwards you'll see which technique is holding you back, with a lesson and a drill for it.</p>
+      <p class="muted">No rounds yet. Two minutes of Zetamac-style questions is enough to find the technique that's holding you back.</p>
       <div class="btn-row"><a class="btn btn-primary" href="#/math">Play a round</a></div>`;
   }
   const last = rounds[0];
