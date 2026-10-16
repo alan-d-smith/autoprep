@@ -2123,9 +2123,49 @@
    "text": "Root a tree in O of n, use depth, subtree sizes and DFS order to answer subtree questions, write bottom-up DP on subtrees, reroot it to get an answer for every vertex, and find a diameter with two BFS passes."
   },
   {
-   "key": "2ck4v762ul1",
+   "key": "20cxi0m6lwq",
    "where": "path/trees",
-   "text": "Rooting the tree once gives every vertex a parent, a depth and a subtree; walking the DFS preorder backwards finishes every child before its parent, so a DP over subtrees is a single O of n pass. In a preorder each subtree is a contiguous block order of tin v to tin of v plus sz of v minus 1, which turns \"everything below v\" into an array range. When the statement wants an answer for every vertex as the root, compute it for one root and move the root across each edge with an O of 1 update (rerooting): O of n in total instead of O of n squared."
+   "text": "Rooting the tree once gives every vertex a parent, a depth and a subtree (the vertex and everything below it). One DFS from the root visits the vertices in preorder; walking that order backwards finishes every child before its parent, so a DP over subtrees is a single O of n pass. A DFS finishes a subtree before it leaves it, so each subtree is a contiguous block of the preorder, order of tin v to tin of v plus size of v minus 1, which turns \"everything below v\" into an array range. When the statement wants an answer for every vertex as the root, compute it for one root and move the root across each edge with an O of 1 update (rerooting): O of n in total instead of O of n squared."
+  },
+  {
+   "key": "1l7k73wxm24",
+   "where": "path/trees",
+   "text": "What the arrays mean"
+  },
+  {
+   "key": "jpqv34cg2s",
+   "where": "path/trees",
+   "text": "par of v: v's parent once the tree is rooted; the root has none ( minus 1)."
+  },
+  {
+   "key": "9sggw65w0h",
+   "where": "path/trees",
+   "text": "depth of v: the number of edges from the root down to v (dep in the TRD version)."
+  },
+  {
+   "key": "1me5nrda9zx",
+   "where": "path/trees",
+   "text": "order: the vertices in DFS preorder, the order in which a DFS from the root first reaches them (in the TRD version, rootTree builds a BFS order and preorder() fills tin)."
+  },
+  {
+   "key": "1t1bzz9qvp6",
+   "where": "path/trees",
+   "text": "tin of v: the position of v in order, also called its entry time."
+  },
+  {
+   "key": "89xewjfbqx",
+   "where": "path/trees",
+   "text": "size of v: how many vertices are in v's subtree, v included (sub in the TRD version)."
+  },
+  {
+   "key": "bq4v5hne7e",
+   "where": "path/trees",
+   "text": "down of v: in a subtree DP, the answer for v's subtree on its own, filled children first."
+  },
+  {
+   "key": "mcq6us6sjd",
+   "where": "path/trees",
+   "text": "ans of v: in rerooting, the answer with v as the root, filled parents first from ans of par v."
   },
   {
    "key": "2816k4xoy50",
@@ -2165,9 +2205,9 @@
    "script": "In the rerooting pass, the upward value for child v must use the parent's full answer with v's own contribution removed (for example ans of p minus max(0, down of v)), not down of p, which ignores everything above p. Distance sums like sum of dist times eh i reach 10 to the 15 and need long long."
   },
   {
-   "key": "t2yvqbng98",
+   "key": "1pnbydm1vjc",
    "where": "path/trees",
-   "text": "A command or search spreading from v in DFS order, asked for its k-th step: that is, the preorder slice of length sz of v starting at tin of v; one DFS from the root answers every query (1006E)."
+   "text": "A command or search spreading from v in DFS order, asked for its k-th step: that is, the preorder slice of length size of v starting at tin of v; one DFS from the root answers every query (1006E)."
   },
   {
    "key": "1mf8rkidlta",
@@ -2175,9 +2215,9 @@
    "text": "Pick k cities whose envoys walk to the capital and score the unpicked cities they pass: that is, each city is worth depth minus (subtree size minus 1); sort and take the k largest (1336A)."
   },
   {
-   "key": "12cgsyxl9ts",
+   "key": "217aoov2c08",
    "where": "path/trees",
-   "text": "Choose the best centre for a weighted sum of distances: that is, compute the sum for root 1, then reroot: moving from p to its child v changes it by S minus 2 times sub(v) (1092F). This is the \"move to a neighbour with an O of 1 update\" step in UKIEPC 2024 Jabber Network."
+   "text": "Choose the best centre for a weighted sum of distances: that is, compute the sum for root 1, then reroot: moving from p to its child v changes it by S minus 2 times sub(v), where S is the total of all the weights and sub(v) the total inside v's subtree (1092F). This is the \"move to a neighbour with an O of 1 update\" step in UKIEPC 2024 Jabber Network."
   },
   {
    "key": "2174v52snp",
@@ -5496,9 +5536,9 @@
    "text": "Build children lists in increasing index (reading p 2 to p n in order already sorts them), run one iterative preorder from 1 recording tin of v and order of, compute subtree sizes, and answer (u, k) with order of tin u plus k minus 1 if k at most sz of u, else minus 1. O of n plus q."
   },
   {
-   "key": "znd2f18lqu",
+   "key": "f2b8s3152h",
    "where": "path/trees/1006E",
-   "text": "Children are appended in increasing index as p i is read for i is 2 to n. One preorder DFS from 1 (iterative, pushing children in reverse so the smallest is popped first) gives order of and tin of; walking order of backwards gives subtree sizes. For query (u, k), print minus 1 if k greater than sz of u, otherwise order of tin u plus k minus 1. O of n plus q. Simulating the spread per query is O of nq and times out, and a recursive DFS on a 2 times 10 to the 5 chain risks a stack overflow."
+   "text": "Children are appended in increasing index as p i is read for i is 2 to n. One preorder DFS from 1 (iterative, pushing children in reverse so the smallest is popped first) gives order of and tin of; walking order of backwards gives subtree sizes. For query (u, k), print minus 1 if k greater than size of u, otherwise order of tin u plus k minus 1. O of n plus q. Simulating the spread per query is O of nq and times out, and a recursive DFS on a 2 times 10 to the 5 chain risks a stack overflow."
   },
   {
    "key": "tpwpwap7g0",
