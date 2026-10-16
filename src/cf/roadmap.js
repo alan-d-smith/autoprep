@@ -58,4 +58,7 @@ export function covered(stageIds, isSolved) {
   return stages.length > 0 && stages.every((s) => stageProgress(s, isSolved).complete);
 }
 
+// Ready to try: its stages are covered and it needs nothing the path doesn't teach (offPath).
+export const problemReady = (problem, isSolved) => !problem.offPath && covered(problem.stages, isSolved);
+
 export const allStages = () => STAGES;

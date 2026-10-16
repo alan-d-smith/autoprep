@@ -7,7 +7,7 @@ import { SKILLS } from './math/skills.js';
 import { focusReason } from './math/view.js';
 import { TRACKS } from './cf/curriculum.js';
 import { UKIEPC } from './cf/ukiepc.js';
-import { currentStage, nextProblem, stageProgress, problemUrl, ratingBand, covered } from './cf/roadmap.js';
+import { currentStage, nextProblem, stageProgress, problemUrl, ratingBand, problemReady } from './cf/roadmap.js';
 import { quizConfident } from './cf/quiz.js';
 
 function mathCard() {
@@ -57,7 +57,7 @@ function trackItem(track) {
 
 function pathCard() {
   const all = UKIEPC.flatMap((c) => c.problems.map((p) => ({ ...p, key: `${c.gym}${p.letter}` })));
-  const ready = all.filter((p) => !isSolved(p.key) && covered(p.stages, isSolved)).length;
+  const ready = all.filter((p) => !isSolved(p.key) && problemReady(p, isSolved)).length;
   return html`
     <h2 id="today-path">Codeforces path</h2>
     <ul class="track-list">${TRACKS.map(trackItem)}</ul>

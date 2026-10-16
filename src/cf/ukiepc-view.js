@@ -6,7 +6,7 @@ import { html, mount } from '../dom.js';
 import { state, save, isSolved } from '../store.js';
 import { stageById } from './curriculum.js';
 import { UKIEPC } from './ukiepc.js';
-import { covered, problemUrl } from './roadmap.js';
+import { problemReady, problemUrl } from './roadmap.js';
 import { bindHints } from './hints.js';
 import { bindListen } from '../tts.js';
 import { syncControls, problemRow, bindSolveBoxes } from './view.js';
@@ -37,7 +37,7 @@ export function renderUkiepc(app) {
 
   function metaTpl(p, key) {
     if (!ui.ukiepcDifficulty && !ui.ukiepcTopics) return '';
-    const ready = ui.ukiepcTopics && covered(p.stages, isSolved) && !isSolved(key);
+    const ready = ui.ukiepcTopics && problemReady(p, isSolved) && !isSolved(key);
     return html`
       <div class="uk-meta">
         ${ui.ukiepcDifficulty ? html`<span class="chip ${p.difficulty}">${DIFFICULTY[p.difficulty]}</span>` : ''}
@@ -45,7 +45,8 @@ export function renderUkiepc(app) {
           ${p.stages.map((id) => stageById[id] && html`<a class="chip path-stage" href="#/path/${id}" title="Path stage">${stageById[id].title}</a>`)}
           ${p.techniques.filter((t) => !p.stages.some((id) => stageById[id]?.title === t)).map((t) => html`<span class="chip">${t}</span>`)}` : ''}
       </div>
-      ${ready ? html`<span class="uk-ready">You've completed every stage this needs.</span>` : ''}`;
+      ${ready ? html`<span class="uk-ready">You've completed every stage this needs.</span>` : ''}
+      ${ui.ukiepcTopics && p.offPath ? html`<span class="small faint">Also needs ${p.offPath}, which no path stage teaches.</span>` : ''}`;
   }
 
   function contestTpl(contest) {
@@ -79,7 +80,7 @@ export function renderUkiepc(app) {
   function draw() {
     const all = UKIEPC.flatMap((c) => c.problems.map((p) => ({ ...p, key: `${c.gym}${p.letter}` })));
     const solved = all.filter((p) => isSolved(p.key)).length;
-    const ready = all.filter((p) => !isSolved(p.key) && covered(p.stages, isSolved)).length;
+    const ready = all.filter((p) => !isSolved(p.key) && problemReady(p, isSolved)).length;
     mount(app, html`
       <div class="page-head">
         <h1>UKIEPC practice</h1>

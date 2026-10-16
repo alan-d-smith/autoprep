@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { TRACKS, STAGES, TIERS, stageById } from '../src/cf/curriculum.js';
 import { UKIEPC } from '../src/cf/ukiepc.js';
 import { STAGE_VISUALS } from '../src/viz/stages.js';
-import { problemUrl, ratingBand, stageProgress, currentStage, nextProblem, belowLevel, covered, trackStages } from '../src/cf/roadmap.js';
+import { problemUrl, ratingBand, stageProgress, currentStage, nextProblem, belowLevel, covered, problemReady, trackStages } from '../src/cf/roadmap.js';
 
 const nonEmpty = (s) => typeof s === 'string' && s.trim().length > 0;
 
@@ -114,6 +114,9 @@ test('progress, current stage and coverage per track', () => {
   assert.ok(!belowLevel(stages[0], null));
   assert.equal(covered([stages[0].id], (id) => first.has(id)), true);
   assert.equal(covered([], () => true), false);
+  // A problem that needs something no stage teaches is never shown as ready.
+  assert.equal(problemReady({ stages: [stages[0].id] }, (id) => first.has(id)), true);
+  assert.equal(problemReady({ stages: [stages[0].id], offPath: 'circle intersections' }, (id) => first.has(id)), false);
 });
 
 test('every stage has at least one short explainer video', async () => {
