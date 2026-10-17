@@ -29,11 +29,11 @@ export function renderPrivacy(app) {
       <section>
         <h2>When data leaves your device</h2>
         <h3>Visiting the site</h3>
-        <p>Your browser fetches the pages from our web host, which receives your IP address, browser details and the addresses of the files requested, as with any website. This is used only to deliver the site and keep it secure; the host keeps it in its logs for its standard retention period and nothing else is done with it. Everything the site needs, including its fonts, scripts and recorded audio, comes from this host: no third-party trackers or font services are contacted.</p>
+        <p>Your browser fetches the pages from our web host, which receives your IP address, browser details and the addresses of the files requested, as with any website. This is used only to deliver the site and keep it secure. The host keeps it in its logs for its standard retention period and nothing else is done with it. Everything the site needs, including its fonts, scripts and recorded audio, comes from this host: no third-party trackers or font services are contacted.</p>
         <p class="legal-basis">Legal basis: legitimate interests in running a working, secure site (Article 6(1)(f)).</p>
 
         <h3>Progress saved on your device</h3>
-        <p>Only if you accept the storage notice, your settings, rounds, solved problems, revealed hints and Codeforces handle are kept in your browser's storage. They are never sent to us or anyone else. The <a href="#/cookies">cookie policy</a> lists what's stored and lets you delete it.</p>
+        <p>Your settings, rounds, solved problems, revealed hints and Codeforces handle are kept in your browser's storage only if you accept the storage notice. They are never sent to us or anyone else. The <a href="#/cookies">cookie policy</a> lists what's stored and lets you delete it.</p>
         <p class="legal-basis">Legal basis: your consent (Article 6(1)(a)), which you can withdraw at any time.</p>
 
         <h3>Codeforces sync</h3>
@@ -45,7 +45,7 @@ export function renderPrivacy(app) {
         <p class="legal-basis">Legal basis: your consent, given by pressing play.</p>
 
         <h3>Reading aloud</h3>
-        <p>The recorded voice comes from this site. If you pick one of your browser's own voices, or something isn't recorded, your browser's speech engine reads it instead; some browsers make their online voices on their maker's servers (for example Microsoft Edge's "Online (Natural)" voices and Chrome's Google voices), so the text being read goes to that company. The other natural voices download a speech model from Hugging Face, and its code from jsDelivr, only after you agree to the download. The model then runs on your device and nothing you're reading is sent.</p>
+        <p>The recorded voice comes from this site. If you pick one of your browser's own voices, or something isn't recorded, your browser's speech engine reads it instead. Some browsers make their online voices on their maker's servers (for example Microsoft Edge's "Online (Natural)" voices and Chrome's Google voices), so the text being read goes to that company. The other natural voices download a speech model from Hugging Face, and its code from jsDelivr, only after you agree to the download. The model then runs on your device and nothing you're reading is sent.</p>
         <p class="legal-basis">Legal basis: your consent, given by choosing the voice or agreeing to the download.</p>
       </section>
 
