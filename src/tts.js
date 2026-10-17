@@ -569,8 +569,8 @@ async function fillVoiceMenu(pop, confirmFor = null) {
       <p class="voice-group">Browser</p>
       ${browserVoices().map((v) => html`<button type="button" data-voice="browser:${v.voiceURI}" aria-pressed="${String(isCurrent(`browser:${v.voiceURI}`))}">${voiceLabel(v)}<span>${voiceAccent(v)}</span></button>`)}` : ''}
     <p class="voice-note">${gpu
-      ? `Heart is pre-recorded for everything on the site. The other natural voices, and Heart for new text such as a fresh worked example, need the voice model (${download}); until then that text uses the browser voice.`
-      : `Heart is pre-recorded for everything on the site; new text such as a fresh worked example uses the browser voice. ${modelBroken ? "The voice model couldn't run in this browser." : 'The other natural voices need WebGPU, which this browser doesn\'t have.'}`}</p>`);
+      ? `Heart is pre-recorded for everything on the site. The other natural voices, and Heart for new text such as a fresh worked example, need the voice model (${download}). Until then, that text uses the browser voice.`
+      : `Heart is pre-recorded for everything on the site. New text, such as a fresh worked example, uses the browser voice. ${modelBroken ? "The voice model couldn't run in this browser." : 'The other natural voices need WebGPU, which this browser doesn\'t have.'}`}</p>`);
 }
 
 // Starts the model in the background when a voice that needs it is chosen and it has loaded here
