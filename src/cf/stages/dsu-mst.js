@@ -3,7 +3,7 @@ export default {
   id: 'dsu-mst',
   title: 'DSU and minimum spanning trees',
   track: 'graphs',
-  summary: 'Maintain components under edge additions with union-find, answer threshold questions by adding edges offline in sorted order, and build minimum spanning trees with Kruskal or dense Prim, including the virtual-vertex trick for "build here or connect" costs.',
+  summary: 'Maintain components under edge additions with union-find, answer threshold questions by adding edges offline in sorted order, and build minimum spanning trees with Kruskal or dense Prim, including a virtual vertex for "build here or connect" costs.',
   primer: {
     slides: [
       {
@@ -13,7 +13,7 @@ export default {
           'A fresh search after each of 2·10^5 additions costs about 8·10^10 steps.',
           'Or keep some edges so all n vertices stay connected at the least total weight; trying subsets is hopeless.',
         ],
-        say: 'Two kinds of question meet in this stage. In the first, edges (friendships, merges, cables) are only ever added, and between additions you must say whether two vertices are connected, how big a component is or how many there are; re-running a search after each of 2·10^5 additions on a graph with 2·10^5 vertices costs about 8·10^10 steps. In the second, you must keep some of the m edges so that all n vertices stay connected at the least total weight, and trying subsets of edges is out of the question.',
+        say: 'In one kind of question, edges (friendships, merges, cables) are only ever added, and between additions you must say whether two vertices are connected, how big a component is or how many there are. Re-running a search after each of 2·10^5 additions on a graph with 2·10^5 vertices costs about 8·10^10 steps. In another, you must keep some of the m edges so that all n vertices stay connected at the least total weight, and trying subsets of edges is out of the question.',
       },
       {
         title: 'Components only merge: use a DSU',
@@ -24,18 +24,18 @@ export default {
         ],
         show: [0, 3],
         note: 'In the Kruskal run used on this page, the first union is the lightest edge D–F: D and F are separate roots, so F goes under D.',
-        say: 'When edges are only added, components only ever merge, so all you need is a fast answer to "which component is x in?" and a fast merge. A disjoint set union (DSU) stores each component as a rooted tree whose root is its representative: p[x] is x\'s parent, and a root has p[x] = x. find(x) follows parents up to the root, so u and v are connected exactly when find(u) == find(v), and unite(a, b) finds both roots and, if they differ, hangs one under the other.',
+        say: 'When edges are only added, components only ever merge, so all you need is a fast answer to "which component is x in?" and a fast merge. A disjoint set union (DSU) stores each component as a rooted tree whose root is its representative: p[x] is x\'s parent, and a root has p[x] = x. find(x) follows parents up to the root, so u and v are connected exactly when find(u) == find(v). unite(a, b) finds both roots and, if they differ, hangs one under the other.',
       },
       {
-        title: 'Two tricks keep the trees shallow',
+        title: 'Two rules keep the trees shallow',
         points: [
           'Union by size: the smaller tree, by sz[r], goes under the larger, so every depth stays at most log n.',
           'Path halving: find(x) repoints the vertex it is on to its grandparent and jumps there, x = p[x] = p[p[x]].',
-          'Together, find and unite cost amortised O(α(n)), and α(n) ≤ 4 in practice: effectively constant.',
+          'Together, find and unite cost amortised O(α(n)), an average over all calls, and α(n) ≤ 4 in practice: effectively constant.',
         ],
         show: [0, 14],
         note: 'find(F) climbs F → D → A in the DSU\'s trees at the bottom, not along graph edges, and path halving repoints F to its grandparent A (green arrow).',
-        say: 'Two tricks keep the trees shallow. Union by size: sz[r] counts the vertices in the tree rooted at r, and the smaller tree goes under the larger, so a vertex only gets deeper when its tree at least doubles, which keeps every depth at most log n. Path halving, a form of path compression: as find(x) climbs, it repoints the vertex it is on to its grandparent and jumps there, x = p[x] = p[p[x]], which roughly halves the path for later calls. Together they make find and unite amortised O(α(n)), where α is the inverse Ackermann function, at most 4 for any n you will meet: effectively constant.',
+        say: 'Two rules keep the trees shallow. Union by size: sz[r] counts the vertices in the tree rooted at r, and the smaller tree goes under the larger, so a vertex only gets deeper when its tree at least doubles, which keeps every depth at most log n. Path halving, a form of path compression: as find(x) climbs, it repoints the vertex it is on to its grandparent and jumps there, x = p[x] = p[p[x]], which roughly halves the path for later calls. Together they make find and unite amortised O(α(n)), where α is the inverse Ackermann function, at most 4 for any n you will meet: effectively constant.',
       },
       {
         title: 'Kruskal: lightest edges first, skip cycles',
@@ -55,7 +55,7 @@ export default {
           'Suppose an MST T holds every edge kept before e, but not e. Adding e closes a cycle that leaves C again by an edge f, not kept and no lighter than e.',
           'Swapping f for e gives an MST holding every kept edge so far; step by step, the kept edges end up as an MST.',
         ],
-        say: 'Why the greedy choice is safe: when Kruskal reaches an edge e that joins two different components, every lighter edge has already been kept or skipped, so no lighter edge leaves C, either of the two components e joins. If an MST contains the edges kept so far but not e, adding e closes a cycle that must leave C again through some other edge f, which is not lighter than e; swapping f for e gives a spanning tree, no heavier, that contains them all. So at every step some MST contains every kept edge, and at the end the kept edges are an MST.',
+        say: 'Why the greedy choice is safe: when Kruskal reaches an edge e that joins two different components, every lighter edge has already been kept or skipped, so no lighter edge leaves C, either of the two components e joins. If an MST contains the edges kept so far but not e, adding e closes a cycle that must leave C again through some other edge f, which is not lighter than e. Swapping f for e gives a spanning tree, no heavier, that contains them all. So at every step some MST contains every kept edge, and at the end the kept edges are an MST.',
       },
       {
         title: 'Sweeping sorted edges answers threshold queries',
@@ -66,7 +66,7 @@ export default {
         ],
         show: [0, 12],
         note: 'Partway through the sweep: with only the edges of weight ≤ 4, B is still on its own. It joins at weight 6.',
-        say: 'Sorting dominates, so Kruskal is O(m log m). The same "add edges in sorted order" loop answers threshold questions offline: once every edge of weight ≤ q is in, the DSU holds exactly the components of the graph restricted to those edges, so sort the queries by q and sweep them together with the edges, counting x·y new connected pairs whenever components of sizes x and y merge. "Pay c_i to serve i on its own, or connect it to something served" becomes an ordinary MST after adding a virtual vertex 0 joined to every i by an edge of weight c_i. On a complete graph with n ≈ 2000, skip sorting n²/2 edges and use O(n²) Prim instead: grow one tree from any vertex, keep for every outside vertex its cheapest edge into the tree, and repeatedly attach the outside vertex whose edge is cheapest.',
+        say: 'Sorting dominates, so Kruskal is O(m log m). The same "add edges in sorted order" loop answers threshold questions offline: once every edge of weight ≤ q is in, the DSU holds exactly the components of the graph restricted to those edges. So sort the queries by q and sweep them together with the edges, counting x·y new connected pairs whenever components of sizes x and y merge. "Pay c_i to serve i on its own, or connect it to something served" becomes an ordinary MST after adding a virtual vertex 0 joined to every i by an edge of weight c_i. On a complete graph with n ≈ 2000, skip sorting n²/2 edges and use O(n²) Prim instead: grow one tree from any vertex, keep for every outside vertex its cheapest edge into the tree, and repeatedly attach the outside vertex whose edge is cheapest.',
       },
     ],
     terms: [
@@ -77,7 +77,7 @@ export default {
       'α(n): the inverse Ackermann function, at most 4 for any practical n; DSU operations cost amortised O(α(n)).',
       '`kruskal`: sorts the edges, stored as {w, u, v} with weight w first, and returns the total weight of the kept edges, or of a spanning forest if the graph is disconnected (the TRD version returns −1 then).',
       'best[v], from[v]: in O(n²) Prim for dense graphs, the cheapest edge from v, not yet in the tree, into the tree, and that edge\'s tree end. Repeatedly attach the outside v with the smallest best[v], then update every other best[] through v.',
-      'vertex 0: the virtual vertex of the "build here or connect" trick, joined to every i by an edge whose weight c_i is the cost of serving i on its own (vertex n in the TRD\'s `withVirtualSource`, with the costs in `build`).',
+      'vertex 0: the virtual vertex for "build here or connect" problems, joined to every i by an edge whose weight c_i is the cost of serving i on its own (vertex n in the TRD\'s `withVirtualSource`, with the costs in `build`).',
     ],
     worked: {
       title: 'trucks on bridges',
@@ -108,7 +108,7 @@ export default {
     pitfalls: [
       'Comparing p[a] with p[b] instead of find(a) with find(b), or merging a and b instead of their roots, silently corrupts the sets.',
       'Pair counts (x·y, or s(s − 1)/2 for a component of size s) and MST totals overflow int long before n reaches 2·10^5; keep them in long long.',
-      'Materialising all n(n − 1)/2 edges of a dense graph costs memory and a large sort; for complete graphs with n ≈ 2000 use O(n²) Prim with plain arrays, or prove that only O(n) of the edges can ever be chosen.',
+      'Storing all n(n − 1)/2 edges of a dense graph costs memory and a large sort; for complete graphs with n ≈ 2000 use O(n²) Prim with plain arrays, or prove that only O(n) of the edges can ever be chosen.',
     ],
     code: `struct DSU {
     vector<int> p, sz;
@@ -125,7 +125,7 @@ export default {
         return true;
     }
 };
-// Kruskal: cheapest edge first, keep it iff it joins two components. O(m log m).
+// Kruskal: cheapest edge first, keep it only if it joins two components. O(m log m).
 // Returns the MST weight (spanning forest weight if the graph is disconnected).
 long long kruskal(int n, vector<array<long long, 3>> edges) {  // {w, u, v}
     sort(edges.begin(), edges.end());
@@ -167,7 +167,7 @@ long long kruskal(int n, vector<array<long long, 3>> edges) {  // {w, u, v}
         'Applying the rule repeatedly, any two members in the same connected component must be direct friends: every component has to be a clique. A DSU finds the components, and a component with s members is a clique exactly when it holds s(s − 1)/2 friendships.',
         'Unite the ends of every friendship, then count friendships per root (edge (a, b) belongs to find(a)) and compare each root\'s count with sz·(sz − 1)/2 computed in long long. O((n + m) α(n)).',
       ],
-      solution: 'The condition makes friendship transitive inside each component, so the network is reasonable iff every component is complete. Build components with a DSU, count the edges in each, and print NO if some component of size s has fewer than s(s − 1)/2 edges (pairs are distinct, so it can never have more). s(s − 1)/2 is about 1.1·10^10 for s = 150000, so an int comparison overflows.',
+      solution: 'The condition makes friendship transitive inside each component, so the network is reasonable exactly when every component is complete. Build components with a DSU, count the edges in each, and print NO if some component of size s has fewer than s(s − 1)/2 edges (pairs are distinct, so it can never have more). s(s − 1)/2 is about 1.1·10^10 for s = 150000, so an int comparison overflows.',
     },
     {
       id: '1702E',
@@ -177,9 +177,9 @@ long long kruskal(int n, vector<array<long long, 3>> edges) {  // {w, u, v}
       hints: [
         'Treat each number as a vertex and each domino as an edge between its two numbers. What must a vertex look like for a split to be possible, and what does a valid split mean for two dominoes that share a number?',
         'A domino {x, x} or a number on three dominoes makes it impossible. Otherwise n dominoes carry 2n numbers, so every number appears exactly twice and the graph is a disjoint union of cycles. Dominoes sharing a number must go to different sets, so the sets alternate around each cycle, which works exactly when every cycle has even length.',
-        'Reject a_i = b_i or any count above 2. Otherwise unite a_i with b_i in a DSU; a component with s numbers is a cycle of s dominoes, so answer YES iff every component size is even. O(n α(n)) per test case.',
+        'Reject a_i = b_i or any count above 2. Otherwise unite a_i with b_i in a DSU; a component with s numbers is a cycle of s dominoes, so answer YES exactly when every component size is even. O(n α(n)) per test case.',
       ],
-      solution: 'Count how often each number appears; a double or a count above 2 means NO. Then every number has degree exactly 2 in the number graph, so its components are cycles whose dominoes must alternate between the two sets. Unite the two numbers of each domino and answer YES iff every component has an even number of vertices. Equivalently, check that the graph "dominoes sharing a number" is bipartite with a DSU that stores parity.',
+      solution: 'Count how often each number appears; a double or a count above 2 means NO. Then every number has degree exactly 2 in the number graph, so its components are cycles whose dominoes must alternate between the two sets. Unite the two numbers of each domino and answer YES exactly when every component has an even number of vertices. Equivalently, check that the graph "dominoes sharing a number" is bipartite with a DSU that stores parity.',
     },
     {
       id: '1209D',
@@ -203,7 +203,7 @@ long long kruskal(int n, vector<array<long long, 3>> edges) {  // {w, u, v}
         'A pair counts exactly when u and v are in the same component of the forest of edges with weight ≤ q, so the answer is Σ s(s − 1)/2 over those components. As q grows edges are only added, which is the Kruskal loop run offline: sort edges by weight and union them in that order.',
         'Sort the edges; keep a running total and, when an edge joins components of sizes x and y, add x·y. Record the total after all edges of weight ≤ w for each w up to 2·10^5 (or sort the queries with their indices) and answer by lookup. O(n log n + m + max w).',
       ],
-      solution: 'The largest edge on the u–v path is ≤ q iff u and v are connected using only edges of weight ≤ q. Sort the edges and sweep q upwards, uniting each edge once q reaches its weight; merging components of sizes x and y creates x·y new valid pairs. Store the running count per weight value and print the answers in input order. The count reaches n(n − 1)/2 ≈ 2·10^10, so use long long; with n = 1 there are no edges and every answer is 0.',
+      solution: 'The largest edge on the u–v path is ≤ q exactly when u and v are connected using only edges of weight ≤ q. Sort the edges and sweep q upwards, uniting each edge once q reaches its weight; merging components of sizes x and y creates x·y new valid pairs. Store the running count per weight value and print the answers in input order. The count reaches n(n − 1)/2 ≈ 2·10^10, so use long long; with n = 1 there are no edges and every answer is 0.',
     },
     {
       id: '1095F',
@@ -223,11 +223,11 @@ long long kruskal(int n, vector<array<long long, 3>> edges) {  // {w, u, v}
       rating: 1900,
       tier: 'core',
       hints: [
-        'Building a station costs c_i and involves no other city. Can you make that option look like an edge, so that every decision is just "pick some edges"?',
-        'Add a virtual vertex 0, the power source, with an edge (0, i) of weight c_i. A city has electricity iff it is connected to 0, so the cheapest plan is a minimum spanning tree on n + 1 vertices: tree edges at 0 are stations, all other tree edges are wires.',
+        'Building a station costs c_i and involves no other city. Can you make that option look like an edge, so that every decision is "pick some edges"?',
+        'Add a virtual vertex 0, the power source, with an edge (0, i) of weight c_i. A city has electricity exactly when it is connected to 0, so the cheapest plan is a minimum spanning tree on n + 1 vertices: tree edges at 0 are stations, all other tree edges are wires.',
         'The graph is complete with about 2·10^6 edges, so run O(n²) Prim from vertex 0 with arrays best[] and from[] and no heap, computing (k_i + k_j)·(|x_i − x_j| + |y_i − y_j|) on the fly. Record from[v] for each vertex you attach. O(n²).',
       ],
-      solution: 'Vertex 0 stands for "has a power station" with edge weights c_i; wires cost (k_i + k_j) times the Manhattan distance. A plan is valid iff every city is connected to 0, so the optimum is an MST of this complete graph on n + 1 vertices. Dense Prim repeatedly attaches the cheapest unattached vertex and relaxes all others; a vertex attached from 0 gets a station, any other attachment is a wire. Wire costs reach about 4·10^15, so use long long. O(n²) time, O(n) memory; Kruskal on all pairs also passes but is slower.',
+      solution: 'Vertex 0 stands for "has a power station" with edge weights c_i; wires cost (k_i + k_j) times the Manhattan distance. A plan is valid exactly when every city is connected to 0, so the optimum is an MST of this complete graph on n + 1 vertices. Dense Prim repeatedly attaches the cheapest unattached vertex and updates best[] for the rest; a vertex attached from 0 gets a station, any other attachment is a wire. Wire costs reach about 4·10^15, so use long long. O(n²) time, O(n) memory; Kruskal on all pairs also passes but is slower.',
     },
     {
       id: '1513D',

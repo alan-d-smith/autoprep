@@ -21,7 +21,7 @@ export default {
           'In a row whose neighbours close up, each item comes from a contiguous segment l..r, decided only by its own items.',
           'The last step on l..r splits it into shorter segments that never interact again.',
         ],
-        say: 'Most of those possibilities share their future. A walk that has reached a cell can go on in exactly the same ways however it got there, and it can only have arrived from the cell above or the cell to the left. In a row whose neighbours close up, every item on the table is built from a contiguous segment of the original row, so what happens to the segment l..r depends only on the items inside it, and the last step on it splits it into shorter segments that never interact again.',
+        say: 'Most of those possibilities share their future. A walk that has reached a cell can go on in exactly the same ways however it got there, and it can only have arrived from the cell above or the cell to the left. In a row whose neighbours close up, every item on the table is built from a contiguous segment of the original row, so what happens to the segment l..r depends only on the items inside it. The last step on it splits it into shorter segments that never interact again.',
       },
       {
         title: 'best[i][j] from the cell above or left',
@@ -50,7 +50,7 @@ export default {
           'So for each k the cheapest halves give the cheapest way, and trying every k covers every way.',
           'A state is the smallest description that decides every future move: equal states finish alike, so keep the better.',
         ],
-        say: 'Why this is right: every way of merging l..r has some last merge at some k, and the two halves before it were merged independently, so the cheapest way with that k uses the cheapest way for each half, and trying every k covers every way. The same test decides any state: it must be the smallest description of a partial solution that still decides every future move, because two partial solutions with equal states can be finished in exactly the same ways and only the better needs keeping. Examples are the cell a walk has reached, the segment still on the table, or the last item placed on each of three lines (UKIEPC 2025 Klaus).',
+        say: 'Every way of merging l..r has a last merge at some k, and the two halves before it were merged independently. So the cheapest way with that k uses the cheapest way for each half, and trying every k covers every way. In general, a state must be the smallest description of a partial solution that still decides every future move: two partial solutions with equal states can be finished in exactly the same ways, so only the better needs keeping. Examples are the cell a walk has reached, the segment still on the table, or the last item placed on each of three lines (UKIEPC 2025 Klaus).',
       },
       {
         title: 'Usually O(n³), so n ≤ 500',
@@ -164,7 +164,7 @@ long long bestPath(const vector<vector<long long>>& g) {
         'Recognition: one corner flip swaps a single visited cell, so the sum changes by -2, 0 or +2, and flips can turn the minimum-sum path into the maximum-sum path step by step. Every even value between the two extremes is therefore reachable, and the extremes are plain grid DPs.',
         'Approach: if n+m-1 is odd, print NO. Otherwise compute mn[i][j] = a[i][j] + min(mn[i-1][j], mn[i][j-1]) and mx the same way with max, and print YES exactly when mn ≤ 0 ≤ mx at (n,m). O(nm) per test.',
       ],
-      solution: 'A path has n+m-1 cells of ±1, so an odd count can never sum to 0 (this also handles the 1×1 grid). Otherwise compute the minimum and maximum path sums with two grid DPs in O(nm). Flipping one corner of a path changes exactly one visited cell, so the sum moves by at most 2 and keeps its parity; since corner flips connect the minimum path to the maximum path, every even value in between occurs on some path, and the answer is YES iff min ≤ 0 ≤ max.',
+      solution: 'A path has n+m-1 cells of ±1, so an odd count can never sum to 0 (this also handles the 1×1 grid). Otherwise compute the minimum and maximum path sums with two grid DPs in O(nm). Flipping one corner of a path changes exactly one visited cell, so the sum moves by at most 2 and keeps its parity; since corner flips connect the minimum path to the maximum path, every even value in between occurs on some path, and the answer is YES exactly when min ≤ 0 ≤ max.',
     },
     {
       id: '1509C',
@@ -212,7 +212,7 @@ long long bestPath(const vector<vector<long long>>& g) {
         'Recognition: run two separate min-sum grid DPs, one on the count of 2s per cell and one on the count of 5s. Every path has min(2s, 5s) ≥ min(best 2s, best 5s), and the path achieving the smaller optimum meets that bound, so the answer is the smaller of the two. The only twist is a 0 in the matrix.',
         'Approach: factor each cell into its 2s and 5s, run both DPs with parent pointers and rebuild the better path. If some cell is 0 and the result is above 1, print 1 and a path through that zero instead. O(n^2).',
       ],
-      solution: 'Let A be the fewest 2s and B the fewest 5s on any path, each found by a min-sum grid DP in O(n^2); every path has at least min(A, B) trailing zeros, and the path that attains the smaller one has at most that many, so print it from parent pointers. A 0 makes the product 0, which has exactly one trailing zero: count a 0 as one 2 and one 5 in the DPs, and if a zero exists and min(A, B) > 1, print 1 with a path that goes down to the zero\'s row, right to the last column, then down. Missing the zero case, or giving a 0 no factors at all so that paths through it look free, is the usual WA.',
+      solution: 'Let A be the fewest 2s and B the fewest 5s on any path, each found by a min-sum grid DP in O(n^2); every path has at least min(A, B) trailing zeros, and the path that attains the smaller one has at most that many, so print it from parent pointers. A 0 makes the product 0, which has exactly one trailing zero: count a 0 as one 2 and one 5 in the DPs, and if a zero exists and min(A, B) > 1, print 1 with a path that goes down to the zero\'s row, right to the last column, then down. Missing the zero case, or giving a 0 no factors at all so that paths through it look free, is the usual bug.',
     },
     {
       id: '1132F',
@@ -221,7 +221,7 @@ long long bestPath(const vector<vector<long long>>& g) {
       tier: 'challenge',
       hints: [
         'Look at the first letter s[l] of a segment. Either it is deleted by an operation of its own, or it is deleted together with some later equal letter. What has to happen to the letters between them first?',
-        'Recognition: an interval DP of the same shape as Zuma. If s[l] goes together with s[k] = s[l], the letters strictly between are cleared on their own, after which s[l] simply joins whatever operation deletes s[k] at no extra cost.',
+        'Recognition: an interval DP of the same shape as Zuma. If s[l] goes together with s[k] = s[l], the letters strictly between are cleared on their own, after which s[l] joins whatever operation deletes s[k] at no extra cost.',
         'Approach: dp[l][r] = min(1 + dp[l+1][r], min over k in (l, r] with s[k] = s[l] of dp[l+1][k-1] + dp[k][r]), with empty segments 0, filled by length. O(n^3) with n ≤ 500.',
       ],
       solution: 'dp[l][r] is the fewest operations to delete s[l..r]. Either s[l] is deleted alone (1 + dp[l+1][r]) or in the same operation as some s[k] = s[l], k > l: first clear l+1..k-1 independently (dp[l+1][k-1]); then s[l] is adjacent to s[k] and rides along for free, leaving dp[k][r]. Keep s[k] inside the right part (dp[k][r], not dp[k+1][r]) so it can still chain with later equal letters. O(n^3), roughly 2·10^7 steps for n = 500.',
@@ -236,7 +236,7 @@ long long bestPath(const vector<vector<long long>>& g) {
         'Recognition: an interval DP followed by a prefix DP. Merging two v into v+1 keeps the sum of 2^a_i, so a block that collapses has a forced value; an interval DP finds, for every a[l..r], whether it collapses and to what. Then cut the array into the fewest collapsible blocks.',
         'Approach: val[i][i] = a[i]; val[l][r] = val[l][k] + 1 if some split k has val[l][k] = val[k+1][r] ≠ -1, else -1 (by length, O(n^3)). Then dp[0] = 0 and dp[i] = min over j < i with val[j][i-1] ≠ -1 of dp[j] + 1; print dp[n].',
       ],
-      solution: 'The final array is a partition of the original into contiguous blocks, each merged down to one element. A block collapses iff its last merge joins two collapsed halves with equal values, so val[l][r] = val[l][k] + 1 for a split with val[l][k] = val[k+1][r] ≠ -1; since the sum of 2^a_i is preserved, the value does not depend on the split, and any valid split will do. A prefix DP dp[i] = min(dp[j] + 1) over collapsible blocks a[j..i-1] gives the answer dp[n]. Total O(n^3) for n ≤ 500.',
+      solution: 'The final array is a partition of the original into contiguous blocks, each merged down to one element. A block collapses exactly when its last merge joins two collapsed halves with equal values, so val[l][r] = val[l][k] + 1 for a split with val[l][k] = val[k+1][r] ≠ -1; since the sum of 2^a_i is preserved, the value does not depend on the split, and any valid split will do. A prefix DP dp[i] = min(dp[j] + 1) over collapsible blocks a[j..i-1] gives the answer dp[n]. Total O(n^3) for n ≤ 500.',
     },
   ],
 };

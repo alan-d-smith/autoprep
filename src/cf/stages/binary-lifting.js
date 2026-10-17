@@ -24,7 +24,7 @@ export default {
         ],
         show: [0, 8],
         note: 'The 5th ancestor of 7: 5 is 101 in binary, so jump 4, then 1.',
-        say: 'The key observation is that every jump length is a sum of distinct powers of two, its binary digits: a jump of 13 is a jump of 8, then 4, then 1. So it is enough to know, for each vertex, where jumps of 1, 2, 4, 8 and so on land, and each of those is easy to build from the one before, because a jump of 2^j is two jumps of 2^(j−1).',
+        say: 'Every jump length is a sum of distinct powers of two, its binary digits: a jump of 13 is a jump of 8, then 4, then 1. So it is enough to know, for each vertex, where jumps of 1, 2, 4, 8 and so on land, and each of those is built from the one before, because a jump of 2^j is two jumps of 2^(j−1).',
       },
       {
         title: 'Build the jump table by doubling',
@@ -55,7 +55,7 @@ export default {
           'Take each jump that still lands where it holds: the jumps taken spell out, in binary, how far it reaches.',
           'Store an aggregate with each jump, such as the heaviest of its 2^j edges, to answer path maximum or sum queries.',
         ],
-        say: 'That descent from the largest power is a general tool. Whenever a condition holds on a bottom part of the path from v towards the root and fails above it, such as "the sum of positive weights climbed is at most x", try the jumps from the largest down and take each one that still lands on a vertex satisfying it: the jumps taken spell out, in binary, how far the condition reaches. Storing an aggregate next to each jump, such as the heaviest edge among those 2^j edges, combines the same way as the jumps and answers path-maximum or path-sum queries during the climb.',
+        say: 'Whenever a condition holds on a bottom part of the path from v towards the root and fails above it, such as "the sum of positive weights climbed is at most x", try the jumps from the largest down and take each one that still lands on a vertex satisfying it: the jumps taken spell out, in binary, how far the condition reaches. An aggregate stored next to each jump, such as the heaviest edge among those 2^j edges, combines the same way as the jumps and answers path-maximum or path-sum queries during the climb.',
       },
       {
         title: 'No tree needed, only a successor',
@@ -64,7 +64,7 @@ export default {
           '"Where am I after k steps?" needs a level for each bit of k: `LOG` = 60 for k up to 10^18. The template\'s 18 covers only k < 2^18.',
           '"How many greedy steps lead from l past r?" uses the same descent. Building is O(n·LOG) time and memory, each query O(LOG).',
         ],
-        say: 'Nothing in the table needs a tree. For any function next(x) that gives each position one successor, setting up[0][x] = next(x) and doubling as before answers "where am I after k steps", as long as there is a level for every bit of k: LOG = 60 for k up to 10^18, while the template\'s LOG = 18 only covers k below 2^18. The same descent answers "how many greedy steps lead from l past r", which never takes more than n steps; UKIEPC 2023 Fast Forward jumped through "next ad break" pointers exactly like this. Building costs O(n·LOG) time and memory, 1.2·10^7 entries for n = 2·10^5 and LOG = 60, and every query O(LOG).',
+        say: 'Nothing in the table needs a tree. For any function next(x) that gives each position one successor, setting up[0][x] = next(x) and doubling as before answers "where am I after k steps", as long as there is a level for every bit of k: LOG = 60 for k up to 10^18, while the template\'s LOG = 18 only covers k below 2^18. The same descent answers "how many greedy steps lead from l past r", which never takes more than n steps. UKIEPC 2023 Fast Forward jumped through "next ad break" pointers this way. Building costs O(n·LOG) time and memory, 1.2·10^7 entries for n = 2·10^5 and LOG = 60, and every query O(LOG).',
       },
     ],
     terms: [

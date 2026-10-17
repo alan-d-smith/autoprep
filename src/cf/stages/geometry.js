@@ -13,7 +13,7 @@ export default {
           'Angles from `atan2`, slopes y / x and intersection points in doubles are not exact.',
           '(10^9, 10^9 − 1) and (10^9 − 1, 10^9 − 2) differ by about 5·10^-19 radians, so `atan2` and slopes see one direction.',
         ],
-        say: 'Geometry questions here come with integer coordinates up to 10^9 and ask something discrete: does the path turn left at this corner, do two segments touch, is a point inside a polygon, outside it or on its edge. The obvious tools, angles from atan2, slopes y / x and intersection points in doubles, are not exact. The directions (10^9, 10^9 − 1) and (10^9 − 1, 10^9 − 2) differ by about 5·10^-19 radians, far below the spacing of doubles near π/4 (about 10^-16), so atan2 returns the same angle for both and their slopes come out equal too; slopes also fail outright on vertical lines.',
+        say: 'Geometry questions here come with integer coordinates up to 10^9 and ask something discrete: does the path turn left at this corner, do two segments touch, is a point inside a polygon, outside it or on its edge. The obvious tools, angles from atan2, slopes y / x and intersection points in doubles, are not exact. The directions (10^9, 10^9 − 1) and (10^9 − 1, 10^9 − 2) differ by about 5·10^-19 radians, far below the spacing of doubles near π/4 (about 10^-16), so atan2 returns the same angle for both and their slopes come out equal too. Slopes also fail on vertical lines.',
       },
       {
         title: 'The cross product decides the turn',
@@ -35,7 +35,7 @@ export default {
         ],
         show: [0, 9],
         note: 'a = (1, 1), b = (5, 2), c = (6, 4): cross(b − a, c − a) = 4·3 − 1·5 = 7 > 0, so orient(a, b, c) = +1, a left turn at b.',
-        say: 'The other tests are built from it, with each point stored as an integer vector `P`. orient(a, b, c) is the sign of cross(b − a, c − a): +1 if the walk a → b → c turns left at b, −1 if it turns right, 0 if the three points are collinear. Segments ab and cd cross properly when c and d lie strictly on opposite sides of ab and a and b strictly on opposite sides of cd; otherwise they can only meet where an endpoint of one lies on the other, which onSeg(a, b, p) checks: p is collinear with a and b, and dot(a − p, b − p) ≤ 0, so p lies between them, ends included. segInter(a, b, c, d) combines the two cases.',
+        say: 'The other tests are built from it, with each point stored as an integer vector `P`. orient(a, b, c) is the sign of cross(b − a, c − a): +1 if the walk a → b → c turns left at b, −1 if it turns right, 0 if the three points are collinear. Segments ab and cd cross properly when c and d lie strictly on opposite sides of ab and a and b strictly on opposite sides of cd. Otherwise they can only meet where an endpoint of one lies on the other, which onSeg(a, b, p) checks: p is collinear with a and b, and dot(a − p, b − p) ≤ 0, so p lies between them, ends included. segInter(a, b, c, d) combines the two cases.',
       },
       {
         title: 'Shoelace area and ray casting',
@@ -46,7 +46,7 @@ export default {
         ],
         show: [0, 13],
         note: 'The second term: cross(p1, p2) = 11 is twice the area of the green triangle from the origin to the edge p1p2. The sum so far is 6.',
-        say: 'A polygon is its vertices p_0, …, p_{n−1} in order, with the last edge wrapping from p_{n−1} back to p_0. The shoelace formula `area2` adds cross(p_i, p_{i+1}) over the edges; each term is twice the signed area of the triangle from the origin to that edge, and the total is twice the polygon\'s area, positive when the vertices run counter-clockwise. `inPoly` tests a point by casting a ray from it to the right and counting the edges the ray crosses, an odd count meaning inside. An edge counts when exactly one of its ends is strictly above the point. So a vertex level with the point counts as below it: a ray through a vertex is counted once where the boundary crosses the line and 0 or 2 times where it only touches, and a horizontal edge never counts. The edge must also pass to the point\'s right, which one `orient` call settles: the point must be left of an upward edge or right of a downward one.',
+        say: 'A polygon is its vertices p_0, …, p_{n−1} in order, with the last edge wrapping from p_{n−1} back to p_0. The shoelace formula `area2` adds cross(p_i, p_{i+1}) over the edges. Each term is twice the signed area of the triangle from the origin to that edge, and the total is twice the polygon\'s area, positive when the vertices run counter-clockwise. `inPoly` tests a point by casting a ray from it to the right and counting the edges the ray crosses, an odd count meaning inside. An edge counts when exactly one of its ends is strictly above the point. So a vertex level with the point counts as below it: a ray through a vertex is counted once where the boundary crosses the line and 0 or 2 times where it only touches, and a horizontal edge never counts. The edge must also pass to the point\'s right, which one `orient` call settles: the point must be left of an upward edge or right of a downward one.',
       },
       {
         title: 'Why they are right, and exact',
@@ -57,7 +57,7 @@ export default {
         ],
         show: [0, 17],
         note: 'Sum 28, area 14: the three added triangles also cover the two red ones outside the polygon, and the −5 and −2 terms cancel them.',
-        say: 'Why these are right: the origin triangles in the shoelace sum also cover ground outside the polygon, but each such patch is counted as often with a plus sign as with a minus sign, so it cancels. Each crossing moves the ray between inside and outside, and its far end is outside, so the parity of the count gives the answer. And every decision is an exact integer sign: with |coordinates| ≤ 10^9, differences reach 2·10^9 and a cross product of differences at most 8·10^18, inside long long (about 9.2·10^18); anything larger, such as a product of two cross products, needs __int128.',
+        say: 'The origin triangles in the shoelace sum also cover ground outside the polygon, but each such patch is counted as often with a plus sign as with a minus sign, so it cancels. Each crossing moves the ray between inside and outside, and its far end is outside, so the parity of the count gives the answer. And every decision is an exact integer sign: with |coordinates| ≤ 10^9, differences reach 2·10^9 and a cross product of differences at most 8·10^18, inside long long (about 9.2·10^18); anything larger, such as a product of two cross products, needs __int128.',
       },
       {
         title: 'Stay exact; sweep when objects are many',
@@ -66,7 +66,7 @@ export default {
           'Print an area exactly from `area2`, a whole number or a half; use doubles only for a printed length. Compare angles by half-plane, then cross product.',
           'For many objects, a sweep line walks sorted start and end events, keeping the active ones in a set or Fenwick tree: O(n log n).',
         ],
-        say: 'Each test is O(1), and area and point in polygon are O(n). Print an area exactly from area2, as a whole number or a whole number and a half: twice the area can reach 8·10^18, and a double holds integers exactly only up to 2^53, about 9·10^15. Keep floating point for a printed length only; even angles are compared with cross products, sorting by half-plane first and then by the sign of their cross product. When many objects interact along one axis, such as 10^5 segments where checking every pair is 5·10^9 tests, a sweep line sorts their start and end events by coordinate and walks through them, keeping the currently active objects in a set or Fenwick tree, which brings the work down to about O(n log n).',
+        say: 'Each test is O(1), and area and point in polygon are O(n). Print an area exactly from area2, as a whole number or a whole number and a half: twice the area can reach 8·10^18, and a double holds integers exactly only up to 2^53, about 9·10^15. Keep floating point for a printed length only. Even angles are compared exactly: first by half-plane, upper or lower, then by the sign of their cross product. When many objects interact along one axis, such as 10^5 segments where checking every pair is 5·10^9 tests, a sweep line sorts their start and end events by coordinate and walks through them, keeping the active objects in a set or Fenwick tree. That brings the work down to about O(n log n).',
       },
     ],
     terms: [
@@ -108,7 +108,7 @@ export default {
     ],
     pitfalls: [
       'Overflow: with coordinates up to 10^9 a cross product of differences can reach 8·10^18, at the edge of long long; anything larger, such as a product of two cross products, needs __int128. Never multiply two signed values just to compare their signs.',
-      'Floating-point decisions: testing collinearity, "strictly inside" or ties with doubles and an epsilon gives WA on boundary tests. Keep every predicate in integers and convert only a final length; print an area from area2 exactly, since doubles hold integers exactly only up to 2^53 ≈ 9·10^15.',
+      'Floating-point decisions: testing collinearity, "strictly inside" or ties with doubles and an epsilon gives wrong answers on boundary tests. Keep every predicate in integers and convert only a final length; print an area from area2 exactly, since doubles hold integers exactly only up to 2^53 ≈ 9·10^15.',
       'Boundary cases: points on an edge, collinear consecutive vertices, segments that touch without crossing, a ray through a vertex (use the half-open test), and the wrap-around from the last vertex back to the first.',
     ],
     code: `// Integer points; exact while |coordinate| <= 1e9 (cross products stay below 9.2e18).
@@ -161,7 +161,7 @@ int inPoly(const vector<P> &g, P p) {
         'Starting north from the lowest, then westernmost, point means the track runs clockwise, so the lake is on her right. Ignoring a turn puts her in the water exactly when the turn is to the left, and the sign of a cross product of consecutive directions tells left from right.',
         'For each vertex p_i with 1 ≤ i ≤ n − 1, compute cross(p_i − p_{i−1}, p_{i+1} − p_i) and count the positive values (left turns). O(n), all in integers.',
       ],
-      solution: 'Because the first section goes north from the lowest, then westernmost, point, the track is traversed clockwise and the lake (the polygon\'s interior) is on the right. A turn is dangerous iff going straight on enters the interior, which happens exactly at the left turns of a clockwise walk. Count the vertices p_1..p_{n−1} where cross(p_i − p_{i−1}, p_{i+1} − p_i) > 0; the start vertex is a right turn and never counts. Since every section is axis-parallel, right turns minus left turns is 4, which gives the closed form (n − 4) / 2 as a check.',
+      solution: 'Because the first section goes north from the lowest, then westernmost, point, the track is traversed clockwise and the lake (the polygon\'s interior) is on the right. A turn is dangerous exactly when going straight on enters the interior, which happens exactly at the left turns of a clockwise walk. Count the vertices p_1..p_{n−1} where cross(p_i − p_{i−1}, p_{i+1} − p_i) > 0; the start vertex is a right turn and never counts. Since every section is axis-parallel, right turns minus left turns is 4, which gives the closed form (n − 4) / 2 as a check.',
     },
     {
       id: '593B',
@@ -170,10 +170,10 @@ int inPoly(const vector<P> &g, P p) {
       tier: 'warmup',
       hints: [
         'Look at each line only where it meets the two borders x1 and x2. If two lines cross strictly inside the strip, what happens to their vertical order between x1 and x2?',
-        'Two lines cross strictly inside iff their order at x1 is the reverse of their order at x2. So sort the lines by height at x1 and look for a pair whose heights at x2 are out of order: a sweep across the strip that only needs its two ends.',
-        'Compute y1 = k·x1 + b and y2 = k·x2 + b in long long, sort the pairs (y1, y2) lexicographically, and answer YES iff some adjacent pair has y2 strictly decreasing. O(n log n).',
+        'Two lines cross strictly inside exactly when their order at x1 is the reverse of their order at x2. So sort the lines by height at x1 and look for a pair whose heights at x2 are out of order: a sweep across the strip that only needs its two ends.',
+        'Compute y1 = k·x1 + b and y2 = k·x2 + b in long long, sort the pairs (y1, y2) lexicographically, and answer YES exactly when some adjacent pair has y2 strictly decreasing. O(n log n).',
       ],
-      solution: 'Map every line to (y1, y2), its heights at x1 and x2, computed exactly in long long (up to about 10^12). Lines i and j meet strictly inside the strip iff y1_i − y1_j and y2_i − y2_j have strictly opposite signs. After sorting by (y1, y2) such a pair exists iff the y2 sequence is not non-decreasing, which one scan of adjacent pairs decides. Breaking ties at x1 by y2 keeps lines that meet exactly on the left border from being reported, and testing for a strict decrease ignores lines that meet on the right border.',
+      solution: 'Map every line to (y1, y2), its heights at x1 and x2, computed exactly in long long (up to about 10^12). Lines i and j meet strictly inside the strip exactly when y1_i − y1_j and y2_i − y2_j have strictly opposite signs. After sorting by (y1, y2) such a pair exists exactly when the y2 sequence is not non-decreasing, which one scan of adjacent pairs decides. Breaking ties at x1 by y2 keeps lines that meet exactly on the left border from being reported, and testing for a strict decrease ignores lines that meet on the right border.',
     },
     {
       id: '498A',
@@ -185,7 +185,7 @@ int inPoly(const vector<P> &g, P p) {
         'Each road that separates the two points must be crossed at least once, and no other road ever needs crossing. So the answer is the number of separating lines, and "which side of the line" is the sign of a·x + b·y + c.',
         'For each road compute s1 = a·x1 + b·y1 + c and s2 = a·x2 + b·y2 + c in long long and count the roads where the signs differ. Compare the signs directly: s1·s2 can reach 4·10^24 and overflow.',
       ],
-      solution: 'A road separates home and the university iff a·x + b·y + c has different signs at the two points, and every route between them must cross each such road, so the answer is at least that count. The straight segment from home to the university (shifted slightly if it passes through an intersection) crosses exactly those roads once each, so the count is achieved. The values reach about 2·10^12, fine in long long, but compare (s1 > 0) with (s2 > 0) instead of multiplying them. O(n).',
+      solution: 'A road separates home and the university exactly when a·x + b·y + c has different signs at the two points, and every route between them must cross each such road, so the answer is at least that count. The straight segment from home to the university (shifted slightly if it passes through an intersection) crosses exactly those roads once each, so the count is achieved. The values reach about 2·10^12, fine in long long, but compare (s1 > 0) with (s2 > 0) instead of multiplying them. O(n).',
     },
     {
       id: '772B',
@@ -197,7 +197,7 @@ int inPoly(const vector<P> &g, P p) {
         'Convexity breaks once some vertex p_i can reach the line through its neighbours. Its distance to that line is |cross(p_{i+1} − p_{i−1}, p_i − p_{i−1})| divided by |p_{i+1} − p_{i−1}| (twice the triangle area over the base), and moving the vertex and its neighbours towards each other closes the gap at half the cost.',
         'The answer is the minimum over all i of h_i / 2, where h_i is that distance, including the wrap-around triples. Compute the cross product exactly in long long (differences reach 2·10^9, so it stays within 8·10^18) and do only the final division in long double. O(n).',
       ],
-      solution: 'For each vertex let h_i be the distance from p_i to the line through p_{i−1} and p_{i+1}, computed as |cross(p_{i+1} − p_{i−1}, p_i − p_{i−1})| / |p_{i+1} − p_{i−1}|. Moving p_i by h_i / 2 towards that line and both neighbours by h_i / 2 towards p_i makes the three points collinear, and no smaller D can do it, so the answer is min_i h_i / 2. The cross product is exact in long long and the division is the only floating-point step. Remember the triples that wrap around the end of the vertex list.',
+      solution: 'For each vertex let h_i be the distance from p_i to the line through p_{i−1} and p_{i+1}, computed as |cross(p_{i+1} − p_{i−1}, p_i − p_{i−1})| / |p_{i+1} − p_{i−1}|. Moving p_i by h_i / 2 towards that line and both neighbours by h_i / 2 towards p_i makes the three points collinear, and no smaller D can do it, so the answer is min_i h_i / 2. The cross product is exact in long long and the division is the only floating-point step. Include the triples that wrap around the end of the vertex list.',
     },
     {
       id: '1299B',
@@ -206,7 +206,7 @@ int inPoly(const vector<P> &g, P p) {
       tier: 'core',
       hints: [
         'Try small cases: for a triangle T is a hexagon, and for a square T is a square. What property must P have for T to look like P?',
-        'T is the set of all differences A − B with A and B in P, so T is always centrally symmetric (if v is in T, so is −v). P and T can only be similar if P is centrally symmetric too, and then T is just P scaled by 2. That is a check on vertex vectors, with no areas or angles.',
+        'T is the set of all differences A − B with A and B in P, so T is always centrally symmetric (if v is in T, so is −v). P and T can only be similar if P is centrally symmetric too, and then T is P scaled by 2. That is a check on vertex vectors, with no areas or angles.',
         'Answer NO if n is odd. Otherwise check that p_i + p_{i+n/2} is the same vector for every i < n/2 (twice the centre, so it stays in integers). O(n).',
       ],
       solution: 'T = P + (−P) is centrally symmetric for every P, and similarity preserves central symmetry, so P must be centrally symmetric; conversely, if it is, T is P scaled by 2 about its centre. For a convex polygon listed in order, central symmetry means n is even and each vertex p_i and its opposite p_{i+n/2} have the same midpoint. Compare the sums p_i + p_{i+n/2} in long long instead of halving them, so no fractions appear. O(n).',
@@ -242,10 +242,10 @@ int inPoly(const vector<P> &g, P p) {
       tier: 'challenge',
       hints: [
         'The pair with the smallest angle must be neighbours in some ordering of the vectors. Which ordering?',
-        'Sort the vectors by polar angle; the minimum non-oriented angle is between two cyclically adjacent vectors, including the last and the first. The real difficulty is precision: two candidate angles can differ by less than double can resolve, so compare them in integers instead of with atan2.',
+        'Sort the vectors by polar angle; the minimum non-oriented angle is between two cyclically adjacent vectors, including the last and the first. The difficulty is precision: two candidate angles can differ by less than double can resolve, so compare them in integers instead of with atan2.',
         'Polar-sort exactly: by half-plane first (y > 0, or y = 0 and x > 0), then by cross product. The angle between neighbours u and v is the direction of the vector (dot(u, v), |cross(u, v)|), which lies in the upper half-plane, so compare two such angles by the sign of their cross product. Everything fits in long long; O(n log n).',
       ],
-      solution: 'Sort the vectors by angle without floating point: the half-plane {y > 0} ∪ {y = 0, x > 0} comes first, and inside a half a goes before b iff cross(a, b) > 0. For each of the n cyclic neighbour pairs, the non-oriented angle equals atan2(|cross|, dot), so represent it by the point (dot, |cross|), whose coordinates are at most 2·10^8 in absolute value. Angle 1 is smaller than angle 2 iff cross((dot1, |cross1|), (dot2, |cross2|)) > 0, a value below 10^17 and exact in long long. Keep the best pair and print its original indices. Plain double atan2 is known to fail on this problem; long double atan2l is the common workaround, but the integer comparison removes the question.',
+      solution: 'Sort the vectors by angle without floating point: the half-plane {y > 0} ∪ {y = 0, x > 0} comes first, and inside a half a goes before b exactly when cross(a, b) > 0. For each of the n cyclic neighbour pairs, the non-oriented angle equals atan2(|cross|, dot), so represent it by the point (dot, |cross|), whose coordinates are at most 2·10^8 in absolute value. Angle 1 is smaller than angle 2 exactly when cross((dot1, |cross1|), (dot2, |cross2|)) > 0, a value below 10^17 and exact in long long. Keep the best pair and print its original indices. Plain double atan2 is known to fail on this problem; long double atan2l is the common workaround, but the integer comparison is exact.',
     },
   ],
 };

@@ -13,18 +13,18 @@ export default {
           'Adding up each block from scratch is O(n): about 4·10^10 steps for 2·10^5 questions.',
           'The blocks overlap, so almost all of that adding is repeated work.',
         ],
-        say: 'Many questions ask about blocks of consecutive values: the total from position l to position r, how many marked positions lie between them, or how many blocks add up to exactly k. Adding a block up from scratch costs O(n), so 2·10^5 such questions on 2·10^5 values take about 4·10^10 steps, and testing all n²/2 blocks one by one, about 2·10^10 of them, is no better. The blocks overlap, so almost all of that adding is repeated work.',
+        say: 'Many questions ask about blocks of consecutive values: the total from position l to position r, how many marked positions lie between them, or how many blocks add up to exactly k. Adding a block up from scratch costs O(n), so 2·10^5 such questions on 2·10^5 values take about 4·10^10 steps. Testing all n²/2 blocks one by one, about 2·10^10 of them, is no better. The blocks overlap, so almost all of that adding is repeated work.',
       },
       {
         title: 'Every block is a difference of prefixes',
         points: [
-          'A prefix is a block that starts at the very beginning.',
+          'A prefix is a block that starts at the beginning.',
           'The values from l to r are the first r + 1 values with the first l taken away.',
           'Know the sum of every prefix, and any block\'s sum is one subtraction.',
         ],
         show: [0, 10],
         note: 'The block a[2..5] sums to P[6] − P[2] = 23 − 4 = 19.',
-        say: 'The observation: every block is the difference of two prefixes, the blocks that start at the very beginning. The values from l to r are the first r + 1 values with the first l taken away, so once the sum of every prefix is known, the sum of any block is one subtraction.',
+        say: 'Every block is the difference of two prefixes, the blocks that start at the beginning. The values from l to r are the first r + 1 values with the first l taken away, so once the sum of every prefix is known, the sum of any block is one subtraction.',
       },
       {
         title: 'One pass fills P',
@@ -35,7 +35,7 @@ export default {
         ],
         show: [0, 7],
         note: 'The pass has just filled P[7] = P[6] + a[6] = 25, the total of the whole array.',
-        say: 'Call the input a, indexed from 0, and let P[i] be the sum of its first i values, a[0] + … + a[i−1]. One left-to-right pass fills all n + 1 entries: P[0] = 0 for the empty prefix, then P[i+1] = P[i] + a[i]. The block a[l..r], from index l to index r with both ends included, sums to P[r+1] − P[l], so after that O(n) pass every question costs O(1). A grid works the same way with S[i][j], the sum of the top-left block of i rows by j columns: any rectangle takes four lookups by inclusion–exclusion, the top-left block that ends at the rectangle\'s bottom-right cell, minus the blocks above it and to its left, plus the block above and to the left that was subtracted twice.',
+        say: 'Call the input a, indexed from 0, and let P[i] be the sum of its first i values, a[0] + … + a[i−1]. One left-to-right pass fills all n + 1 entries: P[0] = 0 for the empty prefix, then P[i+1] = P[i] + a[i]. The block a[l..r], from index l to index r with both ends included, sums to P[r+1] − P[l], so after that O(n) pass every question costs O(1). A grid works the same way with S[i][j], the sum of the top-left block of i rows by j columns. Any rectangle takes four lookups by inclusion–exclusion: the top-left block that ends at the rectangle\'s bottom-right cell, minus the blocks above it and to its left, plus the block above and to the left that was subtracted twice.',
       },
       {
         title: 'The shared prefix cancels',
@@ -46,7 +46,7 @@ export default {
         ],
         show: [0, 9],
         note: 'P[2] = 4 is the part before the block, so subtracting it leaves exactly a[2..5].',
-        say: 'Why it is right: P[r+1] and P[l] both contain a[0] + … + a[l−1], and the subtraction cancels exactly those terms, leaving a[l] + … + a[r]. The empty prefix, P[0] = 0, is what lets a block that starts at index 0 use the same formula. Since the identity holds for every pair l ≤ r, any condition on a block can be rewritten as a condition on two prefix values, and that is the bigger payoff.',
+        say: 'Why it is right: P[r+1] and P[l] both contain a[0] + … + a[l−1], and the subtraction cancels exactly those terms, leaving a[l] + … + a[r]. The empty prefix, P[0] = 0, lets a block that starts at index 0 use the same formula. Since the identity holds for every pair l ≤ r, any condition on a block can be rewritten as a condition on two prefix values.',
       },
       {
         title: 'Count blocks by matching prefix values',
@@ -57,7 +57,7 @@ export default {
         ],
         show: [0, 16],
         note: 'The case k = 0 on a new array a: P[5] = P[0] = 0, so the block a[0..4] sums to 0.',
-        say: '"The block a[l..r] sums to k" becomes P[r+1] − P[l] = k, so counting such blocks means counting pairs of prefix positions i < j with P[i] = P[j] − k. Walk j from 1 to n with `seen`, a map from each prefix value met so far to how often it occurred, seeded with the value 0 once for P[0]: at each j add the count of P[j] − k, then record P[j]. That is one O(n log n) pass; when k is 0 it is a search for equal prefix values, and sorting them and comparing neighbours works too. Many conditions turn into this one: "the sum equals the length" is "the values a_i − 1 sum to 0", and "two kinds of item balance" is "the sum is 0 once one kind is negated".',
+        say: '"The block a[l..r] sums to k" becomes P[r+1] − P[l] = k, so counting such blocks means counting pairs of prefix positions i < j with P[i] = P[j] − k. Walk j from 1 to n with `seen`, a map from each prefix value met so far to how often it occurred, seeded with the value 0 once for P[0]: at each j add the count of P[j] − k, then record P[j]. That is one O(n log n) pass. When k is 0 it is a search for equal prefix values, and sorting them and comparing neighbours works too. Many conditions turn into this one: "the sum equals the length" is "the values a_i − 1 sum to 0", and "two kinds of item balance" is "the sum is 0 once one kind is negated".',
       },
       {
         title: 'Splits combine a left and a right',
@@ -154,7 +154,7 @@ long long countSubarrays(const vector<long long>& a, long long k) {
       tier: 'warmup',
       hints: [
         'Each query counts positions i in [l, r) with s_i = s_{i+1}. Whether a single position i counts does not depend on the query at all.',
-        'Mark c_i = 1 when s_i = s_{i+1}. Every query is then a sum of c over a range, the textbook prefix-sum query; with 10^5 queries you cannot rescan the string each time.',
+        'Mark c_i = 1 when s_i = s_{i+1}. Every query is then a sum of c over a range, a prefix-sum query; with 10^5 queries you cannot rescan the string each time.',
         'Build P[k] = c_1 + … + c_k with P[0] = 0 and answer each query with P[r−1] − P[l−1]. O(n + m) overall.',
       ],
       solution: 'Let c_i = 1 if s_i = s_{i+1} (1 ≤ i < n) and P[k] = c_1 + … + c_k. A query counts i from l to r−1, which is P[r−1] − P[l−1]. Using P[r] instead of P[r−1] is the usual wrong answer: it also counts the pair (r, r+1), which lies outside the query. O(n + m).',
@@ -181,7 +181,7 @@ long long countSubarrays(const vector<long long>& a, long long k) {
         'With b_i = a_i for odd i and b_i = −a_i for even i, you need a non-empty block of b with sum 0. A block sum P[r] − P[l−1] is zero exactly when two prefix sums are equal, so the question becomes "does the prefix array contain a repeated value?".',
         'Compute P[0] = 0 and P[1..n] with the signed amounts, sort the n+1 values (or insert them into a set) and check for a duplicate. O(n log n) per test; avoid unordered_map here, it is a known anti-hash target.',
       ],
-      solution: 'Negate the even-numbered glasses: b_i = a_i for odd i, −a_i for even i. A range l..r is balanced iff b_l + … + b_r = 0 iff P[r] = P[l−1]. So the answer is YES iff the values P[0..n] contain a duplicate; sort them and compare neighbours. The sums reach 2·10^14, so use long long, and leaving out P[0] misses ranges that start at the first glass.',
+      solution: 'Negate the even-numbered glasses: b_i = a_i for odd i, −a_i for even i. A range l..r is balanced exactly when b_l + … + b_r = 0 exactly when P[r] = P[l−1]. So the answer is YES exactly when the values P[0..n] contain a duplicate; sort them and compare neighbours. The sums reach 2·10^14, so use long long, and leaving out P[0] misses ranges that start at the first glass.',
     },
     {
       id: '1272D',
@@ -189,7 +189,7 @@ long long countSubarrays(const vector<long long>& a, long long k) {
       rating: 1500,
       tier: 'core',
       hints: [
-        'If you remove a_i, the new increasing run through the gap is a run ending at a_{i−1} glued to a run starting at a_{i+1}, provided a_{i−1} < a_{i+1}. How could you know those two run lengths instantly for every i?',
+        'If you remove a_i, the new increasing run through the gap is a run ending at a_{i−1} glued to a run starting at a_{i+1}, provided a_{i−1} < a_{i+1}. How could you know those two run lengths in O(1) for every i?',
         'This is the left/right precomputation pattern: L[i] is the length of the strictly increasing run ending at i (filled left to right) and R[i] the length of the run starting at i (filled right to left). With both arrays, each possible removal is evaluated in O(1).',
         'Answer = max(max over i of L[i], max over interior i with a_{i−1} < a_{i+1} of L[i−1] + R[i+1]). Two passes to build L and R and one scan to combine them: O(n).',
       ],
@@ -238,7 +238,7 @@ long long countSubarrays(const vector<long long>& a, long long k) {
       tier: 'challenge',
       hints: [
         'If the whole array sums to S, what must each of the three parts sum to? What does that force the prefix sum to be at each of the two cut points?',
-        'The parts are equal iff S is divisible by 3, the first part ends at some p with P[p] = S/3, and the second ends at some q > p with P[q] = 2S/3 (the third part then sums to S/3 automatically). So you are counting pairs p < q, which one left-to-right pass with a running count handles.',
+        'The parts are equal exactly when S is divisible by 3, the first part ends at some p with P[p] = S/3, and the second ends at some q > p with P[q] = 2S/3 (the third part then sums to S/3 automatically). So you are counting pairs p < q, which one left-to-right pass with a running count handles.',
         'If S mod 3 ≠ 0, print 0. Otherwise scan q from 2 to n−1: first add 1 to cnt if P[q−1] = S/3 (p = q−1 becomes available), then if P[q] = 2S/3 add cnt to the answer. O(n), answer in long long.',
       ],
       solution: 'Let P be the prefix sums and S = P[n]. If S is not divisible by 3 the answer is 0. Otherwise count pairs 1 ≤ p < q ≤ n−1 with P[p] = S/3 and P[q] = 2S/3 by sweeping q and keeping how many valid p lie strictly before it. The strict p < q matters when S = 0 (then S/3 = 2S/3, as in an all-zero array), q must stop at n−1 so the third part is non-empty, and the count reaches about n²/2, so use long long. O(n).',

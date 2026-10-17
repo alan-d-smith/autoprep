@@ -59,7 +59,7 @@ export function openQuiz({ fresh = false, onSubmit = () => {} } = {}) {
       <header class="quiz-head">
         <h2 id="quiz-title">Which of these have you heard of?</h2>
         <button class="quiz-close" type="button" data-quiz-close aria-label="Close the quiz">×</button>
-        <p>Drag each technique into the box that fits, or just pick the box. <span class="quiz-count"></span></p>
+        <p>Drag each technique into the box that fits, or pick the box. <span class="quiz-count"></span></p>
       </header>
       <div class="quiz-deck"></div>
       <div class="quiz-bins">

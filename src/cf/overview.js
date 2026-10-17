@@ -66,7 +66,7 @@ export function renderOverview(app) {
     mount(app, html`
       <div class="page-head">
         <h1>Codeforces path</h1>
-        <p>Dynamic programming, graphs and geometry, in the order to learn them. Each stage starts with a primer, then problems that climb steadily in rating. If you get stuck, the hints walk you from a nudge to spotting the technique to the full approach.</p>
+        <p>Dynamic programming, graphs and geometry, in the order to learn them. Each stage starts with a primer, then problems that climb steadily in rating. If you get stuck, the hints give a nudge, then the technique, then the full approach.</p>
       </div>
       <div class="quiz-cta">${quizTpl()}</div>
       <div class="tracks">${TRACKS.map(trackTpl)}</div>

@@ -13,7 +13,7 @@ export default {
           'Trying move sequences is exponential: 4^20 ≈ 10^12 sequences of just 20 grid steps.',
           'DFS finds some path, not the shortest; DP needs a fill order, which a graph with cycles lacks.',
         ],
-        say: 'This stage is about "the fewest moves" when every move costs the same: clicks on a device, steps on a grid, minutes of a spreading fire. Trying move sequences is exponential (there are 4^20, about 10^12, sequences of just 20 grid steps), a DFS finds some path but not necessarily the shortest, and DP needs an order in which to fill its states, which a graph with cycles does not have.',
+        say: 'Many problems ask for the fewest moves when every move costs the same: clicks on a device, steps on a grid, minutes of a spreading fire. Trying move sequences is exponential: there are 4^20, about 10^12, sequences of just 20 grid steps. A DFS finds some path but not necessarily the shortest, and DP needs an order in which to fill its states, which a graph with cycles does not have.',
       },
       {
         title: 'Reach vertices layer by layer',
@@ -23,7 +23,7 @@ export default {
         ],
         show: [0, 21],
         note: 'Grey squares are walls. The BFS reaches the target T at distance 10 and can stop there: its first visit is final.',
-        say: 'The key observation is about layers. The vertices at distance 1 from the start are its neighbours, and the vertices at distance d + 1 are exactly the not-yet-reached neighbours of the vertices at distance d. So if you reach vertices layer by layer, nearest first, the first time a vertex is reached is along a shortest path, and its distance never needs revising.',
+        say: 'The vertices at distance 1 from the start are its neighbours, and the vertices at distance d + 1 are exactly the not-yet-reached neighbours of the vertices at distance d. So if you reach vertices layer by layer, nearest first, the first time a vertex is reached is along a shortest path, and its distance never needs revising.',
       },
       {
         title: 'A queue produces that order',
@@ -52,9 +52,9 @@ export default {
         points: [
           'Start all `sources` at distance 0, and one pass gives each vertex its distance to the nearest.',
           'When moves cost w = 0 or 1, use a deque `dq`: 0-cost moves go to the front, 1-cost ones to the back.',
-          'A vertex can now improve after it is reached, so relax with dist[u] + w < dist[v] instead of testing −1.',
+          'A vertex can now improve after it is reached, so update dist[v] when dist[u] + w < dist[v] instead of testing −1.',
         ],
-        say: 'Three variations cover most problems. Put many `sources` in the queue at distance 0 and one pass gives every vertex its distance to the nearest of them (multi-source BFS), exactly like a BFS from one imaginary vertex joined to all of them, with every distance one smaller; to get every vertex\'s distance to a target set, reverse every edge and run one multi-source BFS from the targets. When each move costs w = 0 or w = 1, use a deque `dq` instead: a 0-cost move goes to the front and a 1-cost move to the back, which keeps it sorted by distance (0-1 BFS). A vertex can now improve after it was first reached, so relax with dist[u] + w < dist[v] instead of testing for −1.',
+        say: 'Put many `sources` in the queue at distance 0 and one pass gives every vertex its distance to the nearest of them (multi-source BFS), exactly like a BFS from one imaginary vertex joined to all of them, with every distance one smaller. To get every vertex\'s distance to a target set, reverse every edge and run one multi-source BFS from the targets. When each move costs w = 0 or w = 1, use a deque `dq` instead: a 0-cost move goes to the front and a 1-cost move to the back, which keeps it sorted by distance (0-1 BFS). A vertex can now improve after it was first reached, so update dist[v] when dist[u] + w < dist[v] instead of testing for −1.',
       },
       {
         title: 'The vertex is the whole state',
@@ -63,7 +63,7 @@ export default {
           'Generate moves from the rules, and number each state as one integer `id`, such as cell·4 + direction.',
           'Count the states before coding: the cost is O(states + moves).',
         ],
-        say: 'The real modelling step is choosing the vertices. When whether a move is allowed, or what it costs, depends on more than where you are (the direction you face, the turns used, the previous city, the time), the vertex is the tuple of all of it, and the moves are generated from the rules instead of being stored. Number each state as one integer `id`, such as cell·4 + direction, keep a flat dist array, and count the states before coding, since the cost is now O(states + moves).',
+        say: 'The modelling step is choosing the vertices. When whether a move is allowed, or what it costs, depends on more than where you are (the direction you face, the turns used, the previous city, the time), the vertex is the tuple of all of it, and the moves are generated from the rules instead of being stored. Number each state as one integer `id`, such as cell·4 + direction, keep a flat dist array, and count the states before coding, since the cost is now O(states + moves).',
       },
     ],
     terms: [
@@ -101,7 +101,7 @@ export default {
     pitfalls: [
       'Marking a vertex visited when it is popped instead of when it is pushed lets the queue hold many copies of it (up to O(E)), which runs out of time or memory. Set dist when you push.',
       'Count the states before coding: 10^6 cells × 4 directions is fine, × 4 directions × 10^3 times is not. Store a state as one integer id with a flat dist array, not a map of tuples.',
-      'Plain BFS (first visit is final) gives wrong distances once moves have different costs. 0/1 costs need a deque (0-1 BFS) or Dijkstra; re-pushing improved vertices to the back of an ordinary queue is correct but can be very slow.',
+      'Plain BFS (first visit is final) gives wrong distances once moves have different costs. 0/1 costs need a deque (0-1 BFS) or Dijkstra; re-pushing improved vertices to the back of an ordinary queue is correct but can be slow.',
     ],
     code: `// Multi-source BFS: every source starts at distance 0. One source is the usual BFS.
 // For a state graph, number the states (e.g. id = cell * 4 + direction) and
@@ -163,7 +163,7 @@ vector<int> bfs01(const vector<vector<pair<int, int>>>& adj, int s) {
         'A tree ignites at its distance to the nearest starting tree, so this is multi-source BFS: put all K burning trees in the queue at distance 0 and run a single BFS. BFS takes cells out in order of distance, so the last cell taken out is a correct answer.',
         'Run that BFS on the N × M grid (up to 4·10^6 cells) with flat int arrays for dist and the queue, and print the last cell dequeued. Read from input.txt and write to output.txt, as the statement says.',
       ],
-      solution: 'Push all K sources at distance 0 and run one BFS over the grid; the last cell dequeued has the largest distance to its nearest source. O(NM) with N, M ≤ 2000; flat int arrays for dist and the queue (32 MB together) keep you under the 64 MB limit. With no obstacles, min over sources of |x − x_i| + |y − y_i| for every cell (O(NMK)) also passes. The most common WA is reading stdin: this problem uses input.txt and output.txt.',
+      solution: 'Push all K sources at distance 0 and run one BFS over the grid; the last cell dequeued has the largest distance to its nearest source. O(NM) with N, M ≤ 2000; flat int arrays for dist and the queue (32 MB together) keep you under the 64 MB limit. With no obstacles, min over sources of |x − x_i| + |y − y_i| for every cell (O(NMK)) also passes. The most common mistake is reading standard input: this problem uses input.txt and output.txt.',
     },
     {
       id: '986A',
@@ -187,7 +187,7 @@ vector<int> bfs01(const vector<vector<pair<int, int>>>& adj, int s) {
         'Make the state (cell, direction he is moving). Stepping forward in the same direction costs no turn and changing direction costs one turn, so this is a shortest path on a state graph with edge costs 0 and 1.',
         'Run 0-1 BFS from the four states (S, d) with 0 turns: forward steps go to the front of the deque, direction changes to the back. Print YES if some (T, d) needs at most 2 turns. 4·n·m ≤ 4·10^6 states, O(nm).',
       ],
-      solution: 'States are (cell, direction), 4·n·m of them. From (c, d) you can step to the next cell in direction d if it has no road works (cost 0) or switch to another direction in place (cost 1); the four states at S start with cost 0. 0-1 BFS gives the minimum number of turns for every state, and the answer is YES iff min over d of turns(T, d) ≤ 2. O(nm). A plain BFS over (cell, direction, turns used ≤ 2) also works with 3 times as many states and no deque.',
+      solution: 'States are (cell, direction), 4·n·m of them. From (c, d) you can step to the next cell in direction d if it has no road works (cost 0) or switch to another direction in place (cost 1); the four states at S start with cost 0. 0-1 BFS gives the minimum number of turns for every state, and the answer is YES exactly when min over d of turns(T, d) ≤ 2. O(nm). A plain BFS over (cell, direction, turns used ≤ 2) also works with 3 times as many states and no deque.',
     },
     {
       id: '1063B',
@@ -197,7 +197,7 @@ vector<int> bfs01(const vector<vector<pair<int, int>>>& adj, int s) {
       hints: [
         'Suppose a path ends in column j after L moves left and R moves right. What is R − L, whichever path you took?',
         'R − L = j − c is fixed by the target column, so the path with the fewest left moves also has the fewest right moves. Up and down moves are free, so this is a shortest path where a left move costs 1 and every other move costs 0: 0-1 BFS.',
-        '0-1 BFS from (r, c), with left moves pushed to the back of the deque and up, down and right moves to the front, gives the minimum L for every cell. A cell counts iff L ≤ x and L + (j − c) ≤ y. O(nm) for up to 4·10^6 cells.',
+        '0-1 BFS from (r, c), with left moves pushed to the back of the deque and up, down and right moves to the front, gives the minimum L for every cell. A cell counts exactly when L ≤ x and L + (j − c) ≤ y. O(nm) for up to 4·10^6 cells.',
       ],
       solution: 'Because rights − lefts equals j − c on every path to column j, minimising left moves minimises both counts at once. A 0-1 BFS (cost 1 for left, 0 otherwise) computes the minimum number of left moves L for every free cell; count the cells with L ≤ x and L + j − c ≤ y. O(nm). A plain BFS by number of steps is wrong: the shortest path to a cell may use more left moves than a longer detour that goes up and around an obstacle.',
     },

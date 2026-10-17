@@ -13,7 +13,7 @@ export default {
           'Checking every earlier j is O(n²), about 2·10^10 checks at n = 2·10^5.',
           'The LIS binary search fails: with weights, a longer chain is not always the better one to extend.',
         ],
-        say: 'Several DPs from earlier stages look back at every earlier item: dp[i] = w[i] + the best dp[j] over j < i with key[j] < key[i], or a sum instead of a best when counting. That is the LIS DP with each item worth its weight w[i] instead of 1, and checking every earlier j is O(n²), about 2·10^10 checks at n = 2·10^5. The binary search from the LIS stage no longer applies, because with weights a longer chain is not always the better one to extend.',
+        say: 'Several DPs from earlier stages look back at every earlier item: dp[i] = w[i] + the best dp[j] over j < i with key[j] < key[i], or a sum instead of a best when counting. That is the LIS DP with each item worth its weight w[i] instead of 1. Checking every earlier j is O(n²), about 2·10^10 checks at n = 2·10^5. The binary search from the LIS stage no longer applies, because with weights a longer chain is not always the better one to extend.',
       },
       {
         title: 'Two conditions, and neither needs a loop',
@@ -37,7 +37,7 @@ export default {
       {
         title: 'Each entry covers lowbit(i) positions',
         points: [
-          't[i] holds the maximum over the lowbit(i) positions ending at i: t[4] covers 1..4, t[6] covers 5..6, t[7] just 7.',
+          't[i] holds the maximum over the lowbit(i) positions ending at i: t[4] covers 1..4, t[6] covers 5..6, t[7] only 7.',
           'query(7) reads t[7], t[6] and t[4], removing the lowest bit each time; an update climbs by adding it.',
           'Either walk touches at most log₂ n + 1 entries. The diagram keeps sums; the DP keeps maxima.',
         ],
@@ -52,7 +52,7 @@ export default {
           'So query(r − 1) is the best earlier item with a strictly smaller key; query(r) would admit equal keys.',
           'A prefix maximum works because values only go up, and max(0, …) lets item i start a new chain.',
         ],
-        say: 'Why it is right: when item i is reached, the tree holds the dp of exactly the earlier items, each at its key\'s rank, so query(r − 1) is the best of the earlier items with a strictly smaller key, while query(r) would also admit equal keys. A prefix maximum can be kept this way because the value at a position only ever goes up, and the max(0, …) lets item i start a new chain on its own.',
+        say: 'When item i is reached, the tree holds the dp of exactly the earlier items, each at its key\'s rank, so query(r − 1) is the best of the earlier items with a strictly smaller key, while query(r) would also admit equal keys. A prefix maximum can be kept this way because the value at a position only ever goes up, and the max(0, …) lets item i start a new chain on its own.',
       },
       {
         title: 'Two O(log n) walks per item',
@@ -61,7 +61,7 @@ export default {
           'A segment tree answers any range, not just a prefix, for any associative merge, such as a minimum.',
           'Lazy propagation keeps a range update as a pending tag, passed to the children only when needed: still O(log n).',
         ],
-        say: 'Each item costs two O(log n) walks, so the DP is O(n log n); UKIEPC 2024 Eradication Sort was an LIS-like DP sped up this way. With + instead of max the same sweep counts: inversions, ordered pairs, or chains of length k with one tree per length. A segment tree answers any range, not just a prefix, for any associative merge (minimum, per-bit counts, a bracket summary), and lazy propagation adds updates to a whole range: a node lying inside the range keeps the update as a pending tag and hands it to its two children only when an operation must go below it, so each operation stays O(log n). UKIEPC 2023 History in Numbers needed such a lazy segment tree.',
+        say: 'Each item costs two O(log n) walks, so the DP is O(n log n); UKIEPC 2024 Eradication Sort was an LIS-like DP sped up this way. With + instead of max the same sweep counts: inversions, ordered pairs, or chains of length k with one tree per length. A segment tree answers any range, not just a prefix, for any associative merge (minimum, per-bit counts, a bracket summary). Lazy propagation adds updates to a whole range: a node lying inside the range keeps the update as a pending tag and hands it to its two children only when an operation must go below it, so each operation stays O(log n). UKIEPC 2023 History in Numbers needed such a lazy segment tree.',
       },
     ],
     terms: [
@@ -147,7 +147,7 @@ long long bestChain(const vector<long long> &key, const vector<long long> &w) {
         'This is a segment tree whose merge depends on the level: the level right above the leaves uses OR, the next XOR, and so on. Changing a_p only changes its n ancestors.',
         'Store the tree in an array of size 2^(n+1) with leaf i at 2^n + i. To update, set the leaf and walk i /= 2 up to the root, recomputing t[i] from t[2i] and t[2i+1] with OR when the height above the leaves is odd and XOR when it is even. Print t[1]. O(n) per query.',
       ],
-      solution: 'Build a segment tree over the 2^n numbers in which a node at height h (leaves at height 0) combines its children with OR when h is odd and XOR when h is even, which mirrors Xenia\'s iterations exactly, so the root holds v. A query changes one leaf, so recompute only the n nodes on its path to the root: O(2^n + m·n) in total. A common WA is choosing the operation by distance from the root instead of from the leaves: the root uses OR when n is odd and XOR when n is even.',
+      solution: 'Build a segment tree over the 2^n numbers in which a node at height h (leaves at height 0) combines its children with OR when h is odd and XOR when h is even, which mirrors Xenia\'s iterations exactly, so the root holds v. A query changes one leaf, so recompute only the n nodes on its path to the root: O(2^n + m·n) in total. A common bug is choosing the operation by distance from the root instead of from the leaves: the root uses OR when n is odd and XOR when n is even.',
     },
     {
       id: '61E',
@@ -179,8 +179,8 @@ long long bestChain(const vector<long long> &key, const vector<long long> &w) {
       rating: 2000,
       tier: 'core',
       hints: [
-        'Cake i may only go on an earlier cake with strictly smaller volume, and you maximise the total volume of the stack. Which classic subsequence problem is this, and what is different about it?',
-        'It is a longest strictly increasing subsequence in which each cake is worth its volume instead of 1: dp[i] = V_i + max dp[j] over j < i with V_j < V_i. The O(n²) transition becomes a prefix-maximum query on a Fenwick tree indexed by the rank of the volume.',
+        'Cake i may only go on an earlier cake with strictly smaller volume, and you maximise the total volume of the stack. Which subsequence problem is this, and what is different about it?',
+        'It is a longest strictly increasing subsequence in which each cake is worth its volume instead of 1: dp_i = V_i + max dp_j over j < i with V_j < V_i. The O(n²) transition becomes a prefix-maximum query on a Fenwick tree indexed by the rank of the volume.',
         'Work with r²·h as an exact integer (up to 10^12) and multiply by π only when printing. Compress the volumes; for each cake in input order query the prefix max over ranks below rank(V_i), set dp_i = V_i + that max, and update position rank(V_i) with dp_i. O(n log n).',
       ],
       solution: 'This is a weighted strictly increasing subsequence over the volumes in input order. Compress the integer volumes r²·h, keep a Fenwick tree of prefix maxima over the ranks, compute dp_i = r_i²·h_i + query(rank_i − 1) and then update rank_i with dp_i; print the largest dp times π with at least 6 decimals. Equal volumes share a rank, so querying rank − 1 enforces the strict inequality. Comparing floating-point volumes π·r²·h instead of the integers can make two equal volumes compare as different and break that strictness.',
@@ -228,7 +228,7 @@ long long bestChain(const vector<long long> &key, const vector<long long> &w) {
       tier: 'challenge',
       hints: [
         'Both operations act on a whole segment. What would inc cost on a segment tree with only point updates, and how could a node avoid touching every element below it?',
-        'Range add with range minimum is the textbook lazy segment tree: a node lying fully inside the update adds v to its minimum and keeps v as a pending tag for its children. The circular part is only input handling.',
+        'Range add with range minimum is a lazy segment tree: a node lying fully inside the update adds v to its minimum and keeps v as a pending tag for its children. The circular part is only input handling.',
         'If lf ≤ rg use [lf, rg]; otherwise split into [lf, n−1] and [0, rg], apply an inc to both parts and take the min of both for rmq. Read each operation as a whole line and count its numbers (2 means rmq, 3 means inc). Use long long. O((n + m) log n).',
       ],
       solution: 'Use a segment tree of range minima with an additive lazy tag: an inc covering a node adds v to its minimum and to its tag, the tag is pushed to the children before any descent, and the minimum is recomputed after the recursion. A circular segment with lf > rg is the union of [lf, n−1] and [0, rg]. The operation type is the number of integers on the line, so read lines (getline, or fgets with sscanf) instead of a fixed number of tokens. Values reach 10^6 + 2·10^5·10^6, so use long long; O((n + m) log n) overall.',

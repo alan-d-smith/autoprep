@@ -11,11 +11,11 @@ export default {
         points: [
           'Find the least total cost from a start to every vertex, or to one target, when each edge has a weight.',
           'BFS counts edges, not cost: S → A costs 4, but S → B → A costs 1 + 2 = 3.',
-          'Listing paths is exponential, and relaxing every edge until nothing improves can take n − 1 passes, about 10^10 steps.',
+          'Listing paths is exponential, and improving distances edge by edge until nothing changes can take n − 1 passes, about 10^10 steps.',
         ],
         show: [0, 17],
         note: 'Dijkstra\'s finished tree: S to T costs 7, and the direct edge S → A (4) lost to S → B → A (3).',
-        say: 'The question: the least total cost from a start to every vertex, or to one target, when each edge has a weight. BFS answers it only when every edge costs the same: from S, the edge S → A of weight 4 is a single edge, but S → B → A with weights 1 and 2 costs 3. Listing every path is exponential, and relaxing every edge again and again until nothing improves can take n − 1 passes over all m edges, about 10^10 steps for n = 10^5 vertices and m = 10^5 edges.',
+        say: 'The question: the least total cost from a start to every vertex, or to one target, when each edge has a weight. BFS answers it only when every edge costs the same: from S, the edge S → A of weight 4 is a single edge, but S → B → A with weights 1 and 2 costs 3. Listing every path is exponential, and improving distances edge by edge until nothing changes can take n − 1 passes over all m edges, about 10^10 steps for n = 10^5 vertices and m = 10^5 edges.',
       },
       {
         title: 'Settle the closest unknown vertex first',
@@ -26,7 +26,7 @@ export default {
         ],
         show: [0, 4],
         note: 'B has the smallest tentative distance, 1, so it is settled: nothing can reach it more cheaply.',
-        say: 'The key observation needs only that no weight is negative. Among the vertices whose distance is not yet known, take the one with the smallest tentative distance, the best found so far through vertices already known: no other route can beat it, because such a route has to leave the known vertices somewhere, already costs at least as much at that point, and can only add more. So distances can be fixed one vertex at a time in increasing order, much as BFS fixes them layer by layer.',
+        say: 'Suppose no weight is negative. Among the vertices whose distance is not yet known, take the one with the smallest tentative distance, the best found so far through vertices already known: no other route can beat it, because such a route has to leave the known vertices somewhere, already costs at least as much at that point, and can only add more. So distances can be fixed one vertex at a time in increasing order, much as BFS fixes them layer by layer.',
       },
       {
         title: 'Dijkstra\'s algorithm with a priority queue',
@@ -37,7 +37,7 @@ export default {
         ],
         show: [0, 5],
         note: 'Relaxing B → A lowers dist[A] from 4 to 3; the old pair (4, A) stays in the queue, now stale.',
-        say: 'Dijkstra\'s algorithm does this with a priority queue. dist[v] holds the best distance found so far from the start `src` (INF until v is reached, 0 for `src`), and the min-heap `pq` holds pairs (d, v), each meaning "v can be reached at cost d". Pop the smallest pair; if d differs from dist[v], the pair is stale, left over from before an improvement, so skip it; otherwise v is settled, meaning dist[v] is final, and each edge in adj[v] from v to u with weight w is relaxed: if d + w < dist[u], set dist[u] = d + w, record par[u] = v and push (dist[u], u). Pushing a new pair instead of updating the old one keeps the code short, and following par[u] back step by step from any vertex u gives a shortest path to it.',
+        say: 'Dijkstra\'s algorithm does this with a priority queue. dist[v] holds the best distance found so far from the start `src` (INF until v is reached, 0 for `src`), and the min-heap `pq` holds pairs (d, v), each meaning "v can be reached at cost d". Pop the smallest pair. If d differs from dist[v], the pair is stale, left over from before an improvement, so skip it. Otherwise v is settled, meaning dist[v] is final. Relax each edge in adj[v] from v to u with weight w: if d + w < dist[u], set dist[u] = d + w, record par[u] = v and push (dist[u], u). Pushing a new pair instead of updating the old one keeps the code short. Following par[u] back from any vertex u gives a shortest path to it.',
       },
       {
         title: 'Why the popped distance is final',
@@ -46,7 +46,7 @@ export default {
           'The vertex before u is settled, so its edge into u was relaxed: dist[u] < d, and u would leave `pq` first.',
           'Each vertex settles once: at most m + 1 pushes, O((n + m) log m). A negative weight breaks the argument.',
         ],
-        say: 'Why it is right: suppose some path to v were shorter than the popped d, and let u be its first vertex that is not yet settled. The vertex before u on that path is settled, so its edge into u was relaxed and dist[u] is at most the path\'s length up to u, which is below d because the rest of the path costs at least 0; then (dist[u], u) would have come out of `pq` before (d, v). Each vertex is settled once and each edge relaxed once, so at most m + 1 pairs are pushed and the total is O((n + m) log m); a negative weight breaks the argument, which is why Dijkstra needs every weight ≥ 0.',
+        say: 'Why it is right: suppose some path to v were shorter than the popped d, and let u be its first vertex that is not yet settled. The vertex before u on that path is settled, so its edge into u was relaxed and dist[u] is at most the path\'s length up to u, which is below d because the rest of the path costs at least 0. Then (dist[u], u) would have come out of `pq` before (d, v). Each vertex is settled once and each edge relaxed once, so at most m + 1 pairs are pushed and the total is O((n + m) log m). A negative weight breaks the argument, which is why Dijkstra needs every weight ≥ 0.',
       },
       {
         title: 'Put what you carry in the vertex',
@@ -64,7 +64,7 @@ export default {
           'For k = 0 to n − 1, d[i][j] = min(d[i][j], d[i][k] + d[k][j]); after pass k, stopovers lie among vertices 0 to k.',
           'O(n³), about 1.25·10^8 for n = 500; the table turns "add a road" or "visit these in order" into arithmetic or a small DP.',
         ],
-        say: 'For all pairs at once, Floyd–Warshall keeps a table d[i][j] that starts as the edge weights (INF where there is no edge, 0 on the diagonal) and, for k = 0 to n − 1 in the outer loop, sets d[i][j] = min(d[i][j], d[i][k] + d[k][j]) for every i and j. After the pass for k, d[i][j] is the shortest path from i to j whose stopovers all lie among vertices 0 to k, so the outer loop can add vertices one at a time, in any order you choose. It costs O(n³), about 1.25·10^8 for n = 500, and with the finished table, "change one road", "add a road" or "visit these places in some order" become arithmetic or a small DP over table entries.',
+        say: 'For all pairs at once, Floyd–Warshall keeps a table d[i][j] that starts as the edge weights (INF where there is no edge, 0 on the diagonal) and, for k = 0 to n − 1 in the outer loop, sets d[i][j] = min(d[i][j], d[i][k] + d[k][j]) for every i and j. After the pass for k, d[i][j] is the shortest path from i to j whose stopovers all lie among vertices 0 to k, so the outer loop can add vertices one at a time, in any order you choose. It costs O(n³), about 1.25·10^8 for n = 500. With the finished table, "change one road", "add a road" or "visit these places in some order" become arithmetic or a small DP over table entries.',
       },
     ],
     terms: [
@@ -99,7 +99,7 @@ export default {
     ],
     disguises: [
       'Delete vertices one by one and report a sum over all pairs before each deletion → reverse the order and add the vertices as the k of Floyd–Warshall.',
-      'Costs depend on an item picked up earlier (a bike, a horse, a coupon) → Dijkstra over states (vertex, item), with n times the number of item values states.',
+      'Costs depend on an item picked up earlier (a bike, a horse, a coupon) → Dijkstra over states (vertex, item), n states per item value.',
       'Two people travel and meet at a vertex as early as possible → one Dijkstra from each start; meeting at v takes max(d1[v], d2[v]), so minimise that over v.',
       'Make one road free, or add one road, and minimise a sum of route lengths → with all-pairs distances, route a → b becomes min(d[a][b], d[a][x] + w + d[y][b], d[a][y] + w + d[x][b]) for road x–y of new length w.',
     ],

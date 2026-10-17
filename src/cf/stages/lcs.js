@@ -14,7 +14,7 @@ export default {
           'Testing every subsequence of a costs 2^n, about 10^9 already at n = 30.',
           'Greedy fails: for a = XAB and b = ABX, matching X first finds 1 instead of 2.',
         ],
-        say: 'This stage compares two sequences, a with n items and b with m. The model question is the longest common subsequence (LCS): the longest sequence that both contain, its items in order but not necessarily adjacent. Testing every subsequence of a against b costs 2^n, about 10^9 already when n is 30, and matching greedily goes wrong: for a = XAB and b = ABX, matching X first leaves nothing after it for A and B, so it finds 1 instead of 2.',
+        say: 'This stage compares two sequences, a with n items and b with m. The model question is the longest common subsequence (LCS): the longest sequence that both contain, its items in order but not necessarily adjacent. Testing every subsequence of a against b costs 2^n, about 10^9 already when n is 30. Matching greedily goes wrong: for a = XAB and b = ABX, matching X first leaves nothing after it for A and B, so it finds 1 instead of 2.',
       },
       {
         title: 'Look only at the last items',
@@ -54,7 +54,7 @@ export default {
           'Deleting a[i − 1] or inserting b[j − 1] costs 1; turning a[i − 1] into b[j − 1] costs 1 only if they differ.',
           'Row 0 costs j insertions and column 0 costs i deletions.',
         ],
-        say: 'Edit distance, the fewest single-item inserts, deletes and replacements that turn a into b, uses the same table, with dp[i][j] now the fewest operations turning `a[0..i)` into `b[0..j)`. The three neighbours become: delete a[i − 1] (from (i − 1, j), plus 1), insert b[j − 1] (from (i, j − 1), plus 1), or turn a[i − 1] into b[j − 1] (from (i − 1, j − 1), plus 1 only if they differ). Row 0 costs j insertions and column 0 costs i deletions.',
+        say: 'Edit distance, the fewest single-item inserts, deletes and replacements that turn a into b, uses the same table. dp[i][j] is now the fewest operations turning `a[0..i)` into `b[0..j)`. The three neighbours become: delete a[i − 1] (from (i − 1, j), plus 1), insert b[j − 1] (from (i, j − 1), plus 1), or turn a[i − 1] into b[j − 1] (from (i − 1, j − 1), plus 1 only if they differ). Row 0 costs j insertions and column 0 costs i deletions.',
       },
       {
         title: 'O(nm) time, two rows of memory',
@@ -154,7 +154,7 @@ int editDistance(const string& a, const string& b) {
         'dp[i][j] = fewest changed characters in c[0..i+j) = min(dp[i−1][j] + [a[i−1] ≠ c[i+j−1]], dp[i][j−1] + [b[j−1] ≠ c[i+j−1]]), with dp[0][0] = 0. Answer dp[|a|][|b|], O(|a|·|b|) per test.',
       ],
       solution:
-        'Let dp[i][j] be the fewest changes so that c[0..i+j) is an interleaving of a[0..i) and b[0..j). The last character c[i+j−1] came either from a[i−1] (cost 1 if it differs) or from b[j−1], so take the minimum of those two transitions, guarding i > 0 and j > 0 on the borders. The answer is dp[|a|][|b|]; the length limits keep the total work across tests to about 2·10⁶ cells. Greedily matching c against whichever string fits fails when a and b offer the same letter, which is exactly why the DP is needed.',
+        'Let dp[i][j] be the fewest changes so that c[0..i+j) is an interleaving of a[0..i) and b[0..j). The last character c[i+j−1] came either from a[i−1] (cost 1 if it differs) or from b[j−1], so take the minimum of those two transitions, guarding i > 0 and j > 0 on the borders. The answer is dp[|a|][|b|]; the length limits keep the total work across tests to about 2·10⁶ cells. Greedily matching c against whichever string fits fails when a and b offer the same letter.',
     },
     {
       id: '163A',
@@ -193,7 +193,7 @@ int editDistance(const string& a, const string& b) {
         'Compress to m runs, compute L = LCS(a, reverse(a)) in O(m²) with rolling rows, and answer m − 1 − ⌊L/2⌋.',
       ],
       solution:
-        'After compressing equal neighbours into m runs, every turn absorbs at least one run, and absorbs one on each side exactly when the two bordering runs share a colour. The double turns pair up equal colours nested around the starting run, i.e. a palindromic subsequence, and L = LCS(a, reverse a) is the longest one; all ⌊L/2⌋ of its pairs can be used, because after compression the innermost equal pair is never adjacent, so a starting run fits between them. Answer m − 1 − ⌊L/2⌋ in O(m²). Skipping the compression breaks inputs such as 3 3 3, whose answer is 0.',
+        'After compressing equal neighbours into m runs, every turn absorbs at least one run, and absorbs one on each side exactly when the two bordering runs share a colour. The double turns pair up equal colours nested around the starting run, i.e. a palindromic subsequence, and L = LCS(a, reverse a) is the longest one. All ⌊L/2⌋ of its pairs can be used, because after compression the innermost equal pair is never adjacent, so a starting run fits between them. Answer m − 1 − ⌊L/2⌋ in O(m²). Skipping the compression breaks inputs such as 3 3 3, whose answer is 0.',
     },
     {
       id: '463D',
@@ -206,7 +206,7 @@ int editDistance(const string& a, const string& b) {
         'Store pos[t][v] for every permutation. Walk the first permutation in order and set dp[v] = 1 + max dp[u] over earlier u with pos[t][u] < pos[t][v] for every t. O(n²·k), about 5·10⁶ checks.',
       ],
       solution:
-        'Record the position of each number in every permutation. A sequence is a common subsequence exactly when every consecutive pair (x, y) has x before y in all k permutations, so the answer is the longest path in that DAG. The first permutation is a topological order of it, so dp[i] = 1 + max dp[j] over j < i in the first permutation whose number precedes perm[0][i] in every other permutation. Answer max dp, O(n²k). A k-dimensional LCS table would have 1000⁵ cells; the fact that each value appears once is what makes the problem small.',
+        'Record the position of each number in every permutation. A sequence is a common subsequence exactly when every consecutive pair (x, y) has x before y in all k permutations, so the answer is the longest path in that DAG. The first permutation is a topological order of it, so dp[i] = 1 + max dp[j] over j < i in the first permutation whose number precedes perm[0][i] in every other permutation. Answer max dp, O(n²k). A k-dimensional LCS table would have 1000⁵ cells; each value appearing once keeps the problem small.',
     },
     {
       id: '682D',
@@ -215,7 +215,7 @@ int editDistance(const string& a, const string& b) {
       tier: 'core',
       hints: [
         'Forget k for a moment: with any number of pieces of any length, what is the maximum total length? Then ask what extra information a cell needs so you can count pieces.',
-        'Without k this is plain LCS. With k, add a third index c = pieces used so far, and separate "piece c ends exactly at s[i] and t[j]" (the next equal pair may extend it for free) from "the best anywhere inside these prefixes".',
+        'Without k this is plain LCS. With k, add a third index c = pieces used so far, and separate "piece c ends exactly at s[i] and t[j]" (the next equal pair may extend it, keeping c) from "the best anywhere inside these prefixes".',
         'end[c][i][j] = 1 + max(end[c][i−1][j−1], best[c−1][i−1][j−1]) if s[i] = t[j], else −∞; best[c][i][j] = max(best[c][i−1][j], best[c][i][j−1], end[c][i][j]). Answer best[k][n][m], O(nmk) ≈ 10⁷.',
       ],
       solution:
@@ -232,7 +232,7 @@ int editDistance(const string& a, const string& b) {
         'Build the automaton go[state][letter] from the prefix function. f[i][j][s] = longest valid continuation from s1[i..], s2[j..] in state s = max(f[i+1][j][s], f[i][j+1][s], 1 + f[i+1][j+1][go[s][c]] when s1[i] = s2[j] = c and go[s][c] < |virus|). Answer f[0][0][0] over about 10⁶ states, then walk the table to print it.',
       ],
       solution:
-        'Precompute the prefix function of the virus and go[s][c], the state after appending letter c in state s. Fill f[i][j][s] over suffixes so that reconstruction walks forwards from (0, 0, 0): take the common letter when s1[i] = s2[j], the new state is below |virus| and the value matches, otherwise step i or j to a cell with the same value. Print 0 if the best length is 0. Tracking only "how many virus letters are matched" without failure links is the classic bug: for virus AAB, after AAA the state is still 2, not reset to 0 or 1.',
+        'Precompute the prefix function of the virus and go[s][c], the state after appending letter c in state s. Fill f[i][j][s] over suffixes so that reconstruction walks forwards from (0, 0, 0): take the common letter when s1[i] = s2[j], the new state is below |virus| and the value matches, otherwise step i or j to a cell with the same value. Print 0 if the best length is 0. Tracking only "how many virus letters are matched" without failure links is the common bug: for virus AAB, after AAA the state is still 2, not reset to 0 or 1.',
     },
     {
       id: '56D',
@@ -240,7 +240,7 @@ int editDistance(const string& a, const string& b) {
       rating: 2100,
       tier: 'challenge',
       hints: [
-        'The minimum number of moves is a textbook table; the new part is printing moves whose positions are valid when each is applied. In what order can you emit them so that earlier moves never shift the positions used by later ones?',
+        'The minimum number of moves is a standard table; the new part is printing moves whose positions are valid when each is applied. In what order can you emit them so that earlier moves never shift the positions used by later ones?',
         'This is edit distance with reconstruction. Walking the table back from (|s|, |t|) and printing each operation as you meet it edits the string from right to left, so positions 1..i still hold the original s[1..i].',
         'dp[i][j] = min(dp[i−1][j−1] + [s[i] ≠ t[j]], dp[i−1][j] + 1, dp[i][j−1] + 1). Backtrack from (n, m): skip free diagonal steps, otherwise print REPLACE i t[j], DELETE i or INSERT i+1 t[j] for the transition taken. O(nm) with the full table.',
       ],

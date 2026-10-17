@@ -9,13 +9,13 @@ export default {
       {
         title: 'Asking about everything below v',
         points: [
-          'Sizes, totals and best answers inside a subtree come up constantly.',
+          'Many problems ask for a size, total or best answer inside a subtree.',
           'Walking down from each vertex separately is O(n) per vertex, O(n²) in all.',
-          'Fix one shape for the tree and reuse each answer instead.',
+          'Root the tree once; build each vertex\'s answer from its children\'s.',
         ],
         show: [0, 0],
         note: 'The diagram\'s tree, rooted at 1, before any par, depth, tin or size is filled in.',
-        say: 'Many tree questions are about "everything below v": how many vertices it holds, their total weight, the best answer found inside it. Working that out by walking down from each vertex separately costs O(n) per vertex and O(n²) in all, too slow for n = 2·10^5. The way out is to fix one shape for the tree and reuse each answer instead of recomputing it.',
+        say: 'Many tree questions are about "everything below v": how many vertices it holds, their total weight, the best answer found inside it. Working that out by walking down from each vertex separately costs O(n) per vertex and O(n²) in all, too slow for n = 2·10^5. Instead, root the tree once and build each subtree\'s answer from its children\'s answers.',
       },
       {
         title: 'Root the tree',
@@ -25,7 +25,7 @@ export default {
         ],
         show: [0, 5],
         note: 'Rooted at 1: 2\'s children 4 and 5 get par = 2 and depth = depth[2] + 1 = 2.',
-        say: 'So first root the tree: pick any vertex r as the root. Every other vertex now has exactly one parent par[v], its neighbour on the way back to r, a depth depth[v], and a subtree: v together with everything below it. "Below" was meaningless in an unrooted tree; now it is well defined, and a vertex\'s subtree is just itself plus its children\'s subtrees.',
+        say: 'Pick any vertex r as the root. Every other vertex now has exactly one parent par[v], its neighbour on the way back to r, a depth depth[v], and a subtree: v together with everything below it. A vertex\'s subtree is itself plus its children\'s subtrees.',
       },
       {
         title: 'Children before parents',
@@ -35,7 +35,7 @@ export default {
         ],
         show: [0, 15],
         note: 'Walking `order` backwards: 2\'s children 4 and 5 come later and have already been added, so size[2] = 5 is final.',
-        say: 'Next, an order that finishes children before parents. A DFS from r writes the vertices down in the order it enters them, the preorder `order`. Every vertex appears after its parent, so walking `order` backwards meets each child before its parent. When the backward walk reaches v, every child\'s answer is already final, so size[v] = 1 + the sizes of v\'s children, and any subtree DP down[v] built from its children\'s values takes one O(n) pass.',
+        say: 'A DFS from r writes the vertices down in the order it enters them, the preorder `order`. Every vertex appears after its parent, so walking `order` backwards meets each child before its parent. When the backward walk reaches v, every child\'s answer is already final, so size[v] = 1 + the sizes of v\'s children, and any subtree DP down[v] built from its children\'s values takes one O(n) pass.',
       },
       {
         title: 'A subtree is a block of the preorder',
@@ -45,7 +45,7 @@ export default {
         ],
         show: [0, 18],
         note: '2\'s subtree {2, 4, 5, 7, 8} is the block order[3..7]. The stack took 3\'s subtree first, as 3 was pushed last; any child order keeps blocks.',
-        say: 'The same order makes subtrees easy to query. A DFS that enters v does not leave until it has seen everything below v, so v\'s subtree sits in consecutive slots of `order`: from tin[v], v\'s own slot, for size[v] entries. "Is u inside v\'s subtree?" becomes tin[v] ≤ tin[u] < tin[v] + size[v], and "the total over v\'s subtree" becomes a range sum over `order`, which prefix sums or a Fenwick tree answer quickly.',
+        say: 'A DFS that enters v does not leave until it has seen everything below v, so v\'s subtree sits in consecutive slots of `order`: from tin[v], v\'s own slot, for size[v] entries. "Is u inside v\'s subtree?" becomes tin[v] ≤ tin[u] < tin[v] + size[v], and "the total over v\'s subtree" becomes a range sum over `order`, which prefix sums or a Fenwick tree answer quickly.',
       },
       {
         title: 'Every vertex as the root',
@@ -54,7 +54,7 @@ export default {
           'Moving the root across one edge, from p to its child v, changes the answer by an O(1) correction.',
           'Walking `order` forwards gives every answer in O(n): rerooting.',
         ],
-        say: 'Some problems ask for an answer with every vertex as the root. Recomputing per root is O(n²) again. Instead compute ans[r] for one root, then move the root one edge at a time, from a parent p to its child v. Only p and v swap roles, v becoming p\'s parent; every other vertex keeps its parent, so ans[v] follows from ans[p] with an O(1) correction: take out what v\'s subtree contributed and add what the rest of the tree now contributes through p. This is rerooting, and walking `order` forwards gives every vertex its answer in O(n) total.',
+        say: 'Some problems ask for an answer with every vertex as the root. Recomputing per root is O(n²) again. Instead compute ans[r] for one root, then move the root one edge at a time, from a parent p to its child v. Only p and v swap roles, v becoming p\'s parent; every other vertex keeps its parent. So ans[v] follows from ans[p] with an O(1) correction: take out what v\'s subtree contributed and add what the rest of the tree now contributes through p. This is rerooting, and walking `order` forwards gives every vertex its answer in O(n) total.',
       },
       {
         title: 'The diameter in two BFS passes',
@@ -62,7 +62,7 @@ export default {
           'BFS from any vertex; the farthest vertex a is an end of a longest path.',
           'BFS again from a; the farthest vertex b gives the diameter a to b.',
         ],
-        say: 'One more classic: the diameter, the longest path in the tree. A BFS from any vertex ends at a vertex a that is an end of some longest path, and a second BFS from a reaches the farthest vertex b; the path from a to b is a diameter. Two O(n) passes.',
+        say: 'The diameter is the longest path in the tree. A BFS from any vertex ends at a vertex a that is an end of some longest path. A second BFS from a reaches the farthest vertex b, and the path from a to b is a diameter. Two O(n) passes.',
       },
     ],
     // Grouped by technique: a problem uses the rooting names plus the groups it needs.
@@ -198,7 +198,7 @@ pair<int, int> farthest(const vector<vector<int>>& g, int s, vector<int>& d) {
         'Carry the length of the current run of consecutive cats: it becomes run + 1 at a cat vertex and resets to 0 at a cat-free one. This is a top-down DFS where each vertex\'s state depends only on its parent\'s.',
         'Iterative DFS from vertex 1 with (vertex, parent, run), starting from run = a_1. If run > m, do not descend further. Count reached vertices with no neighbour other than their parent. O(n).',
       ],
-      solution: 'DFS from vertex 1 with run(1) = a_1 and run(child) = a_child ? run(parent) + 1 : 0. As soon as run exceeds m, prune that whole subtree, since every restaurant below shares the bad stretch. A reached vertex whose only neighbour is its parent is a restaurant; count it. O(n). Common WAs: tracking the total number of cats on the path instead of the current consecutive run, and counting the root as a leaf when it has degree 1.',
+      solution: 'DFS from vertex 1 with run(1) = a_1 and run(child) = a_child ? run(parent) + 1 : 0. As soon as run exceeds m, prune that whole subtree, since every restaurant below shares the bad stretch. A reached vertex whose only neighbour is its parent is a restaurant; count it. O(n). Common mistakes: tracking the total number of cats on the path instead of the current consecutive run, and counting the root as a leaf when it has degree 1.',
     },
     {
       id: '1006E',
@@ -207,8 +207,8 @@ pair<int, int> farthest(const vector<vector<int>>& g, int s, vector<int>& d) {
       tier: 'core',
       hints: [
         'The command spreads exactly like a DFS that always picks the smallest child first. How does the order starting from officer u relate to the order starting from the commander?',
-        'In a DFS preorder every subtree is a contiguous block: the order from u is the slice of the commander\'s order that starts at u\'s position and has length size(u). One DFS from the root answers every query.',
-        'Build children lists in increasing index (reading p_2..p_n in order already sorts them), run one iterative preorder from 1 recording tin[v] and order[], compute subtree sizes, and answer (u, k) with order[tin[u] + k − 1] if k ≤ sz[u], else −1. O(n + q).',
+        'In a DFS preorder every subtree is a contiguous block: the order from u is the slice of the commander\'s order that starts at u\'s position and has length size[u]. One DFS from the root answers every query.',
+        'Build children lists in increasing index (reading p_2..p_n in order already sorts them), run one iterative preorder from 1 recording tin[v] and order[], compute subtree sizes, and answer (u, k) with order[tin[u] + k − 1] if k ≤ size[u], else −1. O(n + q).',
       ],
       solution: 'Children are appended in increasing index as p_i is read for i = 2..n. One preorder DFS from 1 (iterative, pushing children in reverse so the smallest is popped first) gives order[] and tin[]; walking order[] backwards gives subtree sizes. For query (u, k), print −1 if k > size[u], otherwise order[tin[u] + k − 1]. O(n + q). Simulating the spread per query is O(nq) and times out, and a recursive DFS on a 2·10^5 chain risks a stack overflow.',
     },
@@ -219,10 +219,10 @@ pair<int, int> farthest(const vector<vector<int>>& g, int s, vector<int>& d) {
       tier: 'core',
       hints: [
         'When you turn a city into an industry city, whose happiness changes besides its own envoy\'s?',
-        'Choosing v gives its envoy depth(v) tourism cities if nothing above is industrial, but v stops counting for every industry city below it. It is never worse to pick a child before its parent, so an optimal choice takes whole subtrees and each chosen v is worth depth(v) − (sz(v) − 1), independently of the others.',
-        'Root at city 1 (depth 0), compute depth and subtree size for every city, form depth(v) − sz(v) + 1, sort in decreasing order and add up the k largest in long long. O(n log n).',
+        'Choosing v gives its envoy depth[v] tourism cities if nothing above is industrial, but v stops counting for every industry city below it. It is never worse to pick a child before its parent, so an optimal choice takes whole subtrees and each chosen v is worth depth[v] − (size[v] − 1), independently of the others.',
+        'Root at city 1 (depth 0), compute depth and subtree size for every city, form depth[v] − size[v] + 1, sort in decreasing order and add up the k largest in long long. O(n log n).',
       ],
-      solution: 'Swapping an industrial parent with a tourism child never lowers the total, so an optimal set is closed under taking descendants, and then each chosen city v contributes depth(v) minus the sz(v) − 1 chosen cities below it. The values depth(v) − (sz(v) − 1) are independent, and a child\'s value is always larger than its parent\'s, so taking the k largest automatically respects the closure. Sort and sum the top k. The sum reaches about 10^10, so use long long. O(n log n).',
+      solution: 'Swapping an industrial parent with a tourism child never lowers the total, so an optimal set is closed under taking descendants, and then each chosen city v contributes depth[v] minus the size[v] − 1 chosen cities below it. The values depth[v] − (size[v] − 1) are independent, and a child\'s value is always larger than its parent\'s, so taking the k largest automatically respects the closure. Sort and sum the top k. The sum reaches about 10^10, so use long long. O(n log n).',
     },
     {
       id: '1689C',
@@ -232,9 +232,9 @@ pair<int, int> farthest(const vector<vector<int>>& g, int s, vector<int>& d) {
       hints: [
         'When the infection reaches a vertex with two healthy children, you can delete only one of them before it spreads. What happens to each child\'s subtree depending on that choice?',
         'At every moment the infection front is a single vertex v, and the situation inside v\'s subtree repeats itself one level lower: a subtree DP. Let dp[v] be the most vertices you can save in v\'s subtree once v has just been infected.',
-        'Root at 1 and compute subtree sizes. A leaf has dp = 0; with one child c, dp = sz(c) − 1; with children c1, c2, dp = max(sz(c1) − 1 + dp[c2], sz(c2) − 1 + dp[c1]). Print dp[1]. O(n) per test case.',
+        'Root at 1 and compute subtree sizes. A leaf has dp = 0; with one child c, dp = size[c] − 1; with children c1, c2, dp = max(size[c1] − 1 + dp[c2], size[c2] − 1 + dp[c1]). Print dp[1]. O(n) per test case.',
       ],
-      solution: 'Each turn you delete one child of the currently infected vertex v: the deleted child\'s subtree minus the child itself is saved, and the infection continues into the other child, where the same choice appears. Process vertices in reverse DFS order with dp[v] = 0 for a leaf, sz(c) − 1 for a single child, and the better of the two deletions for two children. Print dp[1]. The −1 is because a deleted vertex does not count as saved. O(n) per test case.',
+      solution: 'Each turn you delete one child of the currently infected vertex v: the deleted child\'s subtree minus the child itself is saved, and the infection continues into the other child, where the same choice appears. Process vertices in reverse DFS order with dp[v] = 0 for a leaf, size[c] − 1 for a single child, and the better of the two deletions for two children. Print dp[1]. The −1 is because a deleted vertex does not count as saved. O(n) per test case.',
     },
     {
       id: '1324F',
@@ -256,7 +256,7 @@ pair<int, int> farthest(const vector<vector<int>>& g, int s, vector<int>& d) {
       hints: [
         'Computing the cost for v = 1 is one DFS. If you then move v across one edge to a neighbour, which distances grow by one and which shrink by one?',
         'This is rerooting with an O(1) update: moving the chosen vertex from p to its child v brings every vertex in v\'s subtree one step closer and pushes everything else one step away, so cost(v) = cost(p) + S − 2·W(v), where S = Σ a_i and W(v) is the sum of a over v\'s subtree.',
-        'Root at 1, compute depths and subtree sums in one pass, set cost(1) = Σ depth(i)·a_i, then walk the DFS order applying cost(v) = cost(par(v)) + S − 2·W(v) and take the maximum. Use long long; O(n).',
+        'Root at 1, compute depths and subtree sums in one pass, set cost(1) = Σ depth[i]·a_i, then walk the DFS order applying cost(v) = cost(par[v]) + S − 2·W(v) and take the maximum. Use long long; O(n).',
       ],
       solution: 'Compute cost(1) = Σ dist(i, 1)·a_i and the subtree sums W(v) with vertex 1 as root. Moving from parent p to child v changes the cost by (S − W(v)) − W(v), so in DFS order cost(v) = cost(p) + S − 2·W(v); the answer is the maximum over all v. Costs exceed 10^15, so everything must be long long, and n = 1 prints 0. O(n).',
     },

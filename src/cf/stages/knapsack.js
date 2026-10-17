@@ -4,7 +4,7 @@ export default {
   title: 'Knapsack and subset sums',
   track: 'dp',
   summary:
-    'Recognise a knapsack under any wording, decide what the capacity dimension really measures, and use the right loop direction for 0/1, unbounded and bounded items.',
+    'Recognise a knapsack under any wording, decide what the capacity dimension measures, and use the right loop direction for 0/1, unbounded and bounded items.',
   primer: {
     slides: [
       {
@@ -14,7 +14,7 @@ export default {
           'Each item is used at most once (0/1), and trying every subset is 2^n, about 10^30 for n = 100.',
           'Greedy by value per weight fails: with W = 4 it takes (3, 5) and scores 5, but the two (2, 3) items score 6.',
         ],
-        say: 'The model question: n items, item i with weight w[i] and value v[i], and a capacity W. Choose a set of total weight at most W with the largest total value, each item used at most once (the 0/1 knapsack). Trying every subset costs 2^n, about 10^30 when n is 100, and greedy by value per unit of weight fails: with a capacity of 4 and items of (weight, value) (3, 5), (2, 3) and (2, 3), it takes the first, has no room left and scores 5, while the two small items score 6.',
+        say: 'The model question: n items, item i with weight w[i] and value v[i], and a capacity W. Choose a set of total weight at most W with the largest total value, each item used at most once (the 0/1 knapsack). Trying every subset costs 2^n, about 10^30 when n is 100. Greedy by value per unit of weight fails: with a capacity of 4 and items of (weight, value) (3, 5), (2, 3) and (2, 3), it takes the first, has no room left and scores 5, while the two small items score 6.',
       },
       {
         title: 'Only the weight used matters',
@@ -23,7 +23,7 @@ export default {
           'Of two choices with the same weight, keep the one with more value.',
           'With integer weights there are W + 1 amounts, so the work grows with W, not 2^n.',
         ],
-        say: 'The key observation: what a partial choice leaves for the remaining items depends only on how much weight it has used. Two choices that used the same weight face exactly the same future, so only the one with more value is worth keeping. With integer weights there are just W + 1 possible amounts, so the work grows with W, not with 2^n.',
+        say: 'What a partial choice leaves for the remaining items depends only on how much weight it has used. Two choices that used the same weight face exactly the same future, so only the one with more value is worth keeping. With integer weights there are only W + 1 possible amounts, so the work grows with W, not with 2^n.',
       },
       {
         title: 'One pass over c per item',
@@ -34,7 +34,7 @@ export default {
         ],
         show: [0, 7],
         note: 'Each row is one item\'s pass over c. Item B at capacity 5: taking it (3 + 4 = 7) beats skipping it (3).',
-        say: 'So let dp[c] be the best value of a set of the items considered so far with total weight at most c; before any item, every dp[c] is 0. Item i is added in one pass over c: dp[c] = max(dp[c], dp[c − w[i]] + v[i]) for every c ≥ w[i], which either skips the item or puts it on top of the best set that leaves w[i] free. After the last item, dp[W] is the answer.',
+        say: 'Let dp[c] be the best value of a set of the items considered so far with total weight at most c; before any item, every dp[c] is 0. Item i is added in one pass over c: dp[c] = max(dp[c], dp[c − w[i]] + v[i]) for every c ≥ w[i], which either skips the item or puts it on top of the best set that leaves w[i] free. After the last item, dp[W] is the answer.',
       },
       {
         title: 'Sweep c downwards for 0/1',
@@ -45,7 +45,7 @@ export default {
         ],
         show: [0, 14],
         note: 'Row C runs from capacity 5 down, as in the code: taking C at 4 reads capacity 0, which this pass hasn\'t reached, so it is still without C.',
-        say: 'The update is right only if dp[c − w[i]] still means "without item i". Sweeping c downwards guarantees that, because the smaller index has not been touched yet in this pass, so after item i each dp[c] is the best over subsets of the first i items; that invariant is the whole proof. Sweeping upwards, dp[c − w[i]] may already include item i, so the item can be taken again and again: wrong for 0/1, and exactly right when every item has unlimited copies (the unbounded knapsack).',
+        say: 'The update is right only if dp[c − w[i]] still means "without item i". Sweeping c downwards guarantees that, because the smaller index has not been touched yet in this pass. So after item i, each dp[c] is the best over subsets of the first i items, and that is the whole proof. Sweeping upwards, dp[c − w[i]] may already include item i, so the item can be taken again and again: wrong for 0/1, and exactly right when every item has unlimited copies (the unbounded knapsack).',
       },
       {
         title: 'Exact weights, copies and bitsets',
@@ -54,7 +54,7 @@ export default {
           'An item with cnt[i] copies splits into packs of 1, 2, 4, … plus a remainder, each run as a 0/1 item.',
           'For feasibility alone, the bitset `can` takes each item with `can |= can << w[i]` in O(MAXS/64).',
         ],
-        say: 'Each item costs O(W), so the DP is O(n·W) time and O(W) memory. Starting from 0 everywhere means "weight at most c"; starting from dp[0] = 0 and −∞ everywhere else means "weight exactly c". An item with cnt[i] copies is split into packs of 1, 2, 4 and so on copies plus a remainder, each run as a 0/1 item, and when only feasibility matters, a bitset `can`, whose bit s says some subset sums to s, takes each item with `can |= can << w[i]` in O(MAXS/64).',
+        say: 'Each item costs O(W), so the DP is O(n·W) time and O(W) memory. Starting from 0 everywhere means "weight at most c"; starting from dp[0] = 0 and −∞ everywhere else means "weight exactly c". An item with cnt[i] copies is split into packs of 1, 2, 4 and so on copies plus a remainder, each run as a 0/1 item. When only feasibility matters, a bitset `can`, whose bit s says some subset sums to s, takes each item with `can |= can << w[i]` in O(MAXS/64).',
       },
       {
         title: 'Choose what the index measures',
@@ -155,11 +155,11 @@ bitset<MAXS + 1> subsetSums(const vector<int>& a) {
       tier: 'warmup',
       hints: [
         'The elements do not interact: turning 1 into b_i takes some minimum number of operations, and you either spend all of them and collect c_i or leave the element alone. What does that make each element?',
-        'Each element is a 0/1 knapsack item with weight ops(b_i) and value c_i, and k is the capacity. ops(v) is at most 12 for v ≤ 1000, so k up to 10⁶ is a red herring: cap it at Σ ops(b_i) ≤ 12n.',
-        'Precompute ops[v] for v ≤ 1000 by relaxing ops[a + ⌊a/x⌋] from ops[a] + 1 for every a and x. Then run dp[cap] = max(dp[cap], dp[cap − w] + c) with cap going down from min(k, Σw). O(1000² + 12n²).',
+        'Each element is a 0/1 knapsack item with weight ops[b_i] and value c_i, and k is the capacity. ops[v] is at most 12 for v ≤ 1000, so k up to 10⁶ is a red herring: cap it at Σ ops[b_i] ≤ 12n.',
+        'Precompute ops[v] for v ≤ 1000: for every a and x, set ops[a + ⌊a/x⌋] to ops[a] + 1 if that is smaller. Then run dp[cap] = max(dp[cap], dp[cap − w] + c) with cap going down from min(k, Σw). O(1000² + 12n²).',
       ],
       solution:
-        'Compute ops[v], the fewest operations to reach v from 1, by processing a in increasing order and relaxing a + ⌊a/x⌋ for every x ≤ a (values only grow, so this order is safe). Each index i is then a 0/1 item of weight ops[b_i] and value c_i. Cap the capacity at min(k, Σ ops[b_i]), at most about 12n, and run the 1D knapsack with capacity sweeping downwards; the answer is dp at the capped capacity. Without the cap, 10⁶ capacity times 1000 items is too slow.',
+        'Compute ops[v], the fewest operations to reach v from 1, by processing a in increasing order and updating ops[a + ⌊a/x⌋] for every x ≤ a (values only grow, so this order is safe). Each index i is then a 0/1 item of weight ops[b_i] and value c_i. Cap the capacity at min(k, Σ ops[b_i]), at most about 12n, and run the 1D knapsack with capacity sweeping downwards; the answer is dp at the capped capacity. Without the cap, 10⁶ capacity times 1000 items is too slow.',
     },
     {
       id: '106C',
@@ -167,7 +167,7 @@ bitset<MAXS + 1> subsetSums(const vector<int>& a) {
       rating: 1700,
       tier: 'warmup',
       hints: [
-        'Dough is used by every bun, stuffing i only by buns of type i. Which resource is the knapsack capacity, and what does a stuffing amount really limit?',
+        'Dough is used by every bun, stuffing i only by buns of type i. Which resource is the knapsack capacity, and what does a stuffing amount limit?',
         'Dough is the capacity. Stuffing i only caps how many buns of type i you can bake, at most ⌊a_i / b_i⌋, so the stuffed buns are a bounded knapsack and plain buns are an unbounded item.',
         'dp[g] = most money using at most g grams of dough. For each stuffing, for g from n down to 0, try every count q from 1 to ⌊a_i/b_i⌋ with q·c_i ≤ g. Then add plain buns with one upward sweep. O(n·m·100).',
       ],
@@ -182,7 +182,7 @@ bitset<MAXS + 1> subsetSums(const vector<int>& a) {
       hints: [
         'Costs and salaries go up to 10⁸, so a table indexed by money is far too large. Which number in the input is small enough to index a DP by?',
         'Total happiness is at most 10⁵, so swap the roles: dp[h] = least money spent to collect exactly h happiness. It is a 0/1 knapsack with value as the index and cost as the stored quantity, plus a budget check that depends on the month.',
-        'Process months in order; before month i you have earned x·(i − 1). For h from H down to h_i, if dp[h − h_i] + c_i ≤ x·(i − 1), relax dp[h]. The answer is the largest h with a finite dp[h]. O(m·Σh).',
+        'Process months in order; before month i you have earned x·(i − 1). For h from H down to h_i, if dp[h − h_i] + c_i ≤ x·(i − 1), set dp[h] = min(dp[h], dp[h − h_i] + c_i). The answer is the largest h with a finite dp[h]. O(m·Σh).',
       ],
       solution:
         'Index by happiness: dp[h] is the least total spent on offers from the months so far that give exactly h happiness (infinity if impossible). Processing months in order, a purchase in month i only needs dp[h − h_i] + c_i ≤ x·(i − 1): earlier purchases were checked in their own months, and keeping the minimum spend only leaves more money for later. Sweep h downwards so each offer is used once, then print the largest reachable h. x·(i − 1) reaches about 5·10⁹, so use 64-bit integers.',

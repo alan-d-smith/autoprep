@@ -26,7 +26,7 @@ export default {
         ],
         show: [0, 13],
         note: 'The lower hull 1 → 5 → 8: every corner on it turns left.',
-        say: 'The observation: walking counter-clockwise round a convex polygon, every corner is a left turn. So sort the points by x, breaking ties by y, and walk along the bottom from the leftmost point to the rightmost; that walk is the lower hull, the part of the hull seen from below. A point where the walk would turn right or go straight on lies on or above the line joining its neighbours, so it is not a corner.',
+        say: 'Walking counter-clockwise round a convex polygon, every corner is a left turn. So sort the points by x, breaking ties by y, and walk along the bottom from the leftmost point to the rightmost; that walk is the lower hull, the part of the hull seen from below. A point where the walk would turn right or go straight on lies on or above the line joining its neighbours, so it is not a corner.',
       },
       {
         title: 'Andrew\'s monotone chain pops right turns',
@@ -37,7 +37,7 @@ export default {
         ],
         show: [0, 2],
         note: '1 → 2 → 3 turns right (cross = −5), so 2 is popped: it is not on the lower hull.',
-        say: 'Andrew\'s monotone chain, `convexHull` in the template, does this with a stack `h`. Scan the sorted points, and before pushing each point q, measure the turn from o, the second-to-top point of h, through a, the top one, to q with cross(o, a, q), the cross product of a − o and q − o, which is positive for a left turn. While that turn is not a left turn, pop the top: it is not on the lower hull. A second scan from right to left builds the upper hull the same way, and joining the two chains gives the hull counter-clockwise.',
+        say: 'Andrew\'s monotone chain, `convexHull` in the template, does this with a stack `h`. Scan the sorted points. Before pushing each point q, measure the turn from o, the second-to-top point of h, through a, the top one, to q: cross(o, a, q), the cross product of a − o and q − o, is positive for a left turn. While that turn is not a left turn, pop the top: it is not on the lower hull. A second scan from right to left builds the upper hull the same way, and joining the two chains gives the hull counter-clockwise.',
       },
       {
         title: 'A popped point never returns in that scan',
@@ -48,7 +48,7 @@ export default {
         ],
         show: [0, 5],
         note: '3 → 4 → 5 turns right, so 4 is popped, and the lower-hull scan never pushes it again (the upper-hull scan starts afresh).',
-        say: 'Why popping is safe: a popped point lies on or above the segment from the point below it to q, both of which are in the set, so it can never be a lower-hull corner, however many points come later. So h always holds the lower hull of the points scanned so far. Each point is pushed once and popped at most once, so each scan is O(n) and the sort dominates: O(n log n) in all.',
+        say: 'A popped point lies on or above the segment from the point below it to q, both of which are in the set, so it can never be a lower-hull corner, however many points come later. So h always holds the lower hull of the points scanned so far. Each point is pushed once and popped at most once, so each scan is O(n) and the sort dominates: O(n log n) in all.',
       },
       {
         title: 'The convex hull trick for DP',
@@ -57,7 +57,7 @@ export default {
           'Trying every j is O(n²). With decreasing slopes and increasing queries, `MonoCHT` keeps the envelope in a deque `L`.',
           'add(m, c) pops back lines while useless(l1, l2, l3) says so; query(x) pops front lines already beaten at x.',
         ],
-        say: 'The convex hull trick is the same idea for lines. In a DP like dp[i] = min over j < i of (dp[j] + m_j·x_i), each earlier j is a line with slope m_j and intercept dp[j], and dp[i] is the lowest of those lines at x = x_i, a point on their lower envelope, which is a convex chain; trying every j is O(n²), 5·10^11 steps for n = 10^6. When slopes arrive in decreasing order and queries in increasing order, `MonoCHT` keeps the envelope in a deque `L` of lines (m, c), each meaning y = m·x + c. Adding a line with add(m, c) first pops the last line l2 while useless(l1, l2, l3) says it can never again be strictly lowest, where l1 is the line before it and l3 the new one, and query(x) pops from the front any line already beaten at x, since it stays beaten for every larger x.',
+        say: 'The convex hull trick is the same idea for lines. In a DP like dp[i] = min over j < i of (dp[j] + m_j·x_i), each earlier j is a line with slope m_j and intercept dp[j], and dp[i] is the lowest of those lines at x = x_i, a point on their lower envelope, which is a convex chain. Trying every j is O(n²), 5·10^11 steps for n = 10^6. When slopes arrive in decreasing order and queries in increasing order, `MonoCHT` keeps the envelope in a deque `L` of lines (m, c), each meaning y = m·x + c. Adding a line with add(m, c) first pops the last line l2 while useless(l1, l2, l3) says it can never again be strictly lowest, where l1 is the line before it and l3 the new one. query(x) pops from the front any line already beaten at x, since it stays beaten for every larger x.',
       },
       {
         title: 'Unsorted lines, and problems needing one chain',
@@ -174,10 +174,10 @@ struct MonoCHT {
       tier: 'warmup',
       hints: [
         'A is convex. If every vertex of B is strictly inside A, can any point of B still be outside?',
-        'A convex region contains every segment between two of its points, so B is strictly inside A iff all m vertices of B are. That leaves m point-in-convex-polygon queries with n up to 10^5, so each query needs O(log n): binary search over the fan of triangles from one vertex of A.',
-        'Reverse A to counter-clockwise order. For a point q: reject unless q is strictly left of A0→A1 and strictly right of A0→A(n−1); binary search the last i with q left of or on the ray A0→Ai; then q is strictly inside iff it is strictly left of the edge Ai→A(i+1). Use __int128 for the cross products.',
+        'A convex region contains every segment between two of its points, so B is strictly inside A exactly when all m vertices of B are. That leaves m point-in-convex-polygon queries with n up to 10^5, so each query needs O(log n): binary search over the fan of triangles from one vertex of A.',
+        'Reverse A to counter-clockwise order. For a point q: reject unless q is strictly left of A0→A1 and strictly right of A0→A(n−1); binary search the last i with q left of or on the ray A0→Ai; then q is strictly inside exactly when it is strictly left of the edge Ai→A(i+1). Use __int128 for the cross products.',
       ],
-      solution: 'Since A is convex, B is strictly inside A iff every vertex of B is strictly inside A. Turn A counter-clockwise and fan it from A0: q is strictly inside iff cross(A1 − A0, q − A0) > 0, cross(A(n−1) − A0, q − A0) < 0, and cross(A(i+1) − Ai, q − Ai) > 0 for the sector i found by binary search on the sign of cross(Ai − A0, q − A0). Each query is O(log n), so the total is O(n + m log n). Points on an edge of A, including the first and last edges from A0, must give NO, which is why every test is strict; with coordinates up to 10^9 the cross products are computed in __int128.',
+      solution: 'Since A is convex, B is strictly inside A exactly when every vertex of B is strictly inside A. Turn A counter-clockwise and fan it from A0: q is strictly inside exactly when cross(A1 − A0, q − A0) > 0, cross(A(n−1) − A0, q − A0) < 0, and cross(A(i+1) − Ai, q − Ai) > 0 for the sector i found by binary search on the sign of cross(Ai − A0, q − A0). Each query is O(log n), so the total is O(n + m log n). Points on an edge of A, including the first and last edges from A0, must give NO, which is why every test is strict; with coordinates up to 10^9 the cross products are computed in __int128.',
     },
     {
       id: '1299C',
@@ -234,10 +234,10 @@ struct MonoCHT {
       tier: 'challenge',
       hints: [
         'Every parabola here has the same x² term. What happens to a parabola, and to "strictly above it", if you subtract x² from every y?',
-        'Map each point (x, y) to (x, y − x²). The parabola y = x² + bx + c becomes the straight line Y = bx + c, and a point is strictly above the parabola iff its image is strictly above the line. So you are counting lines through two points with no point strictly above them: the edges of the upper convex hull.',
+        'Map each point (x, y) to (x, y − x²). The parabola y = x² + bx + c becomes the straight line Y = bx + c, and a point is strictly above the parabola exactly when its image is strictly above the line. So you are counting lines through two points with no point strictly above them: the edges of the upper convex hull.',
         'For each x keep only the highest transformed point, sort by x, and build the upper hull with a monotone stack, popping when the turn is not strictly clockwise so that collinear points merge into one edge. The answer is the number of hull points minus 1. Y reaches about 10^12, so use __int128 for cross products.',
       ],
-      solution: 'Subtracting x² maps each U-shaped parabola through two points with different x to the line through their images, and keeps "strictly above" intact. A line through two transformed points has no point strictly above it iff it supports the upper convex hull, so the answer is the number of distinct lines along the upper hull. Keep only the largest Y for each x (a lower point with the same x can never lie on such a line), sort by x, and build the upper chain, popping while the cross product is ≥ 0 so that collinear points merge and each line is counted once. The answer is the hull size minus 1, in O(n log n), with cross products in __int128 because the transformed coordinates reach about 10^12.',
+      solution: 'Subtracting x² maps each U-shaped parabola through two points with different x to the line through their images, and keeps "strictly above" intact. A line through two transformed points has no point strictly above it exactly when it supports the upper convex hull, so the answer is the number of distinct lines along the upper hull. Keep only the largest Y for each x (a lower point with the same x can never lie on such a line), sort by x, and build the upper chain, popping while the cross product is ≥ 0 so that collinear points merge and each line is counted once. The answer is the hull size minus 1, in O(n log n), with cross products in __int128 because the transformed coordinates reach about 10^12.',
     },
   ],
 };

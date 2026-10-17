@@ -34,7 +34,7 @@ export default {
         ],
         show: [0, 5],
         note: 'Rows are masks, columns v. dp[011₂][0] = 4, the order 1 → 0, goes on to u = 2 and offers 4 + w[0][2] = 11 to dp[111₂][2].',
-        say: 'Store the used items as a mask, an int whose bit i is 1 when item i is used: `1 << u` is the set holding only u, `mask | 1 << u` adds u, and `(mask >> u & 1)` tests it. Let dp[mask][v] be the cheapest path that visits exactly the items in mask and ends at v, starting from dp[1 << v][v] = 0 for every v. Going on to an unused item u costs w[v][u], so dp[mask | 1 << u][u] takes the minimum with dp[mask][v] + w[v][u], and the answer is the smallest dp over the full mask (1 << n) − 1, which holds every item.',
+        say: 'Store the used items as a mask, an int whose bit i is 1 when item i is used: `1 << u` is the set holding only u, `mask | 1 << u` adds u, and `(mask >> u & 1)` tests it. Let dp[mask][v] be the cheapest path that visits exactly the items in mask and ends at v, starting from dp[1 << v][v] = 0 for every v. Going on to an unused item u costs w[v][u], so dp[mask | 1 << u][u] takes the minimum with dp[mask][v] + w[v][u]. The answer is the smallest dp over the full mask (1 << n) − 1, which holds every item.',
       },
       {
         title: 'Masks only grow, so loop upwards',
@@ -45,7 +45,7 @@ export default {
         ],
         show: [0, 14],
         note: 'Every move went down the table to a larger mask, so the rows could be filled in order. The cheapest path, 2 → 1 → 0, costs 6.',
-        say: 'Adding an item turns a bit on, so a state only ever moves to a numerically larger mask, and looping over masks in increasing order finishes every dp[mask][v] before it is extended. Every order is a chain of such extensions, so its cost is among the candidates, and each state keeps the cheapest chain that reaches it. When the cost depends only on how many items are already used, the last item can be dropped from the state: in the second diagram, dp[mask] is the cheapest way for the first popcount(mask) workers to take the jobs in mask.',
+        say: 'Adding an item turns a bit on, so a state only ever moves to a numerically larger mask. Looping over masks in increasing order finishes every dp[mask][v] before it is extended. Every order is a chain of such extensions, so its cost is among the candidates, and each state keeps the cheapest chain that reaches it. When the cost depends only on how many items are already used, the last item can be dropped from the state: in the second diagram, dp[mask] is the cheapest way for the first popcount(mask) workers to take the jobs in mask.',
       },
       {
         title: 'Splitting masks into submasks costs 3^n',
@@ -54,7 +54,7 @@ export default {
           's = (s − 1) & mask walks every non-empty submask s of mask; over all masks that is 3^n steps.',
           'Sum over subsets (SOS) totals f over every mask\'s submasks in O(B · 2^B) instead of 3^B, one bit at a time.',
         ],
-        say: 'dp[mask][v] has 2^n · n states with n moves each, so it runs in O(2^n · n²), fine up to about n = 18 to 20. Some DPs split a mask into two disjoint parts: starting from s = mask, the step s = (s − 1) & mask visits every non-empty submask s of mask, and over all masks that is 3^n steps, because each item is outside mask, in mask but not in s, or in s. Sum over subsets (SOS) replaces each f[mask] by the total of f over all submasks of mask in O(B · 2^B) instead of 3^B, by taking one bit b at a time and, for every mask that contains b, adding f[mask ^ (1 << b)] to f[mask].',
+        say: 'dp[mask][v] has 2^n · n states with n moves each, so it runs in O(2^n · n²), fine up to about n = 18 to 20. Some DPs split a mask into two disjoint parts: starting from s = mask, the step s = (s − 1) & mask visits every non-empty submask s of mask. Over all masks that is 3^n steps, because each item is outside mask, in mask but not in s, or in s. Sum over subsets (SOS) replaces each f[mask] by the total of f over all submasks of mask in O(B · 2^B) instead of 3^B, by taking one bit b at a time and, for every mask that contains b, adding f[mask ^ (1 << b)] to f[mask].',
       },
       {
         title: 'Meet in the middle for 40 items',
@@ -160,7 +160,7 @@ void sumOverSubsets(vector<long long>& f, int B) {
       hints: [
         'n ≤ 18. If you know which dishes Kefa has already eaten, what one extra fact do you need to score the next dish correctly?',
         'Recognition: only the set of dishes eaten and the last dish matter, because a rule only fires for the dish eaten immediately before. That is the dp[mask][last] state of a Hamiltonian-path DP, stopped at m dishes.',
-        'Approach: dp[mask][last] = best satisfaction having eaten exactly mask and ending with last. Go to dp[mask | 1<<nx][nx] adding a[nx] + bonus[last][nx]. The answer is the max over masks with popcount m. O(2^n · n^2), in long long.',
+        'Approach: dp[mask][last] = best satisfaction having eaten exactly mask and ending with last. Go to dp[mask | 1<<nx][nx] adding a_nx + c(last, nx). The answer is the max over masks with popcount m. O(2^n · n^2), in long long.',
       ],
       solution: 'Let dp[mask][last] be the best satisfaction after eating exactly the dishes in mask, ending with dish last; start from dp[1<<i][i] = a_i. Appending an unused dish nx adds a_nx + c(last, nx), with c = 0 when there is no rule. Iterate masks in increasing order (an extension always has a larger mask) and take the max of dp over masks with exactly m bits. That is 2^18 · 18 · 18 ≈ 8.5·10^7 simple steps; totals reach about 3.5·10^10, so use 64-bit values.',
     },
@@ -222,7 +222,7 @@ void sumOverSubsets(vector<long long>& f, int B) {
         'Recognition: precompute down[i][j] = min over columns c of |a[i][c] - a[j][c]| and wrap[i][j] = min over c of |a[i][c] - a[j][c+1]|. A row order is then a Hamiltonian path scored by its smallest down edge, plus one wrap edge from the last row back to the first: a dp[mask][last] with the first row fixed.',
         'Approach: for each first row s, dp[mask][last] = the largest possible minimum down edge over orders of mask that start at s and end at last; transition with min(dp[mask][last], down[last][nx]). The answer is the max over s and last of min(dp[full][last], wrap[last][s]). O(n^2 · m + n^3 · 2^n).',
       ],
-      solution: 'Precompute down[i][j] (row j directly below row i, min over all columns) and wrap[i][j] (i is the bottom row and j the top row, min over c of |a[i][c] - a[j][c+1]|) in O(n^2 · m). Fix the first row s and run dp[mask][last] = max over orders of the min down edge, extending with min(dp, down[last][nx]); the answer is the max over s and last of min(dp[full][last], wrap[last][s]). That is about 16 · 2^15 · 16^2 ≈ 1.3·10^8 simple steps, fine in 4 s; a binary search on k with a boolean DP also works. When m = 1 there are no wrap edges, so wrap must start at infinity, and when n = 1 the answer is just wrap[0][0].',
+      solution: 'Precompute down[i][j] (row j directly below row i, min over all columns) and wrap[i][j] (i is the bottom row and j the top row, min over c of |a[i][c] - a[j][c+1]|) in O(n^2 · m). Fix the first row s and run dp[mask][last] = max over orders of the min down edge, extending with min(dp, down[last][nx]); the answer is the max over s and last of min(dp[full][last], wrap[last][s]). That is about 16 · 2^15 · 16^2 ≈ 1.3·10^8 simple steps, fine in 4 s; a binary search on k with a boolean DP also works. When m = 1 there are no wrap edges, so wrap must start at infinity, and when n = 1 the answer is wrap[0][0].',
     },
     {
       id: '165E',

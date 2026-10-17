@@ -24,7 +24,7 @@ export function hintPanel(key, { hints, solution }, open) {
         <dl>
           ${hints.slice(0, shown).map((h, i) => html`<div class="hint"><dt>Hint ${i + 1}</dt><dd data-read="hints-${key}">${rich(h)}</dd></div>`)}
           ${shown > hints.length ? html`<div class="hint solution"><dt>Solution</dt><dd data-read="hints-${key}">${rich(solution)}</dd></div>` : ''}
-        </dl>` : html`<p class="small muted">Each hint gives away a little more: first a nudge, then what the problem really is, then how to solve it.</p>`}
+        </dl>` : html`<p class="small muted">Each hint gives away a little more: first a nudge, then the technique, then how to solve it.</p>`}
       <div class="btn-row">
         ${next ? html`<button class="btn" type="button" data-reveal="${key}">${next}</button>` : ''}
         ${shown ? listenButton(`hints-${key}`) : ''}

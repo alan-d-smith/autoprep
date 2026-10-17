@@ -13,7 +13,7 @@ export default {
           'Every subset is 2^n, and the DP dp[i] = 1 + max dp[j] over j < i with a[j] < a[i] is O(n²).',
           'O(n²) is fine up to n ≈ 5000, but about 2·10^10 comparisons at n = 2·10^5.',
         ],
-        say: 'The question: from a sequence a of n numbers, keep as many as possible, in their original order, so that the kept ones strictly increase. They form a longest increasing subsequence (LIS). Trying every subset costs 2^n, and the DP dp[i] = 1 + max dp[j] over j < i with a[j] < a[i], where dp[i] is the length of the longest increasing subsequence ending at a[i], costs O(n²): fine up to n ≈ 5000, but about 2·10^10 comparisons when n = 2·10^5.',
+        say: 'The question: from a sequence a of n numbers, keep as many as possible, in their original order, so that the kept ones strictly increase. They form a longest increasing subsequence (LIS). Trying every subset costs 2^n. The DP dp[i] = 1 + max dp[j] over j < i with a[j] < a[i], where dp[i] is the length of the longest increasing subsequence ending at a[i], costs O(n²): fine up to n ≈ 5000, but about 2·10^10 comparisons when n = 2·10^5.',
       },
       {
         title: 'Only the smallest end matters',
@@ -35,7 +35,7 @@ export default {
         ],
         show: [0, 16],
         note: 'Binary search places 5 at k = 2: it replaces tails[2] = 6 as the smallest end of a length-3 subsequence.',
-        say: 'Keep those numbers in an array `tails`, where tails[k] is the smallest end of an increasing subsequence of length k + 1 among the elements read so far (k counts from 0). The array is strictly increasing, because dropping the last element of a subsequence of length k + 2 leaves one of length k + 1 that ends lower. So when a[i] arrives, a binary search with lower_bound finds the first tail ≥ a[i], at position k: a[i] can follow the length-k subsequence that ends at tails[k − 1], so it ends one of length k + 1 and replaces tails[k], or is appended when every tail is smaller.',
+        say: 'Keep those numbers in an array `tails`, where tails[k] is the smallest end of an increasing subsequence of length k + 1 among the elements read so far (k counts from 0). The array is strictly increasing, because dropping the last element of a subsequence of length k + 2 leaves one of length k + 1 that ends lower. So when a[i] arrives, a binary search with lower_bound finds the first tail ≥ a[i], at position k. a[i] can follow the length-k subsequence that ends at tails[k − 1], so it ends one of length k + 1 and replaces tails[k], or is appended when every tail is smaller.',
       },
       {
         title: 'Follow par back to rebuild it',
@@ -204,7 +204,7 @@ vector<int> lis(const vector<long long> &a, bool strict = true) {
         'Rays p and q cross exactly when their orders disagree: p enters before q but exits after it. List the rays in entry order and write down each one\'s exit position; a group in which every pair crosses is a strictly decreasing subsequence of that list, so the answer is the longest decreasing subsequence.',
         'Store exitPos[ray] from the third line, form b_i = exitPos[x_i] for i = 1..n, and compute the LIS of −b_i with tails and lower_bound. n is 10^6, so the O(n²) DP is far too slow and input must be read with scanf or a fast cin.',
       ],
-      solution: 'Two rays cross iff their entry order and exit order disagree. Let b_i be the exit hole of the ray that enters at hole i (b_i = position of x_i in the third line); a group of pairwise crossing rays is then a set whose exit holes strictly decrease in entry order, so the answer is the longest strictly decreasing subsequence of b. All b_i are distinct, so strict versus non-strict does not matter; negate and run the O(n log n) LIS. The O(n²) DP is too slow for n = 10^6, and reading two million numbers needs fast input.',
+      solution: 'Two rays cross exactly when their entry order and exit order disagree. Let b_i be the exit hole of the ray that enters at hole i (b_i = position of x_i in the third line); a group of pairwise crossing rays is then a set whose exit holes strictly decrease in entry order, so the answer is the longest strictly decreasing subsequence of b. All b_i are distinct, so strict versus non-strict does not matter; negate and run the O(n log n) LIS. The O(n²) DP is too slow for n = 10^6, and reading two million numbers needs fast input.',
     },
     {
       id: '1296E2',
@@ -225,10 +225,10 @@ vector<int> lis(const vector<long long> &a, bool strict = true) {
       tier: 'challenge',
       hints: [
         'For index i to lie on some longest increasing subsequence, the best increasing run ending at i and the best one starting at i must fit together. How long must they be together?',
-        'Compute f[i] = the LIS ending at i and g[i] = the LIS starting at i (the LIS ending at the matching position of the reversed, negated array). Index i is on some LIS iff f[i] + g[i] − 1 = L. In any LIS the k-th element has f exactly k, so i is on every LIS iff it is the only index on some LIS with its value of f.',
+        'Compute f[i] = the LIS ending at i and g[i] = the LIS starting at i (the LIS ending at the matching position of the reversed, negated array). Index i is on some LIS exactly when f[i] + g[i] − 1 = L. In any LIS the k-th element has f exactly k, so i is on every LIS exactly when it is the only index on some LIS with its value of f.',
         'Run the tails routine twice, on a and on the reversed −a, reading f[i] as the position lower_bound returns plus one. Print 1 when f[i] + g[i] − 1 < L; otherwise count cnt[f[i]] over the indices that qualify and print 3 if cnt[f[i]] = 1, else 2. O(n log n).',
       ],
-      solution: 'f[i], the length of the LIS ending at i, is one more than the position lower_bound finds in tails; g[i], the LIS starting at i, comes from the same routine on the reversed array with negated values. If f[i] + g[i] − 1 < L, index i is in group 1. Every LIS takes exactly one index from each level f = 1..L, and every qualifying index at level k extends to a full LIS, so a qualifying i is in group 3 iff it is alone at its level and in group 2 otherwise. O(n log n). Using upper_bound breaks strictness when values repeat, and reversing without negating measures decreasing runs instead of increasing ones.',
+      solution: 'f[i], the length of the LIS ending at i, is one more than the position lower_bound finds in tails; g[i], the LIS starting at i, comes from the same routine on the reversed array with negated values. If f[i] + g[i] − 1 < L, index i is in group 1. Every LIS takes exactly one index from each level f = 1..L, and every qualifying index at level k extends to a full LIS, so a qualifying i is in group 3 exactly when it is alone at its level and in group 2 otherwise. O(n log n). Using upper_bound breaks strictness when values repeat, and reversing without negating measures decreasing runs instead of increasing ones.',
     },
   ],
 };

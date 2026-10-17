@@ -12,7 +12,7 @@ export default {
           'The most cookies, the least meeting time, the largest gap: often there is no formula.',
           'The answer can be anywhere up to 2·10^9, and checking each candidate with an O(n) pass over n = 2·10^5 items costs about 4·10^14 steps.',
         ],
-        say: 'Some questions ask for the best value outright: the most cookies you can bake, the least time in which everyone can meet, the largest gap you can keep between chosen points. There is often no formula, and trying candidates one by one is hopeless: the answer can be anywhere up to 2·10^9, and if checking one candidate is an O(n) pass over n = 2·10^5 items, a scan costs about 4·10^14 steps.',
+        say: 'Some questions ask for the best value outright: the most cookies you can bake, the least time in which everyone can meet, the largest gap you can keep between chosen points. There is often no formula, and trying candidates one by one is too slow: the answer can be anywhere up to 2·10^9, and if checking one candidate is an O(n) pass over n = 2·10^5 items, a scan costs about 4·10^14 steps.',
       },
       {
         title: 'Ask instead: is x achievable?',
@@ -23,7 +23,7 @@ export default {
         ],
         show: [0, 14],
         note: 'ok(x) is x² ≤ 120 on 0 to 15: true up to 10, false from 11, so the answer is the last true, 10.',
-        say: 'The way in is an easier question: is x achievable? Write ok(x) for that check. It is usually a short greedy pass, and it is monotone: if the answer can be at least x, it can be at least every smaller x, so as x grows ok(x) reads true…true, false…false and the answer is the last true. For a minimum, such as the least time, it reads false…false, true…true and the answer is the first true.',
+        say: 'Ask an easier question instead: is x achievable? Write ok(x) for that check. It is usually a short greedy pass, and it is monotone: if the answer can be at least x, it can be at least every smaller x, so as x grows ok(x) reads true…true, false…false and the answer is the last true. For a minimum, such as the least time, it reads false…false, true…true and the answer is the first true.',
       },
       {
         title: 'Binary search finds the switch',
@@ -34,7 +34,7 @@ export default {
         ],
         show: [0, 6],
         note: 'Two checks in: ok(8) was true, so lo = 8; ok(12) was false, so hi = 11. Two more checks find 10.',
-        say: 'Finding where a monotone sequence switches is binary search. Keep two numbers `lo` and `hi` with the answer between them, and test the middle value `mid`: if ok(mid) is true the answer is at least mid, so set lo = mid; if it is false, everything from mid up fails, so set hi = mid − 1. Each check halves the range, so 2·10^9 candidates need about 31 checks; `lastTrue` in the template is this loop.',
+        say: 'Finding where a monotone sequence switches is binary search. Keep two numbers `lo` and `hi` with the answer between them, and test the middle value `mid`. If ok(mid) is true the answer is at least mid, so set lo = mid; if it is false, everything from mid up fails, so set hi = mid − 1. Each check halves the range, so 2·10^9 candidates need about 31 checks; `lastTrue` in the template is this loop.',
       },
       {
         title: 'The invariant, and why mid rounds up',
@@ -45,7 +45,7 @@ export default {
         ],
         show: [0, 10],
         note: 'lo = 10, hi = 11: ok(lo) is true and 12 to 15 are false. mid rounds up to 11; rounded down, 10 = lo would never move.',
-        say: 'It is correct because of an invariant: ok(lo) is true and everything above hi is false. Start lo where ok is known to hold (or check it first), and each step keeps the invariant while shrinking the range, so the loop ends with lo = hi on the boundary. The shrinking needs care: the true branch sets lo = mid, so mid must round up, mid = lo + (hi − lo + 1) / 2, because rounding down gives mid = lo once hi = lo + 1 and the loop never ends.',
+        say: 'It is correct because of an invariant: ok(lo) is true and everything above hi is false. Start lo where ok is known to hold (or check it first), and each step keeps the invariant while shrinking the range, so the loop ends with lo = hi on the boundary. The true branch sets lo = mid, so mid must round up, mid = lo + (hi − lo + 1) / 2, because rounding down gives mid = lo once hi = lo + 1 and the loop never ends.',
       },
       {
         title: 'Real answers: a fixed number of halvings',
@@ -54,7 +54,7 @@ export default {
           'For a real answer, run a fixed 60 to 100 halvings, as `firstTrueReal` does.',
           'Don\'t loop until hi − lo < eps: near 10^9 doubles are about 10^-7 apart, so with eps = 10^-9 it never ends.',
         ],
-        say: 'In total that is O(log range) checks of O(n) each, so O(n log range). When the answer is a real number, such as a time printed to 10^-6, run a fixed 60 to 100 halvings, as `firstTrueReal` does, instead of looping until hi − lo < eps: near 10^9 neighbouring doubles are about 10^-7 apart, so with eps = 10^-9 the gap never gets that small and the loop never ends.',
+        say: 'In total that is O(log range) checks of O(n) each, so O(n log range). When the answer is a real number, such as a time printed to 10^-6, run a fixed 60 to 100 halvings, as `firstTrueReal` does, instead of looping until hi − lo < eps. Near 10^9 neighbouring doubles are about 10^-7 apart, so with eps = 10^-9 the gap never gets that small and the loop never ends.',
       },
       {
         title: 'Ternary search for a valley',
@@ -65,7 +65,7 @@ export default {
         ],
         show: [1, 5],
         note: 'f(m1) < f(m2), so the minimum cannot lie right of m2, where f only rises.',
-        say: 'Ternary search handles a different shape: you choose one parameter x, such as a meeting point or a shift, to minimise a cost f(x) that falls and then rises, often a max or sum of convex pieces like |a_i − x|. There is no yes/no check, but comparing f at two probe points `m1` < `m2`, a third and two thirds of the way from lo to hi, shows which part to drop: if f(m1) < f(m2) the minimum is not right of m2, otherwise it is not left of m1. Each round keeps 2/3 of the range, so `argminReal` runs 100 rounds; on integers, `argminInt` binary searches for the first x with f(x) ≤ f(x + 1), the sign of f(x + 1) − f(x). Either way f must have no flat stretch away from the minimum.',
+        say: 'Ternary search handles a different shape: you choose one parameter x, such as a meeting point or a shift, to minimise a cost f(x) that falls and then rises, often a max or sum of convex (V- or U-shaped) pieces like |a_i − x|. There is no yes/no check, but comparing f at two probe points `m1` < `m2`, a third and two thirds of the way from lo to hi, shows which part to drop: if f(m1) < f(m2) the minimum is not right of m2, otherwise it is not left of m1. Each round keeps 2/3 of the range, so `argminReal` runs 100 rounds. On integers, `argminInt` binary searches for the first x with f(x) ≤ f(x + 1), the sign of f(x + 1) − f(x). Either way f must have no flat stretch away from the minimum.',
       },
     ],
     terms: [
@@ -159,7 +159,7 @@ template <class F> long long argminInt(long long lo, long long hi, F f) {
         'Whether median M is reachable is monotone: if M costs at most k operations, so does every smaller M. So binary search on M with a cost check instead of looking for a formula.',
         'After sorting, cost(M) = sum over i ≥ n/2 (0-indexed) of max(0, M − a_i). Binary search the largest M in [a_{n/2}, a_{n/2} + k] with cost(M) ≤ k; O(n log k).',
       ],
-      solution: 'Sort a. The median is at least M iff every element from index n/2 to the end is at least M, and the cheapest way there raises each such a_i < M up to M, costing the sum of max(0, M − a_i) over i ≥ n/2. This cost grows with M, so binary search the largest M in [a_{n/2}, a_{n/2} + k] whose cost is at most k. Use long long: M can reach 2·10^9, and stopping the sum as soon as it passes k keeps it small. O(n log n + n log k).',
+      solution: 'Sort a. The median is at least M exactly when every element from index n/2 to the end is at least M, and the cheapest way there raises each such a_i < M up to M, costing the sum of max(0, M − a_i) over i ≥ n/2. This cost grows with M, so binary search the largest M in [a_{n/2}, a_{n/2} + k] whose cost is at most k. Use long long: M can reach 2·10^9, and stopping the sum as soon as it passes k keeps it small. O(n log n + n log k).',
     },
     {
       id: '670D2',
@@ -171,7 +171,7 @@ template <class F> long long argminInt(long long lo, long long hi, F f) {
         'Baking is monotone in the number of cookies, and checking a fixed count c is a single sum, so binary search on c: the answer is the largest c whose powder requirement is at most k.',
         'need(c) = sum over i of max(0, a_i·c − b_i). Search c in [0, 2·10^9] (b_i + k ≤ 2·10^9 and a_i ≥ 1). a_i·c reaches 2·10^18, which still fits in long long, but break out of the sum as soon as it exceeds k.',
       ],
-      solution: 'For c cookies ingredient i needs a_i·c grams, so the powder required is the sum of max(0, a_i·c − b_i), which never decreases as c grows. Run lastTrue with lo = 0, which is always feasible, and hi = 2·10^9, where ok(c) says the requirement is at most k; each check is O(n), so the total is O(n log 2·10^9). The usual WA is overflow: a_i·c is up to 2·10^18, and the running sum overflows if you keep adding after it passes k, so stop early.',
+      solution: 'For c cookies ingredient i needs a_i·c grams, so the powder required is the sum of max(0, a_i·c − b_i), which never decreases as c grows. Run lastTrue with lo = 0, which is always feasible, and hi = 2·10^9, where ok(c) says the requirement is at most k; each check is O(n), so the total is O(n log 2·10^9). The usual bug is overflow: a_i·c is up to 2·10^18, and the running sum overflows if you keep adding after it passes k, so stop early.',
     },
     {
       id: '780B',
@@ -183,7 +183,7 @@ template <class F> long long argminInt(long long lo, long long hi, F f) {
         'Friend i can reach exactly the interval [x_i − v_i·T, x_i + v_i·T], and every interval grows with T. So "can they meet within T" is monotone: binary search on the real number T.',
         'Check: max(x_i − v_i·T) ≤ min(x_i + v_i·T). Search T in [0, 10^9] with 100 halvings rather than an epsilon loop; O(100·n).',
       ],
-      solution: 'Within time T friend i can stand anywhere in [x_i − v_i·T, x_i + v_i·T], so all of them can meet iff the largest left end is at most the smallest right end. This only gets easier as T grows, so binary search T over [0, 10^9] (distance ≤ 10^9, speed ≥ 1) for 100 iterations and print hi with 12 decimals. The fixed iteration count avoids an endless loop when hi − lo stops shrinking in floating point. Ternary search on the meeting point also works, since the time to gather at p is max_i |x_i − p| / v_i, a convex function of p.',
+      solution: 'Within time T friend i can stand anywhere in [x_i − v_i·T, x_i + v_i·T], so all of them can meet exactly when the largest left end is at most the smallest right end. This only gets easier as T grows, so binary search T over [0, 10^9] (distance ≤ 10^9, speed ≥ 1) for 100 iterations and print hi with 12 decimals. The fixed iteration count avoids an endless loop when hi − lo stops shrinking in floating point. Ternary search on the meeting point also works, since the time to gather at p is max_i |x_i − p| / v_i, a convex function of p.',
     },
     {
       id: '1730B',
@@ -219,7 +219,7 @@ template <class F> long long argminInt(long long lo, long long hi, F f) {
         'Every even count gives exactly (h + c) / 2, so if t ≤ (h + c) / 2 the answer is 2. Otherwise only odd counts matter, and their temperature ((k + 1)h + kc) / (2k + 1) decreases towards (h + c) / 2 as k grows: monotone in k, so binary search on k.',
         'Find the largest k with (k + 1)h + kc ≥ t(2k + 1), then compare k and k + 1 by cross-multiplying the two distances to t, all in long long, and print 2k + 1 or 2k + 3 (on a tie, the smaller).',
       ],
-      solution: 'If 2t ≤ h + c, print 2. Otherwise binary search k in [0, 10^6] for the last k whose temperature T_k = ((k + 1)h + kc) / (2k + 1) is still ≥ t (k = 0 always qualifies because h ≥ t). The closest temperature is T_k or T_{k+1}: with d1 = (k + 1)h + kc − t(2k + 1) and d2 = t(2k + 3) − ((k + 2)h + (k + 1)c), choose 2k + 1 iff d1·(2k + 3) ≤ d2·(2k + 1). These products stay below about 10^18, so the comparison is exact in long long; comparing doubles here is the usual WA on ties. Even counts never win, because T_{k+1} already lies strictly between (h + c) / 2 and t.',
+      solution: 'If 2t ≤ h + c, print 2. Otherwise binary search k in [0, 10^6] for the last k whose temperature T_k = ((k + 1)h + kc) / (2k + 1) is still ≥ t (k = 0 always qualifies because h ≥ t). The closest temperature is T_k or T_{k+1}: with d1 = (k + 1)h + kc − t(2k + 1) and d2 = t(2k + 3) − ((k + 2)h + (k + 1)c), choose 2k + 1 exactly when d1·(2k + 3) ≤ d2·(2k + 1). These products stay below about 10^18, so the comparison is exact in long long; comparing doubles here gives wrong answers on ties. Even counts never win, because T_{k+1} already lies strictly between (h + c) / 2 and t.',
     },
     {
       id: '448D',
@@ -240,7 +240,7 @@ template <class F> long long argminInt(long long lo, long long hi, F f) {
       tier: 'challenge',
       hints: [
         'For a fixed x, how do you compute the weakness in O(n)? Then think about how it changes as x moves from very negative to very positive.',
-        'For fixed x the weakness is max(largest subarray sum, −smallest subarray sum) of the sequence a_i − x: two Kadane passes. Each segment\'s |sum| is convex in x and a maximum of convex functions is convex, so the weakness is unimodal in x: ternary search on a real x.',
+        'For fixed x the weakness is max(largest subarray sum, −smallest subarray sum) of the sequence a_i − x: two Kadane passes. Each segment\'s |sum| is convex in x and a maximum of convex functions is convex, so the weakness falls then rises in x: ternary search on a real x.',
         'Ternary search x over [−10^4, 10^4] for about 100 iterations, evaluating the weakness with Kadane each time: O(100·n). Print the weakness at the final x, not x itself.',
       ],
       solution: 'Each segment sum Σ(a_i − x) = S − len·x is linear in x, so its absolute value is convex, and the weakness, the maximum over all segments, is convex in x. Evaluate it in O(n) as the larger of the maximum subarray sum and minus the minimum subarray sum of a_i − x (Kadane twice), and ternary search x in [−10^4, 10^4] for 100 iterations. The optimum lies in that range because for x below min(a) every term is positive and raising x lowers the total, and symmetrically above max(a). Use a fixed iteration count: 100 rounds of two O(n) scans is 4·10^7 steps, while a while (hi − lo > eps) loop risks never ending.',

@@ -13,7 +13,7 @@ export default {
           'Trying every combination is 2^n or 3^n, hopeless when n is 10^5.',
           'Greedy fails on tiny cases: with no two neighbours, taking 4 first in 3, 4, 3 misses 3 + 3 = 6.',
         ],
-        say: 'The questions in this stage make one choice per position, left to right: take or skip an item, pick the day\'s activity, decide which way a tree falls, and a rule links each choice to the ones just before it. Trying every combination is 2^n or 3^n, hopeless when n is 10^5, and a greedy rule that looks only at the current position fails on tiny cases: with no two neighbours allowed, taking the largest value first in 3, 4, 3 gets 4, while 3 + 3 = 6.',
+        say: 'The questions in this stage make one choice per position, left to right: take or skip an item, pick the day\'s activity, decide which way a tree falls, and a rule links each choice to the ones just before it. Trying every combination is 2^n or 3^n, hopeless when n is 10^5. A greedy rule that looks only at the current position fails on tiny cases: with no two neighbours allowed, taking the largest value first in 3, 4, 3 gets 4, while 3 + 3 = 6.',
       },
       {
         title: 'The past shrinks to a short summary',
@@ -22,7 +22,7 @@ export default {
           'Histories with the same summary have exactly the same futures.',
           'So keep only the best of them or, when counting, how many there are.',
         ],
-        say: 'The observation is that the rule never needs the whole history. To know what is allowed at the next position, and what it can add, a short summary of the past is enough: what was done last, how long the current run is, what time it is. All histories with the same summary have exactly the same futures, so of those only the best one matters, or, when counting, only how many there are.',
+        say: 'The rule never needs the whole history. To know what is allowed at the next position, and what it can add, a short summary of the past is enough: what was done last, how long the current run is, what time it is. All histories with the same summary have exactly the same futures, so of those only the best one matters, or, when counting, only how many there are.',
       },
       {
         title: 'The state is a sentence',
@@ -33,7 +33,7 @@ export default {
         ],
         show: [0, 8],
         note: 'Never two neighbours, partway through: dp[4][1], the best of the first 4 values with the 4th (8) taken, is dp[3][0] + 8 = 13.',
-        say: 'So the state is a sentence: dp[i][s] = the best answer for the first i positions, given that they end in situation s. The extra index s holds exactly what the next step needs to know about the past and nothing more: the last action, which row the last pick came from, the current run length, or the time of day mod h on an h-hour clock. A transition says how one more position changes s and the answer, for example take (the run grows from s to s + 1, if that is allowed) or skip (the run resets to 0), and each entry is the max over every way of arriving in it. The empty prefix starts the table: 0 for its one real situation and −∞ for every other, so that an impossible state never feeds a later one.',
+        say: 'So the state is a sentence: dp[i][s] = the best answer for the first i positions, given that they end in situation s. The extra index s holds exactly what the next step needs to know about the past and nothing more: the last action, which row the last pick came from, the current run length, or the time of day mod h on an h-hour clock. A transition says how one more position changes s and the answer, for example take (the run grows from s to s + 1, if that is allowed) or skip (the run resets to 0). Each entry is the max over every way of arriving in it. The empty prefix starts the table: 0 for its one real situation and −∞ for every other, so that an impossible state never feeds a later one.',
       },
       {
         title: 'Same situation, same futures',
@@ -147,7 +147,7 @@ long long countNoLongRun(int n, int K) {
         'Let dp[len] = the most pieces whose lengths add up to exactly len. The last piece is a, b or c, so dp[len] is one more than the best of dp[len − a], dp[len − b], dp[len − c]. Greedy (cut as many of the shortest piece as possible) fails because the leftover may not be cuttable: n = 7 with pieces 5, 5, 2 leaves 1 after three 2s.',
         'Set dp[0] = 0 and every other entry to −∞, then for len = 1..n take the max of dp[len − p] + 1 over p in {a, b, c} with p ≤ len and dp[len − p] reachable. Print dp[n]; O(n).',
       ],
-      solution: 'dp[len] is the maximum number of pieces whose lengths sum to exactly len, with dp[0] = 0 and all other entries −∞ (unreachable). For len from 1 to n, dp[len] = max(dp[len − a], dp[len − b], dp[len − c]) + 1, skipping a piece that is longer than len or whose source is unreachable. The statement guarantees dp[n] is reachable, so print it; O(n). Initialising with 0 instead of −∞ is the usual WA: it lets an uncuttable leftover count as zero pieces.',
+      solution: 'dp[len] is the maximum number of pieces whose lengths sum to exactly len, with dp[0] = 0 and all other entries −∞ (unreachable). For len from 1 to n, dp[len] = max(dp[len − a], dp[len − b], dp[len − c]) + 1, skipping a piece that is longer than len or whose source is unreachable. The statement guarantees dp[n] is reachable, so print it; O(n). Initialising with 0 instead of −∞ is the usual wrong answer: it lets an uncuttable leftover count as zero pieces.',
     },
     {
       id: '1195C',
@@ -180,7 +180,7 @@ long long countNoLongRun(int n, int K) {
       tier: 'core',
       hints: [
         'The positions in the sequence do not matter at all. If you take one copy of the value v, is there any reason not to take every copy of v?',
-        'Taking v deletes all copies of v − 1 and v + 1 but no other copy of v, so the game is really: choose a set of values, no two consecutive, each worth v · cnt[v]. That is the no-two-adjacent take/skip DP (house robber), run over the values 1..10^5 instead of over the array.',
+        'Taking v deletes all copies of v − 1 and v + 1 but no other copy of v, so the game is: choose a set of values, no two consecutive, each worth v · cnt[v]. That is the no-two-adjacent take/skip DP (house robber), run over the values 1..10^5 instead of over the array.',
         'Count cnt[v], then dp[v] = max(dp[v − 1], dp[v − 2] + v · cnt[v]) for v up to the largest value, and print the last entry. Use long long: the score can reach 10^5 · 10^5 = 10^10.',
       ],
       solution: 'Taking one copy of v removes every v − 1 and v + 1 but leaves the other copies of v, which you then take as well, so the answer is the best set of values with no two consecutive, where value v is worth v · cnt[v]. Let dp[v] be the best score using only values 1..v: dp[v] = max(dp[v − 1], dp[v − 2] + v · cnt[v]). Iterate over every v up to 10^5, including values with count 0, for O(n + max a) total. The answer reaches 10^10, so an int accumulator overflows.',
