@@ -65,15 +65,47 @@ export default {
         say: 'One more classic: the diameter, the longest path in the tree. A BFS from any vertex ends at a vertex a that is an end of some longest path, and a second BFS from a reaches the farthest vertex b; the path from a to b is a diameter. Two O(n) passes.',
       },
     ],
+    // Grouped by technique: a problem uses the rooting names plus the groups it needs.
     terms: [
-      'par[v]: v\'s parent once the tree is rooted; the root has none (−1).',
-      'depth[v]: the number of edges from the root down to v (`dep` in the TRD version).',
-      '`order`: the vertices in DFS preorder, the order in which a DFS from the root enters them (in the TRD version, `rootTree` builds a BFS order and `preorder()` fills `tin`).',
-      '`st`: the template\'s stack. A vertex gets par and depth when it is pushed and tin when it is popped, so it enters `order` then; the child pushed last comes off first.',
-      'tin[v]: the position of v in `order`, also called its entry time.',
-      'size[v]: how many vertices are in v\'s subtree, v included (`sub` in the TRD version).',
-      'down[v]: in a subtree DP, the answer for v\'s subtree on its own, filled children first.',
-      'ans[v]: in rerooting, the answer with v as the root, filled parents first from ans[par[v]].',
+      {
+        group: 'Rooting the tree',
+        note: 'Always needed.',
+        items: [
+          'par[v]: v\'s parent once the tree is rooted; the root has none (−1).',
+          'depth[v]: the number of edges from the root down to v.',
+          '`order`: the vertices in DFS preorder, each after its parent. Walk it backwards for children first, forwards for parents first.',
+          '`st`: the template\'s stack, used instead of recursion. A vertex gets par and depth when pushed and joins `order` when popped.',
+        ],
+      },
+      {
+        group: 'Subtree DP',
+        items: [
+          'size[v]: how many vertices are in v\'s subtree, v included; the simplest subtree DP.',
+          'down[v]: the value a problem needs for v\'s subtree alone, built from its children\'s values.',
+        ],
+      },
+      {
+        group: 'A subtree as a range',
+        note: 'Also needs size.',
+        items: [
+          'tin[v]: v\'s position in `order`, its entry time. v\'s subtree is order[tin[v] .. tin[v] + size[v] − 1].',
+        ],
+      },
+      {
+        group: 'Rerooting',
+        note: 'Also needs `order` and a subtree DP such as size.',
+        items: [
+          'ans[v]: the answer with v as the root. Work out ans for the root directly, then fill parents first, each ans[v] from ans[par[v]].',
+        ],
+      },
+      {
+        group: 'In the TRD version',
+        items: [
+          '`dep`, `sub`: what this page calls depth and size.',
+          '`rootTree()`: fills par, dep, sub and `order`, but `order` is a BFS order, so it gives no subtree ranges.',
+          '`preorder()`: fills tin from a separate DFS, for subtree ranges.',
+        ],
+      },
     ],
     worked: {
       title: 'sums of distances',

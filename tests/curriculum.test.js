@@ -32,7 +32,14 @@ test('stages have a full primer', () => {
         assert.ok(nonEmpty(slide.note), `${s.id}: ${slide.title} has a picture but no note`);
       }
     }
-    for (const t of p.terms || []) assert.match(t, /^\S[^:]*: \S/, `${s.id} term: ${t}`);
+    // Terms are "name: meaning" lines, either a flat list or in groups, one per technique.
+    for (const t of p.terms || []) {
+      if (typeof t === 'string') assert.match(t, /^\S[^:]*: \S/, `${s.id} term: ${t}`);
+      else {
+        assert.ok(nonEmpty(t.group) && t.items.length >= 1, `${s.id} term group`);
+        for (const item of t.items) assert.match(item, /^\S[^:]*: \S/, `${s.id} term: ${item}`);
+      }
+    }
     if (p.worked) {
       assert.ok(nonEmpty(p.worked.title) && nonEmpty(p.worked.question) && p.worked.steps.length >= 3 && p.worked.steps.every(nonEmpty), `${s.id} worked question`);
       assert.match(p.worked.steps.at(-1), /^Answer:/, `${s.id}: the last worked step gives the answer`);

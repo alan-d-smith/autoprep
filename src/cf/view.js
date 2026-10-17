@@ -274,15 +274,26 @@ export function renderPath(app, stageId) {
   }
 
   // What the names in the walkthrough, code and diagram stand for, each written "name: meaning".
+  // Terms are "name: meaning" lines. A stage whose names belong to separate techniques groups them
+  // ({ group, note, items }), so it's clear a problem needs only some of them.
   function termsTpl(terms) {
+    const list = (items) => html`<dl>${items.map((t) => {
+      const at = t.indexOf(': ');
+      // The colon is only for reading aloud, so the name and its meaning don't run together.
+      return html`<div data-read="primer"><dt>${rich(t.slice(0, at))}<span class="visually-hidden">:</span></dt> <dd>${rich(t.slice(at + 2))}</dd></div>`;
+    })}</dl>`;
+    const grouped = terms.some((t) => typeof t !== 'string');
     return html`
       <div class="terms">
         <h3 data-read="primer">Notation</h3>
-        <dl>${terms.map((t) => {
-          const at = t.indexOf(': ');
-          // The colon is only for reading aloud, so the name and its meaning don't run together.
-          return html`<div data-read="primer"><dt>${rich(t.slice(0, at))}<span class="visually-hidden">:</span></dt> <dd>${rich(t.slice(at + 2))}</dd></div>`;
-        })}</dl>
+        ${grouped
+          ? terms.map((g) => html`
+            <section class="term-group">
+              <h4 data-read="primer">${g.group}</h4>
+              ${g.note ? html`<p class="small faint" data-read="primer">${rich(g.note)}</p>` : ''}
+              ${list(g.items)}
+            </section>`)
+          : list(terms)}
       </div>`;
   }
 
