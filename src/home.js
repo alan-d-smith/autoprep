@@ -107,7 +107,7 @@ export function renderHome(app) {
     mount(app, html`
       <div class="page-head">
         <h1>What to practise next</h1>
-        ${newcomer() ? html`<p>Competitive programming through dynamic programming, graphs and geometry, plus mental maths for quant interviews. Each track tells you the single next thing to do.</p>` : ''}
+        ${newcomer() ? html`<p>Competitive programming through dynamic programming, graphs and geometry, plus mental maths for quant interviews. Each track shows what to do next.</p>` : ''}
       </div>
       <div class="today">
         <section class="card" aria-labelledby="today-path">${pathCard()}</section>
