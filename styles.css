@@ -482,16 +482,14 @@ a.chip:hover { color: var(--text); border-color: rgba(255, 255, 255, 0.3); }
 }
 @media (prefers-reduced-motion: reduce) { .slide.active .slide-text { animation: none; } .slide-dot::before { transition: none; } }
 
-/* A worked question, revealed a step at a time. */
-.cp-worked { display: grid; gap: 12px; max-width: 50rem; }
-.cp-worked-q { font-size: 15.5px; line-height: 1.65; }
-.cp-steps { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; counter-reset: step; }
-.cp-steps:empty { display: none; }
-.cp-steps li { display: grid; grid-template-columns: 26px minmax(0, 1fr); color: var(--text-2); font-size: 15px; line-height: 1.65; counter-increment: step; outline: none; animation: quiz-in 0.2s ease-out; }
-.cp-steps li::before { content: counter(step); color: var(--text-3); font-family: var(--mono); font-size: 12px; padding-top: 3px; }
-.cp-steps li.final { color: var(--text); }
-.cp-steps li:focus-visible { box-shadow: 0 0 0 2px var(--focus); border-radius: 4px; }
-@media (prefers-reduced-motion: reduce) { .cp-steps li { animation: none; } }
+/* A worked contest problem: a slide deck, then its full solution folded away. */
+/* minmax(0, 1fr): long code lines scroll inside their box instead of widening the page. */
+.cp-worked { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.worked-problem { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: -4px 0 4px; font-size: 15px; }
+.worked-problem a { font-weight: 600; }
+.worked-code > summary { cursor: pointer; width: fit-content; color: var(--text-2); font-size: 14px; font-weight: 500; }
+.worked-code > summary:hover { color: var(--text); }
+.worked-code[open] > summary { margin-bottom: 10px; }
 /* The names a stage uses, defined in one place. */
 .terms { max-width: 46rem; }
 .terms h3 { margin-bottom: 10px; }
@@ -875,6 +873,8 @@ input.answer.miss { color: var(--signal); border-bottom-color: var(--signal); }
 .viz .v-weight.dim { fill: var(--text-3); }
 .v-bracket { fill: none; stroke: #60a5fa; stroke-width: 1.5; }
 .v-bracket.wait { stroke: #fbbf24; }
+.v-bracket.good { stroke: #4ade80; }
+.v-bracket.bad { stroke: #ff6b5e; }
 .v-link { fill: none; stroke: #8a8a94; stroke-width: 1.6; }
 .v-link.hl { stroke: #60a5fa; stroke-width: 2.2; }
 .v-link.good { stroke: #4ade80; stroke-width: 2.2; }

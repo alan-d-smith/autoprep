@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { TRACKS, STAGES, TIERS, stageById } from '../src/cf/curriculum.js';
 import { UKIEPC } from '../src/cf/ukiepc.js';
 import { STAGE_VISUALS } from '../src/viz/stages.js';
+import { WORKED_VISUALS } from '../src/viz/worked.js';
 import { problemUrl, ratingBand, stageProgress, currentStage, nextProblem, belowLevel, covered, problemReady, trackStages } from '../src/cf/roadmap.js';
 
 const nonEmpty = (s) => typeof s === 'string' && s.trim().length > 0;
@@ -40,10 +41,22 @@ test('stages have a full primer', () => {
         for (const item of t.items) assert.match(item, /^\S[^:]*: \S/, `${s.id} term: ${item}`);
       }
     }
-    if (p.worked) {
-      assert.ok(nonEmpty(p.worked.title) && nonEmpty(p.worked.question) && p.worked.steps.length >= 3 && p.worked.steps.every(nonEmpty), `${s.id} worked question`);
-      assert.match(p.worked.steps.at(-1), /^Answer:/, `${s.id}: the last worked step gives the answer`);
+    // A worked contest problem, as slides whose pictures come from running its solution on the sample.
+    const w = p.worked;
+    assert.ok(w?.problem && ['codeforces', 'kattis'].includes(w.problem.source) && nonEmpty(w.problem.id) && nonEmpty(w.problem.name), `${s.id} worked problem`);
+    if (w.problem.source === 'codeforces') assert.match(w.problem.id, /^\d+[A-Z]\d*$/, `${s.id} worked problem id`);
+    assert.ok(w.problem.source === 'kattis' ? nonEmpty(String(w.problem.difficulty)) : Number.isInteger(w.problem.rating), `${s.id} worked problem difficulty`);
+    assert.ok(Array.isArray(w.slides) && w.slides.length >= 4, `${s.id} worked slides`);
+    const workedVisuals = WORKED_VISUALS[s.id]();
+    assert.ok(w.slides.some((slide) => slide.show), `${s.id}: the worked problem has pictures`);
+    for (const slide of w.slides) {
+      assert.ok(nonEmpty(slide.title) && nonEmpty(slide.say) && slide.points.length >= 1 && slide.points.length <= 3 && slide.points.every(nonEmpty), `${s.id} worked: ${slide.title}`);
+      if (slide.show) {
+        assert.ok(workedVisuals[slide.show[0]]?.frames[slide.show[1]], `${s.id} worked: ${slide.title} shows a frame that doesn't exist`);
+        assert.ok(nonEmpty(slide.note), `${s.id} worked: ${slide.title} has a picture but no note`);
+      }
     }
+    assert.ok(nonEmpty(w.code), `${s.id} worked solution code`);
     for (const key of ['spot', 'disguises', 'pitfalls']) {
       assert.ok(Array.isArray(p[key]) && p[key].length >= 2 && p[key].every(nonEmpty), `${s.id} ${key}`);
     }
@@ -74,6 +87,11 @@ test('problems climb gradually and every one has hints and a solution', () => {
     assert.ok(s.problems.some((p) => p.tier === 'core'), `${s.id} has core problems`);
   }
   for (const required of ['217A', '580C', '377A']) assert.ok(seen.has(required), `${required} is on the path`);
+  // A worked problem's solution is shown in full, so it must not be a practice or UKIEPC problem.
+  const ukiepc = new Set(UKIEPC.flatMap((c) => c.problems.map((p) => `${c.gym}${p.letter}`)));
+  const worked = STAGES.map((s) => s.primer.worked.problem.id);
+  assert.equal(new Set(worked).size, worked.length, 'each stage has its own worked problem');
+  for (const id of worked) assert.ok(!seen.has(id) && !ukiepc.has(id), `worked problem ${id} is also a practice problem`);
 });
 
 test('UKIEPC sets are complete and point at real stages', () => {

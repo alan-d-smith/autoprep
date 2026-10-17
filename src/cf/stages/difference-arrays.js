@@ -77,15 +77,110 @@ export default {
       'len[c]: in `coverage`, how many integer points are covered by exactly c of the segments. The TRD version, `coveredLength`, merges the segments with IntervalContainer.h and returns only the total length covered at least once; it takes half-open int pairs, so an inclusive [l, r] goes in as {l, r + 1}, and coordinates up to 10^18 need `coverage`\'s event sweep instead.',
     ],
     worked: {
-      title: 'the busiest stretch of a train',
-      question: 'A train calls at stations 1 to n in order. Group j of passengers has c_j people, who board at station s_j and get off at station t_j, where s_j < t_j. Find the largest number of people on board between two consecutive stations. Example: n = 6, and the groups (s, t, c) are (1, 4, 3), (2, 6, 2), (3, 5, 4) and (4, 6, 1). The real version has n and the number of groups m up to 2·10^5, and c_j up to 10^9.',
-      steps: [
-        'Recognise it: each group adds its size to every stretch of track it rides, a range update, and the loads are only read once all the groups are in. Adding group by group is O(n·m), about 4·10^10 steps at full size, so record the groups in a difference array.',
-        'Model it: let stretch i run from station i to station i + 1, for i = 1 to n − 1, and let a[i] be the number of people on it. Group j rides stretches s_j to t_j − 1, so it adds c_j to a[s_j..t_j − 1]: d[s_j] += c_j, and the closing write lands one past the last stretch it rides, at d[t_j].',
-        'The four groups write d[1] += 3 and d[4] −= 3, d[2] += 2 and d[6] −= 2, d[3] += 4 and d[5] −= 4, d[4] += 1 and d[6] −= 1. That leaves d[1] to d[6] as 3, 2, 4, −2, −4, −3, where d[4] = −3 + 1 and d[6] = −2 − 1 each collect two writes.',
-        'One prefix pass rebuilds the loads: a[1] = 3, a[2] = 3 + 2 = 5, a[3] = 5 + 4 = 9, a[4] = 9 − 2 = 7, a[5] = 7 − 4 = 3, and one more step would give 0 at station 6, where everyone has got off. Check stretch 3 directly: groups 1, 2 and 3 are on board, and 3 + 2 + 4 = 9.',
-        'Answer: 9 people, between stations 3 and 4. Two writes per group and one pass make it O(n + m). Since t_j can be n, d needs an index n, and a load can reach 2·10^5 · 10^9 = 2·10^14, so use long long.',
+      problem: { source: 'kattis', id: 'landscape', name: 'Landscape Generator', difficulty: '3.3' },
+      slides: [
+        {
+          title: 'A landscape built from range edits',
+          points: [
+            'n points start at height 0, then k edits follow, with n and k up to 2·10^5. Print every final height.',
+            'Raise and Depress add +1 or −1 at every point from x1 to x2.',
+            'Hill adds 1 at x1 and x2, 2 one point further in, and so on up to the middle; Valley subtracts the same shape.',
+          ],
+          show: [1, 0],
+          note: 'Sample 1: the final heights of its 20 points after 13 edits, the output to print.',
+          say: 'The landscape is n points, all at height 0 to begin with, and k edits follow, with n and k up to 2·10^5. Raise adds 1 at every point from x1 to x2, and Depress subtracts 1. Hill adds a tent shape: 1 at x1 and x2, 2 one point further in, and so on up to the middle. Valley subtracts the same shape. The output is every final height; the picture shows the first sample\'s 20 heights after its 13 edits.',
+        },
+        {
+          title: 'Point by point is 4·10^10 steps',
+          points: [
+            'One edit can touch all n points, so applying the edits one by one is O(n·k), up to 4·10^10 steps.',
+            'The heights are read only after the last edit, so each edit can be recorded in O(1) and the heights rebuilt once.',
+          ],
+          say: 'An edit can cover all n points, so applying the edits one at a time costs O(n·k): with both at 2·10^5, about 4·10^10 steps. But the heights are read only once all the edits are in, which is the situation a difference array is for: record each edit in O(1), then rebuild every height in one pass at the end.',
+        },
+        {
+          title: 'A hill\'s steps are constant in stretches',
+          points: [
+            'Raise and Depress are range adds: d[x1] += v and d[x2+1] −= v, with v = +1 or −1.',
+            'A hill changes every point by a different amount, so recording it in d would take a write per point.',
+            'Its steps between neighbours are +1 up to the middle and −1 after it, with a 0 between two middle points.',
+          ],
+          show: [0, 0],
+          note: 'Sample 2\'s hill, H 1 6, and the step into each point: the shape to record, shown before any writes.',
+          say: 'Raise and Depress are the stage\'s range add: d[x1] += v and d[x2 + 1] −= v, with v = 1 for Raise and −1 for Depress. A hill is harder: every point changes by a different amount, so recording it in d would take one write per point. Look at its steps instead, the change from one point to the next. On the hill 1, 2, 3, 3, 2, 1 they are +1, +1, +1, then 0 between the two middle points, then −1 until the height is back to 0. The steps are constant in stretches, so they can go in a difference array of their own: the second-order difference array dd.',
+        },
+        {
+          title: 'Four writes in dd per hill',
+          points: [
+            'dd holds the changes of the step: +1 at x1, −1 just after each middle point, and +1 at x2 + 2.',
+            'dd[x1] += 1, dd[(x1+x2)/2 + 1] −= 1, dd[(x1+x2+1)/2 + 1] −= 1 and dd[x2+2] += 1; a valley swaps every sign.',
+            'With an odd number of points both middles are the same point, so that cell drops by 2.',
+          ],
+          show: [0, 1],
+          note: 'Sample 2 after its only edit, before the pass: the four writes, at dd[1], dd[4], dd[5] and dd[8].',
+          say: 'So dd records where the step changes. A hill from x1 to x2 starts a step of +1 at x1. With integer division, (x1 + x2) / 2 and (x1 + x2 + 1) / 2 are the middle points, the same point when the hill has an odd number of points, and just after each of them the step drops by 1. The last step down is into x2 + 1, where the height is back to 0, so at x2 + 2 the step returns to 0. That makes four writes: dd[x1] += 1, dd[(x1 + x2) / 2 + 1] −= 1, dd[(x1 + x2 + 1) / 2 + 1] −= 1 and dd[x2 + 2] += 1. A valley makes the same writes with every sign swapped.',
+        },
+        {
+          title: 'One pass with two running sums',
+          points: [
+            '`slope` adds up dd, so it is the step that hills and valleys make into point i.',
+            '`h` adds d[i] + `slope`, the full step, so it is the height at point i, printed as soon as it is known.',
+          ],
+          show: [0, 2],
+          note: 'Partway through the pass, at point 4: dd[4] = −1 takes slope from 1 to 0, so h stays at 3.',
+          say: 'One left-to-right pass rebuilds everything. slope is the running sum of dd, which is the step that the hills and valleys make into point i. Adding d[i] for the raises and depressions gives the full step, and h, the running sum of the steps, is the height at point i, printed as soon as it is known. At point 4 of the second sample, dd[4] = −1 takes slope from 1 down to 0, so the height stays at 3.',
+        },
+        {
+          title: 'Sample 2 rebuilt',
+          points: [
+            'The pass gives 1, 2, 3, 3, 2, 1, 0, the sample\'s output.',
+            'A hill ending at x2 = n writes dd[n + 2], so dd needs n + 3 cells, though the pass never reads past n.',
+          ],
+          show: [0, 3],
+          note: 'The finished pass for sample 2: the heights match the expected output; dd[8] is never read.',
+          say: 'When the pass ends, the heights are 1, 2, 3, 3, 2, 1, 0, exactly the second sample\'s output. The last write, dd[8], lies past the last point and is never read. It is still needed: a hill that ends at the last point, x2 = n, puts its fourth write at n + 2, so d and dd get n + 3 cells.',
+        },
+        {
+          title: 'O(n + k), with heights in long long',
+          points: [
+            'Each edit is 2 or 4 writes and the pass is O(n), so the whole solution is O(n + k).',
+            'Hills over the whole range can stack 2·10^5 deep with middles of 10^5, so heights reach 2·10^10: use long long.',
+            'A one-point hill, x1 = x2, writes +1, −2 and +1 and raises only that point, by 1.',
+          ],
+          say: 'Every edit costs two or four writes and the pass costs O(n), so the whole solution is O(n + k), around 10^6 steps. The heights get large: 2·10^5 hills over the whole range each add up to 10^5 in the middle, so a height can reach 2·10^10, past the range of int. Keep d, dd, slope and h in long long. A hill on a single point, x1 = x2, writes +1, −2 and +1 into three cells in a row and raises only that point, by 1, as the statement says.',
+        },
       ],
+      code: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, k;
+    cin >> n >> k;
+    vector<long long> d(n + 3, 0), dd(n + 3, 0);  // a hill ending at n writes dd[n + 2]
+    while (k--) {
+        char c;
+        int x1, x2;
+        cin >> c >> x1 >> x2;
+        int v = (c == 'R' || c == 'H') ? 1 : -1;
+        if (c == 'R' || c == 'D') {
+            d[x1] += v;
+            d[x2 + 1] -= v;
+        } else {  // the step is +v from x1, drops after each middle point, is 0 from x2 + 2
+            dd[x1] += v;
+            dd[(x1 + x2) / 2 + 1] -= v;
+            dd[(x1 + x2 + 1) / 2 + 1] -= v;
+            dd[x2 + 2] += v;
+        }
+    }
+    long long slope = 0, h = 0;
+    for (int i = 1; i <= n; i++) {
+        slope += dd[i];
+        h += d[i] + slope;
+        cout << h << '\\n';
+    }
+}`,
     },
     spot: [
       'Many "add v to every element from l to r" operations, and the values are only read after all of them.',

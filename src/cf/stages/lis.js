@@ -78,15 +78,105 @@ export default {
       '`strict`: true for strictly increasing (lower_bound), false for non-decreasing (upper_bound). The TRD version is strict only; its comment says to search for the pair (S[i], i) instead of (S[i], 0) to get non-decreasing.',
     ],
     worked: {
-      title: 'bridges across a river',
-      question: 'Eight bridges are proposed across a straight river. Bridge i joins point x_i on the north bank to point y_i on the south bank, and two bridges cross when one has the smaller x and the larger y. The proposals (x, y) are (4, 6), (1, 3), (7, 8), (2, 7), (5, 2), (3, 1), (8, 5) and (6, 4). Build as many as possible with no two crossing. In the real version n ≤ 2·10^5, coordinates are up to 10^9, and no two bridges share an end.',
-      steps: [
-        'Recognise it: two bridges are compatible exactly when their orders on the two banks agree, so a non-crossing set, listed by x, has increasing y. The task is the LIS of the y values in x order. Checking subsets is 2^n, and the O(n²) DP is about 2·10^10 steps at full size, so use `tails`.',
-        'Model it: sort by x and let a[i] be the y of the i-th bridge in that order: a = 3, 7, 1, 6, 2, 4, 8, 5. No two y are equal, so strict and non-strict agree; use lower_bound.',
-        'Run `tails`: 3 starts it; 7 extends it to 3, 7; 1 replaces 3, giving 1, 7; 6 replaces 7, giving 1, 6; 2 replaces 6, giving 1, 2; 4 extends it to 1, 2, 4; 8 extends it to 1, 2, 4, 8; and 5 replaces 8, giving 1, 2, 4, 5. Notice that after the 1, `tails` held 1, 7, which is not a subsequence, since the 1 comes after the 7 in a: `tails` tracks lengths, not one sequence.',
-        'Rebuild with `par`: 5 landed at k = 3, after the element then in tails[2], the 4; the 4 had landed after the 2, the 2 after the 1, and the 1 started its subsequence (its `par` is −1). Reading forwards gives 1, 2, 4, 5, the bridges (3, 1), (5, 2), (6, 4) and (8, 5).',
-        'Answer: 4 bridges, for example (3, 1), (5, 2), (6, 4) and (8, 5); swapping (8, 5) for (7, 8) gives another. Sorting plus n binary searches is O(n log n), and the coordinates fit in int. If bridges could share an end, sort equal x by y descending and keep lower_bound when sharing is forbidden, or sort ties by y ascending and use upper_bound when touching is allowed.',
+      problem: { source: 'kattis', id: 'manhattanmornings', name: 'Manhattan Mornings', difficulty: '4.3' },
+      slides: [
+        {
+          title: 'Pass the most errands on the way',
+          points: [
+            'Home, work and n ≤ 10^5 errands are points of a street grid, with coordinates up to 10^9.',
+            'Walk to work by a shortest route along the streets, passing as many errands as possible.',
+          ],
+          show: [0, 0],
+          note: 'Sample 1: home at (0, 0), work at (6, 6) and three errands. The answer is 2.',
+          say: 'The problem is Manhattan Mornings. Home, work and n errands, up to 10^5 of them, are points of a street grid, with coordinates up to 10^9. You walk to work along the streets by a shortest route and want to pass as many errands as possible on the way. In the first sample home is at (0, 0), work is at (6, 6), and the errands are at (5, 4), (2, 6) and (3, 1); the best route passes 2 of them.',
+        },
+        {
+          title: 'Too many corners, too many pairs',
+          points: [
+            'A shortest route never steps away from work: in sample 1 it only goes up or right.',
+            'A DP over every street corner between home and work can touch 10^18 of them.',
+            'A DP over errands, each extending the best one it can follow, is O(n²): 5·10^9 pairs.',
+          ],
+          say: 'A shortest route never steps away from work, so in sample 1 it only goes up or right, and x and y never decrease along it. A DP over every street corner between home and work would follow that rule, but with coordinates up to 10^9 there can be 10^18 corners. A DP over the errands, where each errand extends the best route ending at an errand it can follow, is the O(n²) LIS DP: about 5·10^9 pairs when n is 10^5.',
+        },
+        {
+          title: 'Sort by x, and routes become subsequences',
+          points: [
+            'Errand j can come before errand i exactly when x_j ≤ x_i and y_j ≤ y_i.',
+            'Sort by x, and equal x by y: every route passes its errands in this order.',
+            'A route is then a non-decreasing subsequence of the y values, so the answer is the longest one.',
+          ],
+          show: [0, 1],
+          note: 'Sample 1 sorted by x: a = 6, 1, 4. Its longest non-decreasing subsequence is 1, 4.',
+          say: 'Errand j can come before errand i on a route exactly when x_j ≤ x_i and y_j ≤ y_i. Sort the errands by x, and equal x by y, and every route passes its errands in that order. A route is then a subsequence of the sorted errands whose y values never decrease, and any such subsequence is a route. So the answer is the longest non-decreasing subsequence of the y values. In sample 1 the sorted errands are (2, 6), (3, 1) and (5, 4), so the y values are 6, 1, 4, and the longest is 1, 4.',
+        },
+        {
+          title: 'Drop far errands and flip the axes',
+          points: [
+            'An errand outside the rectangle between home and work is never on a shortest route: drop it.',
+            'If work is left of home, negate every x; if it is below home, negate every y.',
+            'Let a[i] be the y of the i-th errand in sorted order, and run `tails` with upper_bound.',
+          ],
+          show: [1, 1],
+          note: 'Sample 2 sorted after flipping both axes, since work at (0, 0) is left of and below home at (2, 1). The hollow errand at (3, 1) is dropped.',
+          say: 'Two steps come before the sort. An errand outside the rectangle between home and work is never on a shortest route, so drop it. And if work is left of home, negate every x, and if work is below home, negate every y; the route then goes up and right as before. Now let a[i] be the y value of the i-th remaining errand in sorted order, and run `tails` on a with upper_bound, because two errands with equal y can both be visited.',
+        },
+        {
+          title: 'Run tails on sample 1',
+          points: [
+            'a = 6, 1, 4: 6 starts `tails`, then 1 replaces it as the lowest end of a one-errand route.',
+            '4 is above every tail, so it is appended: `tails` = 1, 4, and the answer is 2.',
+          ],
+          show: [0, 3],
+          note: 'Midway through sample 1: 1 has replaced 6 in tails[0], so a route through one errand can end as low as y = 1.',
+          say: 'In sample 1, a = 6, 1, 4. 6 starts `tails`. 1 is below 6, so upper_bound finds tails[0], and 1 replaces 6: a route through one errand can now end as low as y = 1, which leaves more room above it. 4 is above every tail, so it is appended, and `tails` ends as 1, 4. Its size, 2, is the answer: the route through (3, 1) and then (5, 4).',
+        },
+        {
+          title: 'Equal values must chain: sample 2',
+          points: [
+            'Flipped and sorted, sample 2 is (−2, −1), (−2, 0), (0, −1), (0, 0), so a = −1, 0, −1, 0.',
+            'upper_bound puts the second −1 after the first, and `tails` ends as −1, −1, 0: the answer is 3.',
+            'lower_bound, or sorting equal x by y descending, would give 2.',
+          ],
+          show: [1, 4],
+          note: 'Midway through sample 2: the second −1 replaces tails[1] = 0, so it follows the first −1 instead of replacing it.',
+          say: 'In sample 2, after flipping both axes and dropping (3, 1), the errands sorted by x and then y are (−2, −1), (−2, 0), (0, −1) and (0, 0), so a = −1, 0, −1, 0. When the second −1 arrives, upper_bound passes over the tail equal to it and lands at tails[1]: an errand can follow another on the same street. `tails` ends as −1, −1, 0, so the answer is 3. With lower_bound the second −1 would replace the first and the answer would be 2, and sorting equal x by y descending would also give 2, because errands on the same avenue could then not chain.',
+        },
+        {
+          title: 'Edge cases and cost',
+          points: [
+            'Errands at home, at work or on one shared point all count: they lie in the rectangle and chain.',
+            'Sorting plus one binary search per errand is O(n log n); coordinates and their negatives fit in int.',
+          ],
+          show: [1, 6],
+          note: 'The end of sample 2: one best route passes the errands at home, at (0, 1) and at work.',
+          say: 'Errands at home or at work lie in the rectangle and count, as in sample 2, where the best route passes the errand at home, the one at (0, 1) and the one at work. Errands at the same point give equal pairs, which upper_bound lets chain, so in sample 3 both errands at (100, 100) count. Sorting and one binary search per errand take O(n log n), fast for 10^5 errands, and the coordinates and their negatives fit in int.',
+        },
       ],
+      code: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    int n, xh, yh, xw, yw;
+    cin >> n >> xh >> yh >> xw >> yw;
+    // Negate an axis when work is left of or below home, so the route goes up and right.
+    int fx = xw < xh ? -1 : 1, fy = yw < yh ? -1 : 1;
+    vector<pair<int, int>> pts;
+    for (int i = 0; i < n; i++) {
+        int x, y;
+        cin >> x >> y;
+        if (min(xh, xw) <= x && x <= max(xh, xw) && min(yh, yw) <= y && y <= max(yh, yw))
+            pts.push_back({fx * x, fy * y});
+    }
+    sort(pts.begin(), pts.end());        // by x, equal x by y
+    vector<int> tails;                   // over a[i], the y values in this order
+    for (auto [x, y] : pts) {
+        auto it = upper_bound(tails.begin(), tails.end(), y);   // non-decreasing
+        if (it == tails.end()) tails.push_back(y);
+        else *it = y;
+    }
+    cout << tails.size() << "\\n";
+}`,
     },
     spot: [
       'Keep, or remove, as many items as possible so that what is left is in order',

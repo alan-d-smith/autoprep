@@ -76,16 +76,99 @@ export default {
       '`prv`, `cur`: the previous and current rows of the table in the rolling version, swapped after each row.',
     ],
     worked: {
-      title: 'from TEAMS to MEATS',
-      question:
-        'You may delete any character of a string, or insert any character at any position, each at a cost of 1; replacing is not allowed. Let a be TEAMS and b be MEATS: what is the least cost to turn a into b? In the real version each string has up to 5000 characters, and only the cost is printed.',
-      steps: [
-        'Recognise it: the characters of a that are never deleted must match, in order, characters of b that are never inserted, so they form a common subsequence. Keeping k characters costs (n − k) deletions plus (m − k) insertions, so the answer is n + m − 2·LCS(a, b). Trying every set of kept characters is 2^n, and greedy matching keeps too few: T grabs the T of MEATS, after which only S still fits, so it keeps 2.',
-        'Model it: dp[i][j] is the LCS length of `a[0..i)` and `b[0..j)`, with row 0 and column 0 all 0. If a[i − 1] = b[j − 1] then dp[i][j] = dp[i − 1][j − 1] + 1, otherwise dp[i][j] = max(dp[i − 1][j], dp[i][j − 1]).',
-        'Fill it row by row, with the columns M, E, A, T, S: row T is 0, 0, 0, 1, 1; row E is 0, 1, 1, 1, 1; row A is 0, 1, 2, 2, 2; row M is 1, 1, 2, 2, 2; row S is 1, 1, 2, 2, 3. So dp[5][5] = 3.',
-        'Walk back from (5, 5) to see what is kept. S = S, so keep S and move to (4, 4). There M ≠ T and the cell above holds 2, as much as the cell to the left, so move up to (3, 4); there A ≠ T and the cell above holds 1, less than the 2 to the left, so move left to (3, 3). A = A and then E = E are kept, and at (1, 1) T ≠ M sends the walk to row 0, where it stops. The kept characters are E, A, S.',
-        'Answer: 5 + 5 − 2·3 = 4. Delete T and M, then insert M at the front and T before the S, so TEAMS becomes EAMS, EAS, MEAS and then MEATS. The table is O(nm), 2.5·10^7 cells at full size, and only the cost is printed, so two rolling rows of int, O(m) memory, are enough; printing the operations would need the full table to walk back.',
+      problem: { source: 'kattis', id: 'princeandprincess', name: 'Prince and Princess', difficulty: '4.4' },
+      slides: [
+        {
+          title: 'The longest route both can follow',
+          points: [
+            'The squares of an n × n board are numbered 1 to n², with n ≤ 250.',
+            'The Prince visits squares a and the Princess squares b, neither twice, both from 1 to n².',
+            'Each may skip squares: find the longest route both can follow.',
+          ],
+          show: [1, 0],
+          note: 'The sample: a = 1 7 5 4 8 3 9 and b = 1 4 3 5 6 2 8 9, with lines joining equal squares. The answer is 4.',
+          say: 'The problem is Prince and Princess. The squares of an n × n board are numbered 1 to n², with n up to 250. The Prince visits the squares a, p + 1 of them, and the Princess visits the squares b, q + 1 of them; neither visits a square twice, and both start at square 1 and end at square n². Each may skip squares, and we want the longest route that both can follow. In the sample a is 1, 7, 5, 4, 8, 3, 9 and b is 1, 4, 3, 5, 6, 2, 8, 9, and the longest common route has 4 squares, for example 1, 4, 8, 9.',
+        },
+        {
+          title: 'The LCS table is too big',
+          points: [
+            'A route both can follow is a common subsequence of a and b, so the answer is their LCS.',
+            'Each route can have n² = 62 500 squares, so dp[i][j] has about 3.9·10^9 cells.',
+            'That is seconds of work per test case, and the time limit is 1 second.',
+          ],
+          say: 'A route both can follow is a common subsequence of a and b, so the answer is their longest common subsequence, and the table dp[i][j] computes it. But each route can visit up to n² = 62 500 squares, so the table has about 62 500 × 62 500 ≈ 3.9·10^9 cells: seconds of work for one test case, against a time limit of 1 second.',
+        },
+        {
+          title: 'Distinct squares: at most one match per row',
+          points: [
+            'No route repeats a square, so each square of a equals at most one square of b.',
+            'A common route pairs equal squares, and its pairs never cross, since both routes run in order.',
+            'Of the 3.9·10^9 cells, at most 62 500 are matches, and only they add 1.',
+          ],
+          show: [0, 0],
+          note: 'The finished table for the sample: dp[7][8] = 4, and each row has at most one green match.',
+          say: 'No route visits a square twice, so each square of a equals at most one square of b, and each row of the table has at most one match. A common route is a set of matched pairs, and its pairs never cross, because both routes visit them in order. So of the 3.9·10^9 cells at most 62 500 are matches, the only places where the value grows, and the answer depends only on them.',
+        },
+        {
+          title: 'Rewrite b as positions in a',
+          points: [
+            'pos[v] is the index of square v in a, or −1 if the Prince never visits it.',
+            'Replace each square of b by its pos and drop the −1s: pairs that don\'t cross have increasing positions.',
+            'So the answer is the LIS of that list: `tails` with lower_bound, O(q log q).',
+          ],
+          show: [1, 1],
+          note: 'The sample\'s b rewritten as positions in a: 0, 3, 5, 2, 4, 6. Squares 6 and 2 are not on a and drop out.',
+          say: 'Let pos[v] be the index of square v in a, or −1 if the Prince never visits it. Walk along b and replace each square by its pos, dropping the squares that are not on a. Two pairs do not cross exactly when their positions in a increase along b, so a common route is an increasing subsequence of this list, and the answer is its longest increasing subsequence. The positions are all different, so lower_bound and upper_bound agree, and `tails` finds the length in O(q log q).',
+        },
+        {
+          title: 'Run tails on the positions',
+          points: [
+            '0, 3 and 5 are each above every tail, so `tails` grows to 0, 3, 5.',
+            '2 replaces 3, then 4 replaces 5: routes of 2 and 3 squares can end earlier in a.',
+            '6 is appended, so `tails` = 0, 2, 4, 6 and the answer is 4.',
+          ],
+          show: [1, 5],
+          note: 'Midway: square 5 is a[2], and 2 replaces tails[1] = 3, so a common route of 2 squares can end at a[2] instead of a[3].',
+          say: 'In the sample the list is 0, 3, 5, 2, 4, 6. The first three are each above every tail, so `tails` grows to 0, 3, 5. Then 2 replaces 3: a common route of two squares, 1 then 5, can end at a[2], earlier on the Prince\'s route than a[3]. 4 replaces 5 in the same way, and 6 is appended, so `tails` ends as 0, 2, 4, 6. Its size, 4, is the answer.',
+        },
+        {
+          title: 'Answer and cost',
+          points: [
+            'The output is Case 1: 4; one such route is 1, 5, 8, 9.',
+            'Each test case takes O(p + q log q) time and a pos array of n² + 1 entries, not 3.9·10^9 cells.',
+            'The rewrite needs a to have no repeated squares, so that each square of b has one position or none.',
+          ],
+          show: [1, 8],
+          note: 'The end: one longest common route, 1, 5, 8, 9. Its lines don\'t cross.',
+          say: 'So the output is Case 1: 4, for example along the route 1, 5, 8, 9. Each test case takes O(p + q log q) time and a pos array of n² + 1 entries, rebuilt for every test case, instead of a table of 3.9·10^9 cells. The rewrite relies on a having no repeated squares, so that each square of b has exactly one position in a, or none.',
+        },
       ],
+      code: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int t;
+    cin >> t;
+    for (int tc = 1; tc <= t; tc++) {
+        int n, p, q;
+        cin >> n >> p >> q;
+        vector<int> a(p + 1), b(q + 1);
+        for (int &v : a) cin >> v;
+        for (int &v : b) cin >> v;
+        vector<int> pos(n * n + 1, -1);    // pos[v]: the index of square v in a, or -1
+        for (int i = 0; i <= p; i++) pos[a[i]] = i;
+        vector<int> tails;                 // LIS of b's squares, written as positions in a
+        for (int v : b) {
+            if (pos[v] < 0) continue;
+            auto it = lower_bound(tails.begin(), tails.end(), pos[v]);
+            if (it == tails.end()) tails.push_back(pos[v]);
+            else *it = pos[v];
+        }
+        cout << "Case " << tc << ": " << tails.size() << "\\n";
+    }
+}`,
     },
     spot: [
       'Two strings or arrays of length up to about 5000, and the statement talks about subsequences, matching, aligning, merging or interleaving them.',

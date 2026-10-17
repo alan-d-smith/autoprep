@@ -80,16 +80,117 @@ export default {
       '`dr`, `dc`: the row and column offsets of a grid cell\'s four side neighbours; cell (r, c) of an R × C grid is vertex r·C + c + 1, so the template sees R·C vertices numbered from 1.',
     ],
     worked: {
-      title: 'two buses',
-      question: 'A school trip has two buses, a small red one and a large blue one. There are n = 8 pupils, and m = 6 pairs of them quarrel: 1–2, 2–3, 3–4, 4–1, 4–5 and 6–7. The two pupils of a quarrelling pair must ride different buses. Print the fewest pupils who can ride the red bus, or −1 if no seating works. In the real version n and m are up to 2·10^5.',
-      steps: [
-        'Recognise it: each quarrel is an edge whose two ends must get different buses, which is a 2-colouring. Trying all 2^n seatings is hopeless (2^8 = 256 here, but already 10^12 for n = 40). Once one pupil\'s bus is fixed, the quarrels force every other bus in that pupil\'s component, so each component has exactly two seatings or none, and different components do not affect each other.',
-        'Model it: pupils are vertices 1 to 8 and quarrels are edges in adj. One run of `explore` fills comp[v] and side[v], and sets `bipartite` to false on a conflict. Then count, for each component, its pupils on side 0 and on side 1: the red bus should take the smaller side of every component.',
-        'Run it. From s = 1 (side 0, component 0) the stack pops 1 and labels 2 and 4 with side 1, pops 4 and labels 3 and 5 with side 0, then pops 5, 3 and 2 without labelling anything new. Next s = 6 starts component 1 with side[6] = 0 and labels 7 with side 1, and s = 8 is component 2 on its own, with side[8] = 0.',
-        'Check the edges. The only edge that labelled nothing, 2–3, joins side 1 to side 0, so the 4-cycle 1–2–3–4 is even and `bipartite` stays true. Had there also been a quarrel 1–3, then 1–2–3 would be a triangle, an odd cycle: whatever order the search runs in, some edge of it joins two pupils on the same side, so `bipartite` becomes false and the answer is −1.',
-        'Count the sides: component 0 has {1, 3, 5} on side 0 and {2, 4} on side 1, component 1 has {6} and {7}, and component 2 has {8} and nobody. The red bus takes min(3, 2) + min(1, 1) + min(1, 0) = 2 + 1 + 0 = 3 pupils, for example 2, 4 and 7. As a check, there are 2^3 = 8 valid seatings in all, two per component.',
-        'Answer: 3. One `explore` pass plus one count per vertex is O(n + m); print −1 instead whenever `bipartite` is false. A pupil with no quarrels is a component of size 1 and costs nothing, and the total is at most n, so int is enough.',
+      problem: { source: 'kattis', id: 'hoppers', name: 'Hoppers', difficulty: '3.5' },
+      slides: [
+        {
+          title: 'A hopper jumps two links at a time',
+          points: [
+            'A network has n hosts and m two-way links, with n and m up to 5·10^5.',
+            'A hopper on host u infects every host two links from u, and each newly infected host spreads it the same way.',
+            'Print the fewest new links after which infecting a single host infects them all.',
+          ],
+          show: [0, 0],
+          note: 'Sample 1: a hopper on 1 hops over 2 to 3, and from 3 only back to 1, so 2 is never infected.',
+          say: 'A network has n hosts joined by m two-way links, with n and m up to 5·10^5. A hopper on host u infects every host two links from u, a neighbour of a neighbour, and each newly infected host spreads it the same way. You may add links, and want the fewest new links after which a hopper on some single host infects the whole network. In the first sample, 1–2–3, a hopper on 1 hops over 2 to 3 and back, and never infects 2. One new link, 1–3, fixes that, so the answer is 1.',
+        },
+        {
+          title: 'Searching over new links is hopeless',
+          points: [
+            'About n²/2 ≈ 1.25·10^11 pairs of hosts could get a new link, far too many sets to try.',
+            'Even testing one network by simulation means a run from each of its 5·10^5 hosts.',
+            'So work out exactly which hosts a hopper infects, then count.',
+          ],
+          say: 'With n = 5·10^5 there are about n²/2, roughly 1.25·10^11, pairs of hosts that a new link could join, so trying sets of new links is out of the question. Even testing one network by simulation means a run from each of its 5·10^5 hosts. So first work out exactly which hosts a hopper infects, and count the links from that.',
+        },
+        {
+          title: 'Hops follow walks of even length',
+          points: [
+            'A hopper on u infects w exactly when some walk from u to w uses an even number of links.',
+            'In a bipartite component every link changes side, so u infects exactly the hosts on its own side.',
+            'An odd cycle lets a walk switch between odd and even length, so then u infects its whole component.',
+          ],
+          show: [0, 1],
+          note: 'Sample 1 after `explore`: 1 and 3 have side 0 and 2 has side 1, so a hopper on 1 infects exactly side 0.',
+          say: 'A hop covers two links, so a hopper on u infects host w exactly when some walk from u to w, which may revisit hosts, uses an even number of links. Such a walk never leaves u\'s component. If the component is bipartite, every link changes side, so an even walk always ends on u\'s side, and the hopper infects that side and nothing else. If the component has an odd cycle, a walk can go once round it to turn an odd length into an even one, so every host in the component has an even walk from u and is infected.',
+        },
+        {
+          title: 'Count components and look for an odd cycle',
+          points: [
+            'One run of `explore` gives `id`, the number of components, and `bipartite`, which is false once an odd cycle turns up.',
+            'A hopper never leaves its component, so at least id − 1 new links are needed, and links between components close no cycle.',
+            'Answer: id − 1 if `bipartite` is false; otherwise one more link must close an odd cycle, so id.',
+          ],
+          say: 'One run of the template\'s `explore` gives both facts: `id` ends as the number of components, and `bipartite` becomes false as soon as a link joins two hosts on the same side, which happens exactly when some component has an odd cycle. A hopper never leaves its component, so the network must end up connected, which takes at least id − 1 new links. If some component already has an odd cycle, id − 1 links joining the components into one are enough. If none has, a link between two components closes no cycle, so after id − 1 links the network is still bipartite and a hopper infects only its own side. With n ≥ 3 one side has two hosts, which are never linked already, and a link between them closes an odd cycle. So the answer is id − 1 when `bipartite` is false and id when it is true.',
+        },
+        {
+          title: 'Sample 3: explore labels three components',
+          points: [
+            'Host 1 has no links, so it is component 0 on its own.',
+            'From 2, the ring 2–3–4–5 becomes component 1, with sides 0, 1, 0, 1 going round.',
+            'From 6, each host found takes the side opposite the host that found it.',
+          ],
+          show: [0, 2],
+          note: 'Mid-run, in component 2: popping 12, on side 0, finds 7 already labelled with side 1, so the link 12–7 crosses sides.',
+          say: 'Sample 3 has 12 hosts and 13 links. `explore` starts with s = 1, which has no links, so host 1 is component 0 by itself. From s = 2 the ring 2–3–4–5 becomes component 1, with sides 0, 1, 0, 1 going round it. From s = 6 the remaining hosts become component 2, each taking the side opposite the host that found it. In the picture 12, on side 0, has just been popped; its neighbour 7 is already labelled with side 1, so the link 12–7 joins different sides and `bipartite` stays true.',
+        },
+        {
+          title: 'Every link crosses sides, so answer 3',
+          points: [
+            'All 13 links join side 0 to side 1, so `bipartite` stays true, and id = 3.',
+            'Two new links join the three components; the network stays bipartite, so a third link must close an odd cycle.',
+            'The answer is id = 3, as in the sample output.',
+          ],
+          show: [0, 3],
+          note: 'The end of `explore` on sample 3: three components, and no link has both ends on the same side.',
+          say: 'When `explore` finishes, every one of the 13 links joins a side-0 host to a side-1 host, so `bipartite` is still true, and `id` is 3. Two new links join the three components into one, but the result is still bipartite, so a hopper would infect only its own side. A third link, between two hosts on the same side, closes an odd cycle. So the answer is id = 3, which matches the sample output.',
+        },
+        {
+          title: 'An odd cycle saves a link',
+          points: [
+            'In sample 2 every pair of the 5 hosts is linked. Popping 4 finds 3 on its own side: the triangle 1–3–4.',
+            '`bipartite` becomes false and id = 1, so the answer is id − 1 = 0.',
+            'O(n + m) in all. A host with no links is a component of its own; the explicit stack avoids deep recursion.',
+          ],
+          show: [0, 4],
+          note: 'Sample 2, mid-run: 4 and 3 both have side 1, so the link 4–3 closes an odd cycle and `bipartite` becomes false.',
+          say: 'In sample 2 every pair of the 5 hosts is linked. Popping host 1 gives 2, 5, 3 and 4 side 1; popping 4 then finds 3, also on side 1, so the link 4–3 closes the triangle 1–3–4, an odd cycle, and `bipartite` becomes false. There is one component, so the answer is id − 1 = 0: a hopper on any host already infects every host. `explore` is O(n + m), for n and m up to 5·10^5. A host with no links counts as a component of its own, and the explicit stack avoids recursion 5·10^5 calls deep.',
+        },
       ],
+      code: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    int n, m;
+    scanf("%d %d", &n, &m);
+    vector<vector<int>> adj(n + 1);
+    for (int i = 0; i < m; i++) {
+        int u, v;
+        scanf("%d %d", &u, &v);
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    // The template's explore: label components and 2-colour them with an explicit stack.
+    vector<int> comp(n + 1, -1), side(n + 1, -1);
+    bool bipartite = true;
+    int id = 0;
+    for (int s = 1; s <= n; s++) {
+        if (comp[s] != -1) continue;
+        vector<int> st = {s};
+        comp[s] = id; side[s] = 0;
+        while (!st.empty()) {
+            int u = st.back(); st.pop_back();
+            for (int v : adj[u]) {
+                if (comp[v] == -1) {
+                    comp[v] = id; side[v] = side[u] ^ 1;
+                    st.push_back(v);
+                } else if (side[v] == side[u]) bipartite = false;
+            }
+        }
+        id++;
+    }
+    // id - 1 links join the components; with no odd cycle anywhere, one more link makes one.
+    printf("%d\\n", bipartite ? id : id - 1);
+}`,
     },
     spot: [
       'Symmetric reachability questions: "can he get from any X to any Y", "how many users will hear the news", "how many separate regions": connected components.',

@@ -12,6 +12,7 @@ import { CHEVRON_ICON } from '../icons.js';
 import { hintToggle, hintPanel, bindHints } from './hints.js';
 import { rich, highlightCpp } from '../format.js';
 import { STAGE_VISUALS } from '../viz/stages.js';
+import { WORKED_VISUALS } from '../viz/worked.js';
 import { stepperTpl, slidesTpl, bindSteppers } from '../viz/stepper.js';
 import { listenButton, bindListen } from '../tts.js';
 import { quizConfident } from './quiz.js';
@@ -236,7 +237,7 @@ export function renderPath(app, stageId) {
         ${slidesTpl(`${stage.id}-how`, primer.slides, visuals)}
         ${primer.terms ? termsTpl(primer.terms) : ''}
         ${visuals.map((viz, i) => stepperTpl(`${stage.id}-${i}`, viz))}
-        ${primer.worked ? html`<section class="cp-worked card" data-worked-for="${stage.id}" aria-label="Worked question">${workedTpl(stage)}</section>` : ''}
+        ${primer.worked?.slides ? workedTpl(stage) : ''}
         ${videosTpl(stage.id)}
         <div class="primer-cols">
           <div><h3 data-read="primer">Reach for it when</h3><ul>${primer.spot.map((s) => html`<li data-read="primer">${rich(s)}</li>`)}</ul></div>
@@ -255,22 +256,26 @@ export function renderPath(app, stageId) {
       </section>`;
   }
 
-  // A small question solved with the stage's technique, one step at a time so you can try each first.
-  const workedShown = new Map(); // stage id → steps revealed
+  // A real contest problem solved with the stage's technique, as narrated slides whose pictures come
+  // from running the solution on the problem's own sample, then the full solution, folded away.
   function workedTpl(stage) {
-    const { title, question, steps } = stage.primer.worked;
-    const shown = workedShown.get(stage.id) || 0;
+    const { problem, slides, code } = stage.primer.worked;
+    const visuals = WORKED_VISUALS[stage.id]?.() || [];
+    const kattis = problem.source === 'kattis';
+    const url = kattis ? `https://open.kattis.com/problems/${problem.id}` : problemUrl(problem.id);
+    const head = html`
+      <p class="worked-problem">
+        <a href="${url}" target="_blank" rel="noopener">${problem.name}</a>
+        <span class="small faint">${kattis ? `Kattis, difficulty ${problem.difficulty}` : `Codeforces ${problem.id}, rated ${problem.rating}`}</span>
+      </p>`;
     return html`
-      <h3 data-read="primer">Worked question: ${title}</h3>
-      <p class="cp-worked-q" data-read="primer">${rich(question)}</p>
-      <ol class="cp-steps" aria-live="polite">
-        ${steps.slice(0, shown).map((s, i) => html`<li class="${i === steps.length - 1 ? 'final' : ''}" tabindex="-1" data-read="primer"><span>${rich(s)}</span></li>`)}
-      </ol>
-      ${shown < steps.length ? html`
-        <div class="btn-row">
-          <button class="btn btn-small" type="button" data-worked="next">${shown ? 'Next step' : 'Show the first step'}</button>
-          <button class="text-btn small" type="button" data-worked="all">Show all steps</button>
-        </div>` : ''}`;
+      <div class="cp-worked">
+        ${slidesTpl(`${stage.id}-worked`, slides, visuals, { label: 'Worked problem', head })}
+        <details class="worked-code">
+          <summary>Full solution</summary>
+          <pre class="code"><code>${highlightCpp(code.trim())}</code></pre>
+        </details>
+      </div>`;
   }
 
   // What the names in the walkthrough, code and diagram stand for, each written "name: meaning".
@@ -406,18 +411,6 @@ export function renderPath(app, stageId) {
 
   // Show or hide the floating stage list without re-rendering (so your place on the page stays put).
   app.addEventListener('click', (e) => {
-    // Reveal worked steps in place, so the page doesn't jump.
-    const reveal = e.target.closest('[data-worked]');
-    if (reveal) {
-      const holder = reveal.closest('[data-worked-for]');
-      const stage = stageById[holder.dataset.workedFor];
-      const total = stage.primer.worked.steps.length;
-      const shown = reveal.dataset.worked === 'all' ? total : (workedShown.get(stage.id) || 0) + 1;
-      workedShown.set(stage.id, shown);
-      mount(holder, workedTpl(stage));
-      (holder.querySelector('[data-worked="next"]') || holder.querySelector('.cp-steps li:last-child'))?.focus();
-      return;
-    }
     const codeStyle = e.target.closest('[data-code-style]');
     if (codeStyle) {
       // Swap just the code block so the page doesn't jump.

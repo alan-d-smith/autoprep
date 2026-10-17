@@ -79,16 +79,102 @@ export default {
       'P[i]: a prefix sum, the total of the first i elements of the array, with P[0] = 0.',
     ],
     worked: {
-      title: 'the heaviest rising chain',
-      question: 'Six items arrive in order with keys 30, 10, 50, 30, 40, 20 and weights 5, 3, 2, 4, 1, 9. Choose some of them, keeping their order, so that each chosen key is strictly larger than the one chosen before it, and maximise the total weight. The real version has n up to 2·10^5, with keys and weights up to 10^9.',
-      steps: [
-        'Recognise it: this is the LIS DP with weights, dp[i] = w[i] + the best dp[j] over j < i with key[j] < key[i]. Checking every earlier j is about 2·10^10 checks at full size, and the LIS binary search does not apply because a longer chain need not be heavier, so keep the dp values in a Fenwick tree of prefix maxima over the keys.',
-        'Model it: the distinct keys in order are s = 10, 20, 30, 40, 50, so the six items have ranks 3, 1, 5, 3, 4, 2, and both 30s share rank 3. For each item in turn, dp[i] = w[i] + max(0, query(r − 1)), then update(r, dp[i]). With five ranks, t[4] covers ranks 1..4, t[2] covers 1..2, and t[1], t[3] and t[5] cover only themselves.',
-        'Items 1 to 3. Item 1 (rank 3): query(2) finds no earlier item, so dp[1] = 5 + 0 = 5, and update(3, 5) sets t[3] and t[4] to 5. Item 2 (rank 1): dp[2] = 3, and update(1, 3) sets t[1] and t[2] to 3 while t[4] keeps 5. Item 3 (rank 5): query(4) reads only t[4] = 5, so dp[3] = 2 + 5 = 7.',
-        'Item 4 has key 30 again, rank 3: query(2) reads t[2] = 3, so dp[4] = 4 + 3 = 7, extending item 2. Querying rank 3 instead would reach item 1\'s 5 and give 9, from the chain 30, 30, which does not rise. Then update(3, 7) raises t[3] and t[4] to 7.',
-        'Items 5 and 6. Item 5 (rank 4): query(3) reads t[3] = 7 and t[2] = 3, so dp[5] = 1 + 7 = 8, the chain 10, 30, 40. Item 6 (rank 2): query(1) reads t[1] = 3, so dp[6] = 9 + 3 = 12.',
-        'Answer: 12, from items 2 and 6 (keys 10 and 20), although the longest chain, 10, 30, 40, has three items and weighs only 8. Sorting plus one query and one update per item is O(n log n), and totals reach 2·10^14, so use long long.',
+      problem: { source: 'kattis', id: 'greedyincreasingsubsequences', name: 'Greedy Increasing Subsequences', difficulty: '5.3' },
+      slides: [
+        {
+          title: 'Repeat a greedy pass until nothing is left',
+          points: [
+            'A pass takes the first number, then each next number bigger than the last one it took, and removes what it took.',
+            'Passes repeat until the sequence of up to 2·10^5 numbers is empty. Print the numbers of each pass.',
+          ],
+          show: [0, 0],
+          note: 'Sample 1, 2 2 1 5 3 4 6: each row is what is left before a pass, and the numbers that pass takes are green.',
+          say: 'The input is a sequence of up to 2·10^5 numbers, each at most 10^9. A greedy pass takes the first number, then keeps taking the next number that is bigger than the last one it took, and everything it took is removed. Passes repeat until nothing is left, and the output lists the numbers of each pass in order. In the sample, 2 2 1 5 3 4 6, the first pass takes 2, 5 and 6, the second takes 2, 3 and 4 from what is left, and the third takes the 1.',
+        },
+        {
+          title: 'Running the passes is quadratic',
+          points: [
+            'Each pass scans everything that is left, and on a falling sequence every pass takes a single number.',
+            'At n = 2·10^5 that is n passes and about n²/2 = 2·10^10 steps.',
+          ],
+          say: 'Running the passes as described scans everything that is left, once per pass. On a falling sequence such as 5 4 3 2 1, every pass takes a single number, so there are n passes and about n²/2 steps: 2·10^10 at n = 2·10^5, far too slow.',
+        },
+        {
+          title: 'Each pass number depends on earlier keys',
+          points: [
+            'Pass 1 takes the items bigger than every earlier key, and each later pass does the same on what is left.',
+            'So dp[i], the pass of item i, is 1 + the largest dp[j] over j < i with key[j] ≥ key[i], or 1 if there is none.',
+            'That is the chain DP of this stage with ≥ in place of <, and checking every earlier j is still O(n²).',
+          ],
+          show: [0, 1],
+          note: 'The O(n²) view of item 4, key 3: of the earlier items only key 5 is ≥ 3, and it is in pass 1.',
+          say: 'Call the numbers key[i], for items i counted from 0. Pass 1 takes exactly the items that are bigger than every earlier key. Pass 2 does the same on what is left, and so on, so an item lands in the pass after the last pass that holds an earlier key greater than or equal to its own. So dp[i], the pass of item i, is 1 + the largest dp[j] over earlier items j with key[j] ≥ key[i], or 1 if there is none. That is the chain DP of this stage with greater-or-equal in place of smaller, and checking every earlier j is still O(n²). For item 4, key 3, only item 3, key 5, qualifies, so dp[4] = 1 + 1 = 2.',
+        },
+        {
+          title: 'Rank keys largest first: ≥ becomes a prefix',
+          points: [
+            's holds the distinct keys largest first, and r is the position of key[i] in s, from 1, so the keys ≥ key[i] are ranks 1..r.',
+            'For each item in order: dp[i] = 1 + query(r), then update(r, dp[i]) in a MaxBIT, so the tree holds only earlier items.',
+            'query(r), not query(r − 1): an earlier equal key also blocks item i, as the second 2 in the sample shows.',
+          ],
+          show: [0, 2],
+          note: 'A moment in the middle, at item 1, before its update: query(5) reads t[5] and t[4] (blue), which cover ranks 1 to 5.',
+          say: 'To turn the condition into a prefix, sort the distinct keys largest first into s, and let r be the position of key[i] in s, counted from 1. The keys greater than or equal to key[i] are then exactly the ranks 1 to r. Going through the items in order, dp[i] = 1 + query(r) in a Fenwick tree of maxima, the template\'s MaxBIT, followed by update(r, dp[i]), so the tree only ever holds earlier items. The query includes rank r itself, because an equal earlier key also blocks item i. In the sample, item 1 has key 2 like item 0, so query(5) finds item 0 in pass 1, and item 1 goes into pass 2.',
+        },
+        {
+          title: 'One bar answers ranks 1 to 4',
+          points: [
+            'Item 4 has key 3, rank 4, and query(4) reads only t[4] = 1, which covers the keys 6, 5, 4 and 3.',
+            'So dp[4] = 2, the same as scanning every earlier item, from one O(log n) walk.',
+          ],
+          show: [0, 3],
+          note: 'Later, at item 4, before its update: one bar, t[4], holds the latest pass among keys 3 to 6 so far.',
+          say: 'Item 4 has key 3, which is rank 4. query(4) reads a single entry, t[4] = 1, because t[4] covers ranks 1 to 4, the keys 6, 5, 4 and 3, and so far only item 3, key 5, is among them. So dp[4] = 2, the same answer as scanning every earlier item, from one O(log n) walk.',
+        },
+        {
+          title: 'Three passes, in O(n log n)',
+          points: [
+            'Listing the items of each dp value in input order gives the passes: 2 5 6, then 2 3 4, then 1.',
+            'Sorting, then one query and one update per item, is O(n log n) for n = 2·10^5.',
+          ],
+          show: [0, 4],
+          note: 'The end: every item coloured by its pass, and the tree after the last update.',
+          say: 'After the last item, each dp[i] is the pass of item i. The number of passes is the largest dp, and listing the items of each pass in input order gives the output: 2 5 6, then 2 3 4, then 1. Sorting the keys, then one query and one update per item, makes it O(n log n) for n = 2·10^5. With that many numbers to read and print, turn off the synchronisation of cin and cout with C input and output.',
+        },
       ],
+      code: `#include <bits/stdc++.h>
+using namespace std;
+
+struct MaxBIT {
+    int n; vector<int> t;
+    MaxBIT(int n) : n(n), t(n + 1, 0) {}
+    void update(int i, int v) { for (; i <= n; i += i & -i) t[i] = max(t[i], v); }
+    int query(int i) { int r = 0; for (; i > 0; i -= i & -i) r = max(r, t[i]); return r; }
+};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin >> n;
+    vector<int> key(n);
+    for (int &k : key) cin >> k;
+    vector<int> s = key;                              // distinct keys, largest first
+    sort(s.rbegin(), s.rend());
+    s.erase(unique(s.begin(), s.end()), s.end());
+    MaxBIT bit(s.size());
+    vector<vector<int>> seq;
+    for (int i = 0; i < n; i++) {
+        int r = lower_bound(s.begin(), s.end(), key[i], greater<int>()) - s.begin() + 1;
+        int dp = 1 + bit.query(r);                    // ranks 1..r hold the keys >= key[i]
+        bit.update(r, dp);
+        if (dp > (int)seq.size()) seq.push_back({});
+        seq[dp - 1].push_back(key[i]);
+    }
+    cout << seq.size() << '\\n';
+    for (auto &q : seq)
+        for (size_t j = 0; j < q.size(); j++) cout << q[j] << (j + 1 < q.size() ? ' ' : '\\n');
+}`,
     },
     spot: [
       'An O(n²) DP whose transition takes the max or sum of dp[j] over earlier j with a smaller (or larger) value, and n is 10^5 to 10^6.',

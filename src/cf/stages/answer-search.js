@@ -81,16 +81,107 @@ export default {
       '`argminInt`: the integer version, the first x with f(x) ≤ f(x + 1) (the TRD version\'s `peak` uses KACTL\'s `ternSearch` instead, written for a maximum).',
     ],
     worked: {
-      title: 'spacing out speakers',
-      question: 'A street has n = 6 lamp posts at positions 1, 5, 8, 14, 15 and 21. Hang c = 3 speakers on different posts so that the smallest distance between two speakers is as large as possible, and print that distance. The real version has n up to 2·10^5 and positions up to 10^9, not necessarily sorted.',
-      steps: [
-        'Recognise it: "make the smallest gap as large as possible" is a maximise-the-minimum question. Trying every set of c posts is hopeless, and trying every gap D from 1 to 10^9 with an O(n) check is 2·10^14 steps. But testing one D is easy, and speakers placed with every gap at least D also have every gap at least D − 1, so the check is monotone: binary search on D.',
-        'Model it: ok(D) asks whether c speakers fit with every gap at least D. Place them greedily: the first on the leftmost post, each next one on the first post at least D past the previous speaker. Moving any speaker left to the greedy spot never leaves less room for the rest, so the greedy fits as many speakers as any placement can.',
-        'Set the range: ok(1) is true because the posts are distinct and c ≤ n, and no gap can exceed 21 − 1 = 20, so run `lastTrue` with lo = 1 and hi = 20.',
-        'mid = 1 + (19 + 1) / 2 = 11: speakers at 1 and 14, and the next would need a post at 25 or beyond, so ok(11) is false and hi = 10. mid = 1 + (9 + 1) / 2 = 6: speakers at 1, 8 and 14, so ok(6) is true and lo = 6.',
-        'mid = 6 + (4 + 1) / 2 = 8: speakers at 1 and 14, and the next would need 22 or beyond, so ok(8) is false and hi = 7. mid = 6 + (1 + 1) / 2 = 7: speakers at 1, 8 and 15, so ok(7) is true, lo = 7 = hi, and the loop stops after 4 checks.',
-        'Answer: 7, for example with speakers at 1, 8 and 15. Sorting is O(n log n), then about 30 checks of O(n) each cover every gap up to 10^9 (log₂ 10^9 is about 30), so O(n log n + n log(range)) in all. Because the true branch sets lo = mid, mid must round up: rounded down, any state with hi = lo + 1 and ok(lo) true would repeat forever.',
+      problem: { source: 'kattis', id: 'freighttrain', name: 'Freight Train', difficulty: '4.5' },
+      slides: [
+        {
+          title: 'Cut the train; keep Luxembourg trains short',
+          points: [
+            'A train of N ≤ 10^9 wagons stands in a row, and W ≤ 10^4 of them, given in order, hold freight for Luxembourg.',
+            'Cut it into at most L ≤ 10^4 runs of consecutive wagons. A run with freight goes to Luxembourg; a run of empty wagons can go back.',
+            'Print the smallest possible length of the longest train to Luxembourg.',
+          ],
+          show: [0, 0],
+          note: 'Sample case 1: freight in wagons 1 and 2, L = 2. Wagons 1–2 go to Luxembourg and 3–6 go back, so the answer is 2.',
+          say: 'A freight train of N wagons, up to 10^9, stands in Belgium. W of the wagons, at most 10^4 and given in increasing order, hold freight that must go to Luxembourg, and the rest are empty. Each of the L locomotives, at most 10^4, takes a run of consecutive wagons, so the train is cut into at most L trains. A train with any freight in it goes to Luxembourg, where shorter is faster, and a train of only empty wagons can go back to the Netherlands at any length. Print the smallest possible length of the longest train to Luxembourg. In the first sample case there are 6 wagons, freight in wagons 1 and 2, and two locomotives: wagons 1 and 2 go to Luxembourg and wagons 3 to 6 go back, so the answer is 2.',
+        },
+        {
+          title: 'Too many wagons, too many lengths',
+          points: [
+            'N reaches 10^9, so the solution can\'t touch every wagon, let alone try every way to place the cuts.',
+            'Trying D = 1, 2, 3, … until some cut keeps every Luxembourg train within D wagons can take 10^9 checks, in each of up to 100 test cases.',
+          ],
+          say: 'N reaches 10^9, so a solution can\'t even look at every wagon, let alone try every way to place the cuts. Asking, for D = 1, 2, 3 and so on, whether some cut keeps every train to Luxembourg within D wagons, and stopping at the first D that works, can take 10^9 checks, and there are up to 100 test cases.',
+        },
+        {
+          title: 'Fix D and ask: does it fit?',
+          points: [
+            'ok(D): can at most L trains carry everything with every train to Luxembourg at most D wagons long?',
+            'A cut that works for D also works for D + 1, so ok reads false…false, true…true. The answer is the first true.',
+            'Keep ok(hi) true and everything below `lo` false: `hi = mid` on true, `lo = mid + 1` on false, so `mid` rounds down.',
+          ],
+          say: 'The statement asks for the smallest possible longest train, and a fixed limit is much easier to test. Let ok(D) say whether at most L trains can carry everything with every train to Luxembourg at most D wagons long. A cut that works for D also works for D + 1, so ok reads false…false, true…true, and the answer is the first true. That mirrors `lastTrue`: keep ok(hi) true and everything below lo false, starting from lo = 1 and hi = N, because one train of all N wagons always works. A true check moves hi down to mid and a false one moves lo up to mid + 1, so mid rounds down: rounded up, mid would equal hi once hi = lo + 1, and a true check would leave hi where it was.',
+        },
+        {
+          title: 'ok(D): end each train as late as possible',
+          points: [
+            'From the first wagon p not yet in a train, the next train takes D wagons, or every empty wagon before next, the next freight wagon.',
+            'Take whichever ends later: p = max(p + D, next). ok(D) is true if this needs at most L trains.',
+            'Ending a train later never hurts: any cut of the wagons after an earlier end, trimmed, also cuts the wagons after a later one.',
+          ],
+          show: [0, 1],
+          note: 'First check of the search: lo = 1, hi = 6, mid = 3. Trains 1–3 and 4–6 make 2 ≤ L, so ok(3) is true and hi = 3.',
+          say: 'ok(D) builds the trains from the front. Let p be the first wagon not yet in a train. The next train can take D wagons, which is always allowed, or every empty wagon before next, the next freight wagon, which is allowed at any length because it goes back. Take whichever reaches further: p becomes the larger of p + D and next. Ending a train later never hurts, because any cut of the wagons after an earlier end, with its first train trimmed, also cuts the wagons after a later end. Count the trains until p passes N; ok(D) is true if there are at most L. On the first sample case the search starts with lo = 1 and hi = 6 and checks mid = 3: one train takes wagons 1 to 3, the next takes 4 to 6, two trains in all, so ok(3) is true and hi = 3.',
+        },
+        {
+          title: 'ok(2): an empty train can be long',
+          points: [
+            'mid = 2: wagons 1–2 make one train, and 3–6 hold no freight, so one train takes all four back.',
+            'That is 2 trains, so ok(2) is true and hi = 2. Only trains to Luxembourg must be at most D long.',
+          ],
+          show: [0, 2],
+          note: 'Second check: ok(2) is true with 2 trains, so hi = 2. The train 3–6 is longer than D, which is fine because it goes back.',
+          say: 'Next, mid = 1 + (3 − 1) / 2 = 2. The first train takes wagons 1 and 2. From wagon 3 there is no freight left, so the next train takes all four remaining wagons back to the Netherlands. That is longer than D, which is fine, since only trains to Luxembourg are limited. Two trains, so ok(2) is true and hi = 2.',
+        },
+        {
+          title: 'ok(1) fails, so the answer is 2',
+          points: [
+            'mid = 1: wagons 1 and 2 need a train each and 3–6 make a third, more than L = 2. So ok(1) is false and lo = 2.',
+            'Now lo = hi = 2, the answer, after 3 checks. The other two sample cases give 3 and 2 the same way.',
+          ],
+          show: [0, 3],
+          note: 'Last check: the third train passes L = 2, so ok(1) is false, lo = 2 = hi, and the search stops.',
+          say: 'Then mid = 1 + (2 − 1) / 2 = 1. With trains of one wagon, wagons 1 and 2 need a train each, and wagons 3 to 6 make a third, one more than the two locomotives. So ok(1) is false and lo = 2. Now lo and hi are both 2, and the answer is 2 after three checks. The other two sample cases give 3 and 2 the same way.',
+        },
+        {
+          title: 'Cost and edge cases',
+          points: [
+            'About 30 checks cover 1 to 10^9. Each makes at most L + 1 trains and passes each freight wagon once: O((W + L) log N) per case.',
+            'After the last freight wagon, next = N + 1, so one train takes every remaining wagon back.',
+            'p + D reaches 2·10^9, just under the int limit of about 2.1·10^9, so the solution keeps positions in long long to be safe.',
+          ],
+          say: 'About 30 checks cover every D from 1 to 10^9. Each check stops after L + 1 trains and moves past each freight wagon once, so it costs O(W + L), and a test case costs O((W + L) log N): about 6·10^5 steps, and 6·10^7 for 100 cases. After the last freight wagon there is nothing left to carry, so next is N + 1 and one train takes all the remaining wagons back, as wagons 3 to 6 did in the sample. p + D can reach 2·10^9, just under the int limit of about 2.1·10^9, so the solution keeps positions in long long to be safe.',
+        },
       ],
+      code: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  ios::sync_with_stdio(false); cin.tie(nullptr);
+  int T; cin >> T;
+  while (T--) {
+    long long N; int W, L; cin >> N >> W >> L;
+    vector<long long> a(W);
+    for (auto& x : a) cin >> x;
+    // ok(D): at most L trains, and every train with freight at most D wagons long
+    auto ok = [&](long long D) {
+      long long p = 1;
+      int trains = 0, i = 0;
+      while (p <= N) {
+        while (i < W && a[i] < p) i++;
+        long long next = i < W ? a[i] : N + 1;
+        p = max(p + D, next);
+        if (++trains > L) return false;
+      }
+      return true;
+    };
+    long long lo = 1, hi = N;  // ok(hi) is true; everything below lo is false
+    while (lo < hi) {
+      long long mid = lo + (hi - lo) / 2;
+      if (ok(mid)) hi = mid; else lo = mid + 1;
+    }
+    cout << lo << '\\n';
+  }
+}`,
     },
     spot: [
       'The statement asks for the largest or smallest value of something (cookies, time, radius, median) and a fixed candidate is easy to test, often greedily',

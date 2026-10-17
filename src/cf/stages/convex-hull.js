@@ -84,16 +84,108 @@ export default {
       'S_i: the prefix sum a_1 + … + a_i, with S_0 = 0.',
     ],
     worked: {
-      title: 'stepping stones',
-      question: 'Stones 1 to 5 lie at positions x = 0, 2, 3, 6 and 8. You start on stone 1 and must reach stone 5, always jumping forward, and a jump from stone j to stone i costs (x_i − x_j)² + K, with K = 17. Find the smallest total cost. The real version has n up to 2·10^5 stones at strictly increasing positions up to 10^6, and K up to 10^12.',
-      steps: [
-        'Recognise it: dp[i], the cheapest way to reach stone i, is the minimum over j < i of dp[j] + (x_i − x_j)² + K, and trying every j is about n²/2 = 2·10^10 transitions at full size. Expanding the square gives dp[i] = x_i² + K + min over j of (−2·x_j·x_i + dp[j] + x_j²), and the only part that mixes i and j is a product of something about j with x_i: the convex hull trick.',
-        'Model it: stone j becomes the line with slope m = −2·x_j and intercept c = dp[j] + x_j², and dp[i] = x_i² + K + (the lowest line at x = x_i). Positions increase, so slopes are added in decreasing order and queries come in increasing order, exactly what `MonoCHT` needs. dp[1] = 0, so line 1 is (m, c) = (0, 0).',
-        'Stones 2 and 3: at x = 2 only line 1 is there, value 0, so dp[2] = 4 + 17 + 0 = 21 and line 2 is (−4, 25). At x = 3 line 1 gives 0 and line 2 gives −12 + 25 = 13, so line 1 stays in front, dp[3] = 9 + 17 + 0 = 26, and line 3 is (−6, 35).',
-        'Adding line 3 makes line 2 useless: lines 1 and 3 meet at x = 35/6 ≈ 5.8, where both are 0 and line 2 is 25 − 4·35/6 ≈ 1.7, so line 2 is never strictly lowest and add(−6, 35) pops it. The template\'s useless(l1, l2, l3), with l1, l2, l3 lines 1, 2 and 3, agrees: (35 − 0)·(0 − (−4)) = 140 ≤ (25 − 0)·(0 − (−6)) = 150. In the story, no later stone is ever reached more cheaply from stone 2 than from stone 1 or 3.',
-        'Stone 4, x = 6: line 3 gives −36 + 35 = −1 ≤ 0, line 1\'s value, so query(6) pops line 1 for good and dp[4] = 36 + 17 − 1 = 52; line 4 is (−12, 88). Stone 5, x = 8: line 3 gives −48 + 35 = −13 and line 4 gives −96 + 88 = −8, so line 3 stays in front and dp[5] = 64 + 17 − 13 = 68.',
-        'Answer: 68, by jumping 1 → 3 → 5 at cost (3² + 17) + (5² + 17) = 26 + 42. Each line is added once and popped at most once, so the DP is O(n). dp[i] stays at most 2·10^12 (one jump straight to stone n costs at most 10^12 + 10^12), but the `useless` test multiplies an intercept difference up to 3·10^12 by a slope difference up to 2·10^6, about 6·10^18 and close to the long long limit, so keep the template\'s __int128.',
+      problem: { source: 'kattis', id: 'coveredwalkway', name: 'Covered Walkway', difficulty: '3.5' },
+      slides: [
+        {
+          title: 'Cover sorted points with roofs',
+          points: [
+            'Up to 10^6 points on a walkway, given in increasing order at positions from 1 to 10^9, must each lie under a roof.',
+            'A roof from a to b costs c + (b − a)², with a fixed c ≤ 10^9; a = b is allowed. Find the cheapest total.',
+            'Long roofs pay the square of their length, and many short roofs pay c many times.',
+          ],
+          show: [0, 0],
+          note: 'The sample, c = 5000: one roof over all 10 points costs 1041324, and a roof for each point costs 50000.',
+          say: 'Up to 10^6 points along a walkway, given in increasing order at positions up to 10^9, must all be covered. A roof from position a to position b costs c + (b − a)², where c is a fixed charge of up to 10^9, and a roof over a single point costs c. Find the cheapest set of roofs. A long roof pays the square of its length, and many short roofs pay c each time. In the sample, with c = 5000, one roof over everything costs 1041324, and a separate roof for each of the 10 points costs 50000.',
+        },
+        {
+          title: 'The state: where the last roof starts',
+          points: [
+            'Each roof covers a run of consecutive points, and overlapping roofs never help.',
+            'dp[i], the cheapest cover of the first i points, is the minimum over j ≤ i of dp[j − 1] + c + (x_i − x_j)², with dp[0] = 0.',
+            'Trying every j is about n²/2 = 5·10^11 steps for n = 10^6.',
+          ],
+          show: [0, 1],
+          note: 'dp[5], a moment in the middle of the DP: its best last roof covers points 4 and 5, so dp[5] = dp[3] + 5000 + 34² = 13092.',
+          say: 'A roof only needs to start and end at points, and two roofs never need to overlap, so each roof covers a run of consecutive points. Let dp[i] be the cheapest cover of the first i points, with dp[0] = 0. If the last roof runs from point j to point i, the rest is the cheapest cover of the first j − 1 points, so dp[i] is the minimum over j ≤ i of dp[j − 1] + c + (x_i − x_j)². For dp[5] in the sample the best last roof covers points 4 and 5: dp[3] = 6936, plus 5000, plus 34², gives 13092. Trying every j for every i is about n²/2 steps, 5·10^11 for 10^6 points.',
+        },
+        {
+          title: 'Each start j becomes a line',
+          points: [
+            '(x_i − x_j)² = x_i² − 2·x_j·x_i + x_j², and only −2·x_j·x_i involves both i and j.',
+            'So dp[i] = x_i² + c + the lowest value at x_i of the lines with slope −2·x_j and intercept dp[j − 1] + x_j².',
+            'Positions increase, so slopes arrive in decreasing order and queries in increasing order, as `MonoCHT` needs.',
+          ],
+          show: [0, 2],
+          note: 'i = 2, in the middle of the DP: line 1 is lower at x = 23, giving −45, so dp[2] = 23² + 5000 − 45 = 5484.',
+          say: 'Expand the square: (x_i − x_j)² = x_i² − 2·x_j·x_i + x_j². The terms x_i² and c do not depend on j, and the only term that mixes i and j is −2·x_j·x_i. So each j is a line with slope −2·x_j and intercept dp[j − 1] + x_j², and dp[i] is x_i² + c plus the lowest of those lines at x_i. The positions increase, so the slopes arrive in decreasing order and the query points in increasing order, which is what `MonoCHT` from the template needs. At i = 2 the lines are those of points 1 and 2. At x = 23 line 1 is lower, at −45, so dp[2] = 23² + 5000 − 45 = 5484.',
+        },
+        {
+          title: 'For each point, add a line, then query',
+          points: [
+            'For i = 1 to n: add(−2·x_i, dp[i − 1] + x_i²), the roof starting at point i, then dp[i] = x_i² + c + query(x_i).',
+            'Adding first allows a roof over point i alone. add pops lines from the back of `L` that can never be lowest again.',
+            'At i = 3, lines 1 and 3 cross at x ≈ 85.3, where line 2 is far above both, so line 2 is popped.',
+          ],
+          show: [0, 3],
+          note: 'i = 3, in the middle of the DP: line 2 (dashed) is above line 1 or line 3 everywhere, so add(−90, 7509) pops it.',
+          say: 'For each i from 1 to n, first add the line of the roof that starts at point i, with add(−2·x_i, dp[i − 1] + x_i²), then set dp[i] = x_i² + c + query(x_i). Adding first lets a roof cover point i alone. add pops lines from the back of the deque `L` while useless says they can never again be strictly lowest. At i = 3 the new line has slope −90 and intercept 7509. It meets line 1 at x ≈ 85.3, where line 2 is about 1604, far above both, and on either side line 1 or line 3 is lower still. So line 2 is popped: for every later point, a roof starting at point 1 or 3 is at least as cheap as one starting at point 2. query(45) still finds line 1 lowest, at −89, so dp[3] = 6936.',
+        },
+        {
+          title: 'query(101) drops two lines from the front',
+          points: [
+            'At i = 5, `L` holds lines 1, 3, 4 and 5. At x = 101 they give −201, −1581, −2109 and −845.',
+            'query pops lines 1 and 3: line 4 is lower at 101 and, being steeper, stays lower for every later query.',
+            'Line 4 is in front, so the last roof starts at point 4: dp[5] = 101² + 5000 − 2109 = 13092.',
+          ],
+          show: [0, 4],
+          note: 'i = 5, in the middle of the DP: lines 1 and 3 (dashed) are popped from the front, and line 4 is lowest at x = 101.',
+          say: 'At i = 5 the deque holds lines 1, 3 and 4 and the new line 5. At x = 101 they give −201, −1581, −2109 and −845. query compares the first two lines and pops the front one while the second is at least as low: line 3 beats line 1, then line 4 beats line 3, and line 5 does not beat line 4. Each popped line has a gentler slope than the line that beat it, so it stays higher for every larger x, and the queries only move right. Line 4 is now in front, so the last roof starts at point 4, and dp[5] = 101² + 5000 − 2109 = 13092, the split shown earlier.',
+        },
+        {
+          title: 'Answer 30726, in O(n) with __int128',
+          points: [
+            'The sample ends at dp[10] = 30726: roofs over points 1–4, 5–6, 7, 8 and 9–10.',
+            'Each line enters `L` once and leaves at most once, so the DP is O(n): a few million deque operations for 10^6 points.',
+            'x_i² reaches 10^18, inside long long, but useless multiplies an intercept gap (up to 10^18) by a slope gap (up to 2·10^9): use __int128.',
+          ],
+          show: [0, 5],
+          note: 'The answer: following each dp[i] back to the start of its last roof gives five roofs, 9356 + 5529 + 5000 + 5000 + 5841 = 30726.',
+          say: 'The run ends with dp[10] = 30726. Following each dp[i] back to the point where its last roof starts gives five roofs: points 1 to 4, 5 and 6, 7 alone, 8 alone, and 9 and 10, costing 9356, 5529, 5000, 5000 and 5841. Each line is added once and popped at most once, so the DP is O(n). x_i² reaches 10^18, still inside long long, and the statement promises that the answer fits. The useless test multiplies an intercept difference of up to about 10^18 by a slope difference of up to 2·10^9, so it needs __int128, as in the template. Two points at the same position give two lines with the same slope, and the template\'s tests still give the right answer.',
+        },
       ],
+      code: `#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+
+// Lower envelope of lines y = m*x + c: slopes decreasing, queries non-decreasing.
+struct MonoCHT {
+  deque<pair<ll, ll>> L;
+  static bool useless(pair<ll, ll> l1, pair<ll, ll> l2, pair<ll, ll> l3) {
+    return (__int128)(l3.second - l1.second) * (l1.first - l2.first) <= (__int128)(l2.second - l1.second) * (l1.first - l3.first);
+  }
+  void add(ll m, ll c) {
+    while (L.size() >= 2 && useless(L[L.size() - 2], L.back(), {m, c})) L.pop_back();
+    L.push_back({m, c});
+  }
+  ll query(ll x) {
+    while (L.size() >= 2 && L[1].first * x + L[1].second <= L[0].first * x + L[0].second) L.pop_front();
+    return L[0].first * x + L[0].second;
+  }
+};
+
+int main() {
+  int n;
+  ll c;
+  scanf("%d %lld", &n, &c);
+  vector<ll> x(n + 1), dp(n + 1, 0);
+  MonoCHT cht;
+  for (int i = 1; i <= n; i++) {
+    scanf("%lld", &x[i]);
+    cht.add(-2 * x[i], dp[i - 1] + x[i] * x[i]);  // a roof whose first point is point i
+    dp[i] = x[i] * x[i] + c + cht.query(x[i]);
+  }
+  printf("%lld\\n", dp[n]);
+}`,
     },
     spot: [
       'Questions about the outermost points of a set: the length of a fence around everything, which points can be extreme, whether one shape fits inside another',

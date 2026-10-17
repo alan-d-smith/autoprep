@@ -70,7 +70,7 @@ export default {
     terms: [
       'adj[v]: the edges out of v, as pairs (u, w): an edge from v to u with weight w (the TRD version stores the same pairs but names the popped vertex u and its neighbour v: adj[u] holds {v, w}, and it sets par[v] = u).',
       '`src`: the start vertex (`s` in the TRD version).',
-      'dist[v]: the best distance from `src` to v found so far, final once v is settled, and INF if v is unreachable (LLONG_MAX in the TRD version). In the worked question, dist[v][0] and dist[v][1] are the best distances to the states "at v, coupon unused" and "at v, coupon used".',
+      'dist[v]: the best distance from `src` to v found so far, final once v is settled, and INF if v is unreachable (LLONG_MAX in the TRD version). In the worked problem, dist[v][f] is the cheapest way to reach city v with f units of fuel.',
       '`pq`: a min-heap of pairs (d, v), each saying v can be reached at cost d; a popped pair whose d differs from dist[v] is stale and skipped.',
       'par[u]: the vertex before u on a shortest path from `src`; the edges from par[u] to u form the shortest-path tree (in the TRD version, `path(t)` follows them back).',
       '`INF`: the stand-in for "unreachable", LLONG_MAX / 4, so that adding to it cannot overflow (`inf`, which is 2^62, in KACTL\'s FloydWarshall.h).',
@@ -81,15 +81,123 @@ export default {
       'd2[v]: the distance to v from the second person\'s start, from a second run.',
     ],
     worked: {
-      title: 'one flight at half price',
-      question: 'There are n = 5 cities and m = 5 one-way flights: from 1 to 2 costing 4, from 2 to 3 costing 4, from 3 to 5 costing 4, from 1 to 4 costing 14 and from 4 to 5 costing 2. You hold one coupon that halves the price of a single flight (every price is even). Find the cheapest way from city 1 to city n. The real version has n up to 10^5, m up to 2·10^5 and prices up to 10^9, and city n is always reachable.',
-      steps: [
-        'Recognise it: the cheapest route with non-negative prices is Dijkstra, but what a flight costs depends on whether the coupon is still unused, so that belongs in the vertex. Shortcuts fail: the cheapest route without the coupon is 1 → 2 → 3 → 5 at 12, and halving one of its flights gives 10, which is not the best; rerunning Dijkstra once per flight with that flight halved is m runs, about 10^12 steps at full size.',
-        'Model it: state (v, c) means "at city v, with c coupons used", so (v, 0) and (v, 1), 2n states in all. Number (v, c) as 2v + c (K = 2) and the template\'s dijkstra runs on them unchanged, with dist[v][c] at index 2v + c. A flight u → v of price p gives three edges: (u, 0) to (v, 0) costing p, (u, 0) to (v, 1) costing p / 2, and (u, 1) to (v, 1) costing p. Run Dijkstra from (1, 0) with dist[1][0] = 0, and stop at the first state of city n that comes out of `pq`.',
-        'Pop dist[1][0] = 0: the flight to 2 sets dist[2][0] = 4 and dist[2][1] = 2, and the flight to 4 sets dist[4][0] = 14 and dist[4][1] = 7. Pop dist[2][1] = 2: dist[3][1] = 2 + 4 = 6. Pop dist[2][0] = 4: dist[3][0] = 4 + 4 = 8, while the coupon option, 4 + 2 = 6, does not beat the 6 already in dist[3][1].',
-        'Pop dist[3][1] = 6: dist[5][1] = 6 + 4 = 10. Pop dist[4][1] = 7: the flight to 5 gives 7 + 2 = 9, better than 10, so dist[5][1] = 9, and the pair (10, (5, 1)) still in `pq` is now stale. Pop dist[3][0] = 8: dist[5][0] = 8 + 4 = 12, and the coupon option, 8 + 2 = 10, does not beat 9. The next pop is (9, (5, 1)), the first state of city 5, so stop.',
-        'Answer: 9, by flying from 1 to 4 with the coupon for 7, then from 4 to 5 for 2. Dijkstra on 2n states and 3m edges is O((n + m) log m). Costs reach about 10^5 · 10^9 = 10^14, so dist must be long long, with an INF that leaves room for adding a price.',
+      problem: { source: 'kattis', id: 'fulltank', name: 'Full Tank?', difficulty: '4.0' },
+      slides: [
+        {
+          title: 'The cheapest fuel for a road trip',
+          points: [
+            'n ≤ 1000 cities and m ≤ 10^4 roads of length at most 100. Fuel costs p_v ≤ 100 a unit in city v, and one unit covers one unit of distance.',
+            'Each query gives a tank capacity c ≤ 100, a start city src and a goal city t. The tank starts empty.',
+            'For each of up to 100 queries, print the cheapest cost of reaching t, or "impossible".',
+          ],
+          say: 'There are n cities, up to 1000, joined by m two-way roads, up to 10^4, each at most 100 long. Fuel costs p_v a unit in city v, at most 100, and the car burns one unit per unit of distance. Each of up to 100 queries gives a tank capacity c, at most 100, a start city src and a goal city t. The car starts with an empty tank and may buy fuel in any city it is in, as long as the tank never holds more than c. For each query, print the cheapest cost of reaching t, or "impossible".',
+        },
+        {
+          title: 'The shortest route is not the cheapest',
+          points: [
+            'Sample, c = 10, city 0 to 3: the shortest route 0 → 2 → 3 needs 15 units, so at least 5 are bought in city 2 at 20: 200 in all.',
+            'The longer route 0 → 1 → 2 → 3 needs 17 units, but buys them all at 10: 170.',
+            'Dijkstra over cities cannot see this: what a road costs depends on where its fuel was bought.',
+          ],
+          say: 'In the sample, with c = 10, the trip from city 0 to city 3 shows the difficulty. The shortest route, 0 → 2 → 3, needs 15 units of fuel. The tank holds 10, so at least 5 units must be bought in city 2, where fuel costs 20, and the trip costs at least 10·10 + 5·20 = 200. The longer route 0 → 1 → 2 → 3 needs 17 units, but buys 9 in city 0 and 8 in city 1, all at 10, for 170. Dijkstra over cities alone cannot see this: what a road costs depends on where its fuel was bought, and on how much is still in the tank.',
+        },
+        {
+          title: 'Put the fuel in the vertex',
+          points: [
+            'The cost of the next move depends on the city and the fuel in the tank, so the state is (v, f): in city v with f units, 0 ≤ f ≤ c.',
+            'With K = c + 1 fuel levels, number (v, f) as v·K + f: at most 1000 · 101 ≈ 10^5 states, with dist[v][f] at that index.',
+            'Every move costs a price or nothing, never a negative amount, so Dijkstra runs on the states unchanged.',
+          ],
+          say: 'What decides the cost of the next move is the city you are in and the fuel in the tank, so make that pair the vertex: state (v, f) means being in city v with f units of fuel, where f runs from 0 to c. With K = c + 1 fuel levels, number state (v, f) as v·K + f, as in the template, and keep dist[v][f] at that index; that is at most 1000 times 101, about 10^5 states. Every move costs a price or nothing, never a negative amount, so Dijkstra runs on these states unchanged.',
+        },
+        {
+          title: 'Buy one unit at a time',
+          points: [
+            'Buying: (v, f) → (v, f + 1) costs p_v, if f < c. Driving a road of length d to u: (v, f) → (u, f − d) costs 0, if f ≥ d.',
+            'An edge for every amount bought would give c edges per state, about 10^7 per query; single units keep 1 + deg(v).',
+            'Start at (src, 0) with cost 0. The first state of city t popped from pq is the answer; if pq empties first, print impossible.',
+          ],
+          show: [0, 0],
+          note: 'Query 1 of the sample at the start: rows are cities, columns are fuel levels, and only dist[0][0] = 0 is set.',
+          say: 'Two kinds of move leave state (v, f). Buying one unit goes to (v, f + 1) and costs p_v, if f < c. Driving a road of length d to city u goes to (u, f − d) and costs nothing, if f ≥ d. Buying several units is the same as buying them one at a time, so single units are enough, and they keep the graph small: an edge for every amount would give up to c edges per state, about 10^7 per query, while single units leave 1 + deg(v), where deg(v) counts the roads at v. Start at (src, 0) with cost 0. The first state of city t to leave pq has the lowest cost of any state in city t, so it is the answer; if pq empties first, print impossible.',
+        },
+        {
+          title: 'Fuel from city 0 beats city 2\'s',
+          points: [
+            'The states of city 0 come out of pq in order, each buying a unit at 10. From (0, 8) at 80, the road of length 8 reaches (2, 0) at 80.',
+            'Buying a unit in city 2 then costs 20, so dist[2][1] is 100 at first.',
+            'Popping (0, 9) at 90 drives to (1, 0) at 90, and to (2, 1) at 90, lowering dist[2][1] from 100.',
+          ],
+          show: [0, 11],
+          note: 'Mid-run, popping (0, 9) at 90: the arrows are its two drives, and the green cells are the states it improved.',
+          say: 'Dijkstra first pops the states of city 0 in order of cost, each buying a unit at 10, so row 0 fills with 0, 10, 20 and so on. From (0, 8), at 80, the road of length 8 reaches (2, 0) at 80, and from there a unit bought in city 2 costs 20, so dist[2][1] becomes 100. Popping (0, 9) at 90 drives the road of length 9 to (1, 0) at 90, and the road of length 8 to (2, 1), also at 90, which lowers dist[2][1] from 100: fuel carried from city 0 beats fuel bought in city 2.',
+        },
+        {
+          title: 'Filling up in city 1 instead',
+          points: [
+            'From (1, 0) at 90, row 1 fills at 10 a unit, while buying in city 2 costs 20 a unit.',
+            'Popping (1, 8) at 170 drives the road of length 1 to (2, 7), lowering dist[2][7] from 180 to 170.',
+            'Popping (2, 7) then drives the road of length 7 to (3, 0) at 170.',
+          ],
+          show: [0, 27],
+          note: 'Mid-run, popping (1, 8) at 170: reaching city 2 with 7 units costs 170, against 180 when they are bought in city 2.',
+          say: 'From (1, 0), at 90, row 1 fills at 10 a unit, while buying in city 2 costs 20 a unit. When (1, 8) is popped at 170, the road of length 1 reaches (2, 7) at 170, below the 180 it cost to buy those units in city 2. Then (2, 7) is popped, and the road of length 7 reaches (3, 0), also at 170.',
+        },
+        {
+          title: 'The cheapest trip costs 170',
+          points: [
+            'The first state of city 3 to leave pq is (3, 0) at 170: 9 units bought in city 0 and 8 in city 1, as in the sample.',
+            'The second query prints impossible: city 4 has no roads, so pq empties without reaching it.',
+            'Each query is O((n + m)·K log(n·K)). Costs stay below 10^7, so int is enough.',
+          ],
+          show: [0, 29],
+          note: 'The end of query 1: (3, 0) leaves pq at 170. In green, the route behind it: units bought in cities 0 and 1, and three drives.',
+          say: 'The first state of city 3 to leave pq is (3, 0) at 170, so the answer is 170: buy 9 units in city 0, drive to city 1, buy 8 more, and drive through city 2 to city 3. The second query, from city 1 to city 4, prints impossible: city 4 has no roads, so pq empties without reaching it. Each query handles at most n·K states, about 10^5, and about 2·10^6 edges, so it costs O((n + m)·K log(n·K)), and stopping at the first state of t often ends it sooner. A trip never needs to cost more than 100 · 100 · 999, below 10^7, so int is enough.',
+        },
       ],
+    code: `#include <bits/stdc++.h>
+using namespace std;
+const int INF = INT_MAX;
+
+int main() {
+    int n, m;
+    scanf("%d %d", &n, &m);
+    vector<int> price(n);
+    for (int& x : price) scanf("%d", &x);
+    vector<vector<pair<int, int>>> adj(n);
+    for (int i = 0; i < m; i++) {
+        int u, v, len;
+        scanf("%d %d %d", &u, &v, &len);
+        adj[u].push_back({v, len});
+        adj[v].push_back({u, len});
+    }
+    int queries;
+    scanf("%d", &queries);
+    while (queries--) {
+        int c, src, t;
+        scanf("%d %d %d", &c, &src, &t);
+        int K = c + 1;  // state (v, f): in city v with f units of fuel, numbered v*K + f
+        vector<int> dist(n * K, INF);
+        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<>> pq;
+        dist[src * K] = 0;
+        pq.push({0, src * K});
+        auto relax = [&](int s, int d) {
+            if (d < dist[s]) dist[s] = d, pq.push({d, s});
+        };
+        int ans = -1;
+        while (!pq.empty()) {
+            auto [d, s] = pq.top(); pq.pop();
+            if (d != dist[s]) continue;
+            int v = s / K, f = s % K;
+            if (v == t) { ans = d; break; }  // the first state of t to leave pq is the cheapest
+            if (f < c) relax(s + 1, d + price[v]);
+            for (auto [u, len] : adj[v])
+                if (f >= len) relax(u * K + f - len, d);
+        }
+        if (ans < 0) puts("impossible");
+        else printf("%d\\n", ans);
+    }
+}`,
     },
     spot: [
       'Weighted edges with non-negative weights, and the question asks for the least total time, cost or distance from a start.',

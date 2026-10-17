@@ -78,16 +78,112 @@ export default {
       'R[i]: the mirror image of L[i], the best answer for a part that starts at index i, filled right to left.',
     ],
     worked: {
-      title: 'blocks that sum to k',
-      question: 'An array a holds the n = 6 values 1, 2, −1, 3, −2, 3, and k = 3. Count the blocks of consecutive values whose sum is exactly k. The real version has n up to 2·10^5, values between −10^9 and 10^9, and |k| ≤ 2·10^14.',
-      steps: [
-        'Recognise it: a count of blocks with a condition on their sum. At full size there are about n²/2 ≈ 2·10^10 blocks, too many to try, and the negative values rule out a sliding window, because making a block longer can lower its sum. So rewrite the condition with prefix sums.',
-        'Model it: the block that starts at index i and ends just before index j sums to P[j] − P[i], so it sums to k exactly when P[i] = P[j] − k. For each j from 1 to n, count the earlier positions i < j with that prefix value; `seen` holds those counts.',
-        'The prefix sums P[0] to P[6] are 0, 1, 3, 2, 5, 3, 6. Start with `seen` holding the value 0 once, for P[0].',
-        'Walk j, looking up P[j] − 3 before recording P[j]. j = 1: P[1] = 1, look for −2: none. j = 2: P[2] = 3, look for 0: once, the block a[0..1]. j = 3: P[3] = 2, look for −1: none. j = 4: P[4] = 5, look for 2: once, a[3..3]. j = 5: P[5] = 3, look for 0: once, a[0..4].',
-        'j = 6: P[6] = 6, look for 3, which `seen` holds twice, from P[2] and P[5]. One lookup finds two blocks, a[2..5] and a[5..5], which is why `seen` counts occurrences rather than just marking values.',
-        'Answer: 1 + 1 + 1 + 2 = 5 blocks. The single pass with a map is O(n log n). Prefix sums reach 2·10^14 and the count reaches about 2·10^10 (all zeros with k = 0), so both need long long. Without the starting 0 for P[0] the walk finds only 3, missing a[0..1] and a[0..4].',
+      problem: { source: 'kattis', id: 'gamenight', name: 'Game Night', difficulty: '4.3' },
+      slides: [
+        {
+          title: 'Three teams around a round table',
+          points: [
+            'n people, up to 10^5, sit around a round table, and each is in team A, B or C.',
+            'Each team must end up in one unbroken arc of seats. Find the fewest people who have to change seats.',
+            'In sample 1 the seats hold A, B, A, B, C, and the answer is 2.',
+          ],
+          show: [0, 0],
+          note: 'Sample 1: seats 0 to 4 around the table; seat 4 is next to seat 0.',
+          say: 'n people, up to 10^5, sit around a round table, and each belongs to team A, B or C. Some of them change seats so that every team ends up in one unbroken arc of seats. Find the fewest people who have to move. In the first sample the five seats hold A, B, A, B, C, and the answer is 2.',
+        },
+        {
+          title: 'Checking every final seating is too slow',
+          points: [
+            'Fix the final seating: whoever already sits in a seat meant for their team stays, and the rest swap among the seats they free.',
+            'So a final seating costs the number of seats that hold the wrong team.',
+            'It is an order, A B C or A C B, and a start seat: 2n seatings, each checked in O(n), 2·10^10 steps.',
+          ],
+          show: [0, 1],
+          note: 'One final seating, A A B B C from seat 0: seats 1 and 2 (red) hold the wrong team, so 2 people move.',
+          say: 'Fix a final seating. Everyone who already sits in a seat meant for their own team can stay, and the others can swap among the seats they free, since those seats are meant for exactly their teams. So the cost of a final seating is the number of seats that hold the wrong team. Going round the table, the three blocks come in the order A, B, C or A, C, B; any other order is one of these started from another seat. With n start seats that makes 2n final seatings, and comparing each with the table seat by seat costs O(n): 2·10^10 steps when n is 10^5.',
+        },
+        {
+          title: 'Each block is a range of seats',
+          points: [
+            'Team c\'s block is a run of consecutive seats, and the members of c already in it stay.',
+            'So each final seating needs three counts of one team in a range of seats, which prefix sums answer.',
+            'A block can run past seat n − 1 to seat 0, so search t, the seating written twice.',
+          ],
+          show: [0, 2],
+          note: 'Order A, C, B from seat 2: B\'s block t[5..6] is seats 0 and 1, reached through the second copy.',
+          say: 'Team c\'s block is a run of consecutive seats, and the people who stay in it are the members of team c already sitting there. So each final seating needs three numbers, each the count of one team in a range of seats, and counting in a range is what prefix sums do in O(1). A block can run past seat n − 1 and carry on at seat 0. Writing the seating twice, t = s + s, makes every block an ordinary range of t: a B block on t[5..6] is seats 0 and 1.',
+        },
+        {
+          title: 'One row of prefix counts per team',
+          points: [
+            'P[c][i] is how many of the first i seats of t hold team c; one pass fills all three rows.',
+            'Team c\'s block has P[c][n] seats, and on t[l..r−1] it keeps P[c][r] − P[c][l] people.',
+            'A final seating keeps the sum of its three counts, and n minus that sum must move.',
+          ],
+          show: [0, 3],
+          note: 'All of P for sample 1; the column P[c][5] (green) holds the team sizes 2, 2 and 1.',
+          say: 'Let P[c][i] be how many of the first i seats of t hold team c. One left-to-right pass over the 2n seats fills all three rows. Team c\'s block is as long as the team, P[c][n] seats, and if it covers t[l..r−1], the members already there number P[c][r] − P[c][l]. The three counts add up to the people who stay, and the other n minus that many must move.',
+        },
+        {
+          title: 'Order A, B, C from seat 0',
+          points: [
+            'The blocks are t[0..1] for A, t[2..3] for B and t[4] for C.',
+            'They keep P[A][2] − P[A][0] = 1, P[B][4] − P[B][2] = 1 and P[C][5] − P[C][4] = 1.',
+            'So 3 people stay and 5 − 3 = 2 move, the count the table picture showed.',
+          ],
+          show: [0, 4],
+          note: 'One of the 10 final seatings, partway through the search: each block reads two cells (blue) of its own row.',
+          say: 'Take the order A, B, C with A\'s block starting at seat 0. A gets seats 0 and 1, B gets seats 2 and 3, and C gets seat 4. The counts are P[A][2] − P[A][0] = 1, P[B][4] − P[B][2] = 1 and P[C][5] − P[C][4] = 1. Three people stay, so two must move, the same count the picture of the table gave.',
+        },
+        {
+          title: 'A block that wraps past the end',
+          points: [
+            'Order A, C, B from seat 2 puts A on t[2..3], C on t[4] and B on t[5..6], which are seats 0 and 1.',
+            'P[A][4] − P[A][2] = 1, P[C][5] − P[C][4] = 1 and P[B][7] − P[B][5] = 1, so again 3 stay and 2 move.',
+          ],
+          show: [0, 5],
+          note: 'Another final seating, partway through the search: B\'s block reads P[B][5] and P[B][7], in the second copy.',
+          say: 'Now the order A, C, B starting at seat 2. A takes seats 2 and 3, C takes seat 4, and B takes t[5..6], which are seats 0 and 1 around the table. The same formula works with no special case: P[A][4] − P[A][2] = 1, P[C][5] − P[C][4] = 1 and P[B][7] − P[B][5] = 1. Again three stay and two move.',
+        },
+        {
+          title: 'Answer: 2, in O(n)',
+          points: [
+            'Of the 10 final seatings, the best moves 2 people, the sample\'s answer.',
+            'Each seating costs O(1) after the O(n) pass, so the search is O(n) instead of O(n²).',
+            'A missing team has P[c][n] = 0 and an empty block, so one or two teams need no special case.',
+          ],
+          show: [0, 6],
+          note: 'The finished search: people moved for each order and start seat; the two green seatings reach the minimum, 2.',
+          say: 'Of the 10 final seatings, the best moves 2 people, the sample\'s answer. Each seating costs three subtractions after one O(n) pass, so the whole search is O(n), against O(n²) for checking seat by seat. A team with no members has P[c][n] = 0 and an empty block, so a table with only one or two teams needs no special case, and the answer is 0 when the teams already sit together, as in sample 3, where the two A\'s sit in seats 3 and 0, which are neighbours.',
+        },
       ],
+      code: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    int n;
+    string s;
+    cin >> n >> s;
+    string t = s + s;
+    // P[c][i] = how many of the first i seats of t hold team c
+    vector<vector<int>> P(3, vector<int>(2 * n + 1, 0));
+    for (int i = 0; i < 2 * n; i++)
+        for (int c = 0; c < 3; c++) P[c][i + 1] = P[c][i] + (t[i] - 'A' == c);
+
+    int best = n;
+    for (vector<int> order : {vector<int>{0, 1, 2}, vector<int>{0, 2, 1}}) {
+        for (int start = 0; start < n; start++) {
+            int l = start, stay = 0;
+            for (int c : order) {
+                int r = l + P[c][n];  // team c's block is t[l..r-1]
+                stay += P[c][r] - P[c][l];
+                l = r;
+            }
+            best = min(best, n - stay);
+        }
+    }
+    cout << best << '\\n';
+}`,
     },
     spot: [
       'Many queries for the sum or count of something over a range [l, r], with no updates in between.',

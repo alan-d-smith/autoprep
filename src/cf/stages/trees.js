@@ -108,16 +108,127 @@ export default {
       },
     ],
     worked: {
-      title: 'sums of distances',
-      question: 'A tree has n = 6 vertices and the edges 1–2, 1–3, 2–4, 2–5 and 3–6. For every vertex v, find the sum of the distances from v to all the other vertices, where a distance counts edges. The real version has n up to 2·10^5.',
-      steps: [
-        'Recognise it: one answer per vertex, where each answer is "the same quantity with v as the root". A BFS from every vertex is O(n²), about 4·10^10 steps at full size, so this is rerooting.',
-        'Root the tree at 1 and fill depth[] and size[] with one DFS. Depths: vertex 1 is 0, vertices 2 and 3 are 1, vertices 4, 5 and 6 are 2. Sizes, children first: size[4] = size[5] = size[6] = 1, size[2] = 1 + 1 + 1 = 3, size[3] = 1 + 1 = 2, size[1] = 6.',
-        'The answer for the root is the sum of the depths: ans[1] = 0 + 1 + 1 + 2 + 2 + 2 = 8.',
-        'Move the root from p to a child v. The size[v] vertices in v\'s subtree each get one edge closer, and the other n − size[v] each get one edge farther, so ans[v] = ans[p] − size[v] + (n − size[v]) = ans[p] + n − 2·size[v].',
-        'Apply it parents first: ans[2] = 8 + 6 − 6 = 8, ans[3] = 8 + 6 − 4 = 10, ans[4] = ans[5] = 8 + 6 − 2 = 12, ans[6] = 10 + 6 − 2 = 14. Check one directly: from 6 the distances are 2, 3, 1, 4 and 4, which sum to 14.',
-        'Answer: 8, 8, 10, 12, 12, 14. One DFS plus one pass in preorder is O(n), and the sums reach about n²/2 ≈ 2·10^10, so store them as long long.',
+      problem: { source: 'kattis', id: 'companypicnic', name: 'Company Picnic', difficulty: '3.4' },
+      slides: [
+        {
+          title: 'Three-legged teams from the org chart',
+          points: [
+            'n ≤ 1000 employees, each with a running speed, form a tree: everyone but the top person reports to one supervisor.',
+            'A team is an employee and their direct supervisor, and runs at the slower of their two speeds.',
+            'Form as many teams as possible, nobody in two, and among those choices maximise the average team speed.',
+          ],
+          show: [0, 0],
+          note: 'The sample\'s chart, with Barbara at the top. The table lists everyone children first, the order in which the DP fills it.',
+          say: 'A company has n employees, at most 1000, each with a running speed. Everyone except the top person reports to one supervisor, so the chart is a tree. A team for the three-legged race is an employee and their direct supervisor, and it runs at the slower of their two speeds. Nobody may be in two teams. Print the largest number of teams, and the highest average team speed among the ways to form that many.',
+        },
+        {
+          title: 'Fastest pairs first can lose a team',
+          points: [
+            'Taking the fastest team first, Zack–Mildred at 4.2, leaves Ken and Tina without partners: only 3 teams.',
+            'The best answer has 4 teams. Trying every set of teams is hopeless: a chain of 1000 people allows about 7·10^208.',
+          ],
+          show: [0, 1],
+          note: 'Greedy on the sample: it keeps Zack–Mildred, Barbara–Rose and Wilbur–Virgil, and Seth, Tina and Ken are left alone.',
+          say: 'The first idea is greedy: take the fastest possible team, then the fastest among the rest, and so on. On the sample it takes Zack and Mildred at 4.2 first, and then neither Ken, whose only possible partner is Mildred, nor Tina, whose only possible partner is Zack, can be in a team. It ends with 3 teams, but 4 are possible. Trying every set of teams is no better: on a chain of 1000 employees there are about 7·10^208 ways to choose teams that do not overlap.',
+        },
+        {
+          title: 'A subtree meets the rest at its top',
+          points: [
+            'Teams inside v\'s subtree touch the rest of the chart only through v, who may team with v\'s supervisor.',
+            'So for each v keep two best answers for its subtree: v on no team, or v teamed with one of its children.',
+            'Compare answers as (teams, total speed): more teams first, then the higher total, which also gives the higher average.',
+          ],
+          say: 'Take one employee v and everyone below v, v\'s subtree. The only team that can join someone inside it to someone outside is v with v\'s supervisor. So the rest of the chart only cares whether v is still free, and for each v it is enough to keep two best answers for v\'s subtree: with v on no team, and with v teamed with one of v\'s children. An answer is a pair, the number of teams and their total speed, and pairs are compared by teams first and then by total. With the number of teams fixed, the highest total gives the highest average.',
+        },
+        {
+          title: 'Two values per employee, children first',
+          points: [
+            'down[v][0] adds max(down[c][0], down[c][1]) over v\'s children c: each child\'s subtree does its best alone.',
+            'down[v][1] picks one child c to team with: c\'s term becomes down[c][0] plus a team of speed min(speed[v], speed[c]).',
+            'Walk `order` backwards so every child is done before its supervisor. A leaf has down[v][0] = (0, 0) and no team.',
+          ],
+          say: 'For each employee v, down[v][0] is the best answer for v\'s subtree with v on no team. Each child c\'s subtree then does its best on its own, so add up max(down[c][0], down[c][1]) over v\'s children. down[v][1] is the best with v teamed with one child c: start from down[v][0], replace c\'s term by down[c][0], since c is now taken, and add one team running at min(speed[v], speed[c]). Take the best over all of v\'s children. A DFS from the top gives the preorder `order`, and walking it backwards finishes every child before its supervisor. A leaf has down[v][0] = (0, 0), and no child to team with.',
+        },
+        {
+          title: 'Sample: Zack teams with Tina, not Mildred',
+          points: [
+            'Below Zack, Mildred is best teamed with Ken, (1, 4.0), and Tina alone gives (0, 0), so Zack\'s down[v][0] = (1, 4.0).',
+            'Teaming Zack with Mildred leaves Ken out: (1, 4.2). Teaming him with Tina keeps Mildred–Ken: (2, 7.7).',
+            'So Zack\'s down[v][1] = (2, 7.7): two teams beat one, however fast.',
+          ],
+          show: [0, 2],
+          note: 'Mid-run, just after Zack: every row above his is final. Teaming him with Mildred gives (1, 4.2), with Tina (2, 7.7).',
+          say: 'Walking `order` backwards, the leaves Seth, Virgil, Ken and Tina get (0, 0) with no team, and Rose, Wilbur and Mildred each team with their only child: (1, 2.9), (1, 2.7) and (1, 4.0). Then comes Zack. With Zack on no team, Mildred\'s subtree gives its best, (1, 4.0), and Tina gives (0, 0), so Zack\'s down[v][0] = (1, 4.0). Teaming Zack with Mildred leaves Ken without a partner and gives (1, 4.2); teaming him with Tina keeps Mildred and Ken together and gives (2, 7.7). Two teams beat one, so Zack\'s down[v][1] = (2, 7.7).',
+        },
+        {
+          title: 'Barbara: four teams either way, faster with Rose',
+          points: [
+            'Barbara\'s down[v][0] = (1, 2.9) + (1, 2.7) + (2, 7.7) = (4, 13.3), with Rose teamed with Seth.',
+            'Teaming Barbara with Rose instead gives (4, 13.9); with Wilbur (4, 13.3); with Zack (4, 13.1).',
+            'With the same number of teams the higher total wins: her down[v][1] = (4, 13.9).',
+          ],
+          show: [0, 3],
+          note: 'The last step, Barbara\'s row: both of her values have 4 teams, and teaming her with Rose gives the higher total.',
+          say: 'Barbara is last. With her on no team, her children\'s subtrees give their best: (1, 2.9) from Rose with Seth, (1, 2.7) from Wilbur with Virgil and (2, 7.7) from Zack\'s subtree, so Barbara\'s down[v][0] = (4, 13.3). Teaming her with Rose leaves Seth alone but replaces a 2.9 team by a 3.5 one: (4, 13.9). Teaming her with Wilbur gives (4, 13.3), and with Zack, which breaks up Zack and Tina, (4, 13.1). Every option has 4 teams, so the totals decide: her down[v][1] = (4, 13.9).',
+        },
+        {
+          title: 'Answer: 4 teams averaging 3.475',
+          points: [
+            'The answer is the better of Barbara\'s values, (4, 13.9), and 13.9 / 4 = 3.475, as in the sample output.',
+            'Store speeds as whole thousandths of m/s so totals compare exactly. With n ≥ 2 there is always a team to divide by.',
+            'One DFS and one backward pass make the DP O(n); looking up names adds O(n log n).',
+          ],
+          show: [0, 4],
+          note: 'The teams behind (4, 13.9): Barbara–Rose, Wilbur–Virgil, Zack–Tina and Mildred–Ken. Seth sits out.',
+          say: 'The answer is the better of Barbara\'s two values, (4, 13.9): 4 teams with a total speed of 13.9, an average of 3.475, which matches the sample output. The teams are Barbara with Rose, Wilbur with Virgil, Zack with Tina and Mildred with Ken. Speeds have at most three decimals, so store them as whole thousandths of a metre per second, and totals compare exactly. With n ≥ 2 the chart has at least one supervisor and employee, so there is always a team to divide by. One DFS and one backward pass make the DP O(n), and the map from names to employees adds O(n log n).',
+        },
       ],
+      code: `#include <bits/stdc++.h>
+using namespace std;
+
+// {teams, total speed in thousandths of m/s}. Pairs compare by teams first, then by total.
+using Best = pair<int, long long>;
+Best operator+(Best a, Best b) { return {a.first + b.first, a.second + b.second}; }
+Best operator-(Best a, Best b) { return {a.first - b.first, a.second - b.second}; }
+
+int main() {
+    int n, root = 0;
+    cin >> n;
+    vector<string> name(n), boss(n);
+    vector<long long> speed(n);
+    map<string, int> id;
+    for (int i = 0; i < n; i++) {
+        double s;
+        cin >> name[i] >> s >> boss[i];
+        speed[i] = llround(s * 1000);
+        id[name[i]] = i;
+    }
+    vector<vector<int>> kids(n);
+    for (int i = 0; i < n; i++) {
+        if (boss[i] == "CEO") root = i;
+        else kids[id[boss[i]]].push_back(i);
+    }
+    vector<int> order, st = {root};
+    while (!st.empty()) {
+        int v = st.back(); st.pop_back();
+        order.push_back(v);
+        for (int c : kids[v]) st.push_back(c);
+    }
+    // down[v][0]: best for v's subtree with v on no team; down[v][1]: v teamed with a child.
+    vector<array<Best, 2>> down(n);
+    for (int i = n - 1; i >= 0; i--) {
+        int v = order[i];
+        Best single = {0, 0}, paired = {-1, 0};
+        for (int c : kids[v]) single = single + max(down[c][0], down[c][1]);
+        for (int c : kids[v]) {
+            Best team = {1, min(speed[v], speed[c])};
+            paired = max(paired, single - max(down[c][0], down[c][1]) + down[c][0] + team);
+        }
+        down[v] = {single, paired};
+    }
+    Best ans = max(down[root][0], down[root][1]);
+    printf("%d %.8f\\n", ans.first, ans.second / 1000.0 / ans.first);
+}`,
     },
     spot: [
       'n vertices and n − 1 edges, "connected and acyclic", or parents given as p_i < i: it is a tree, and once rooted every vertex has a well-defined subtree.',

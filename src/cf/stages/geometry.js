@@ -82,17 +82,118 @@ export default {
       'a·x + b·y + c: for a line given as a·x + b·y + c = 0, with integer coefficients a, b and c (numbers here, not points), its sign at a point (x, y) says which side of the line the point is on.',
     ],
     worked: {
-      title: 'a garden and its sprinklers',
-      question: 'A garden is the polygon with vertices (0, 0), (8, 0), (8, 6), (4, 2) and (0, 6), in that order. Print its area, then say whether each sprinkler, at (4, 4), (2, 3) and (6, 0), is inside the garden, outside it or on its boundary. The real version has up to 1000 vertices and 1000 sprinklers, with |coordinates| ≤ 10^9.',
-      steps: [
-        'Recognise it: integer coordinates, an area, and inside, outside or on the boundary. Counting unit squares would visit up to 4·10^18 of them, and working out in doubles where each edge meets a sprinkler\'s row can misjudge a sprinkler within rounding error of an edge, while "on the boundary" needs an exact zero. So use cross products in long long: the shoelace sum for the area and a ray cast for each sprinkler.',
-        'Model it: call the vertices p_0 = (0, 0), p_1 = (8, 0), p_2 = (8, 6), p_3 = (4, 2) and p_4 = (0, 6), with p_5 = p_0. Twice the area is `area2` = Σ cross(p_i, p_{i+1}). For a sprinkler s, `inPoly` first checks `onSeg` against every edge, then counts the edges that a ray from s to the right crosses.',
-        'Area: cross(p_0, p_1) = 0, cross(p_1, p_2) = 8·6 − 0·8 = 48, cross(p_2, p_3) = 8·2 − 6·4 = −8, cross(p_3, p_4) = 4·6 − 2·0 = 24 and cross(p_4, p_0) = 0. The sum is 64, positive, so the vertices run counter-clockwise and the area is 64 / 2 = 32. Check: the 8 × 6 rectangle is 48, minus the notch (0, 6), (4, 2), (8, 6), a triangle of area 8·4 / 2 = 16.',
-        'Sprinkler s = (6, 0): for the edge p_0 → p_1, orient(p_0, p_1, s) = 0 and dot(p_0 − s, p_1 − s) = (−6)·2 + 0·0 = −12 ≤ 0, so s is on the boundary.',
-        'Sprinkler s = (4, 4): four edges straddle the line y = 4. s is left of the upward edge p_1 → p_2 (cross = 24) and right of the downward edge p_2 → p_3 (cross = −8), so the ray crosses both; it is right of the upward edge p_3 → p_4 (cross = −8) and left of the downward edge p_4 → p_0 (cross = 24), so those pass on its left. 2 crossings, even: outside, in the notch.',
-        'Sprinkler s = (2, 3): the ray crosses the upward edge p_1 → p_2 (cross = 36), the downward edge p_2 → p_3 (cross = −12) and the upward edge p_3 → p_4 (cross = 4), while the downward edge p_4 → p_0 (cross = 12) passes on its left. 3 crossings, odd: inside.',
-        'Answer: the area is 32; (4, 4) is outside, (2, 3) inside and (6, 0) on the boundary. Each sprinkler costs O(n), about 10^6 steps for 1000 of each. Twice the area is an integer of at most 8·10^18, so keep `area2` in long long and print the area exactly from it, a whole number or a whole number and a half, with no doubles at all.',
+      problem: { source: 'kattis', id: 'intersectingrectangles', name: 'Intersecting Rectangles', difficulty: '5.4' },
+      slides: [
+        {
+          title: 'Do any two rectangle outlines meet?',
+          points: [
+            'Up to 10^5 axis-parallel rectangles with |coordinates| ≤ 10^9: print 1 if the outlines of some two share a point, otherwise 0.',
+            'A rectangle lying wholly inside another does not count, since their outlines never meet.',
+            'All x coordinates are distinct, and so are all y coordinates.',
+          ],
+          show: [0, 0],
+          note: 'Sample 1: A and B overlap, so their outlines meet; C is apart from both. The answer is 1.',
+          say: 'There are up to 10^5 rectangles with sides parallel to the axes and integer coordinates up to 10^9 in absolute value. Print 1 if the outlines of some two of them share a point, and 0 otherwise. Only the outlines count: a rectangle lying wholly inside another does not touch it. The statement also promises that no two x coordinates are equal, and no two y coordinates. In the first sample A and B overlap, so their outlines meet, and the answer is 1.',
+        },
+        {
+          title: 'Testing every pair is too slow',
+          points: [
+            'n = 10^5 rectangles make n(n − 1)/2 ≈ 5·10^9 pairs, each needing up to 16 edge-against-edge tests.',
+            'When the answer is 0, as in sample 2, every pair has to be tested.',
+            'Testing whether two rectangles overlap is the wrong question: nested rectangles overlap, but their outlines do not meet.',
+          ],
+          show: [0, 4],
+          note: 'Sample 2: B, C and D lie inside A and apart from each other, so no outlines meet. The answer is 0.',
+          say: 'The direct approach tests every pair of rectangles. With 10^5 rectangles that is about 5·10^9 pairs, each needing up to 16 tests of one edge against another, and when the answer is 0 none of them can be skipped. Testing whether two rectangles overlap is the wrong question too. In the second sample B, C and D overlap A, because they lie inside it, but no two outlines meet, so the answer is 0.',
+        },
+        {
+          title: 'Distinct coordinates leave only edge crossings',
+          points: [
+            'Two vertical edges have different x values, so they never meet; nor do two horizontal edges.',
+            'So two outlines meet exactly where a horizontal edge of one crosses a vertical edge of the other, strictly inside both.',
+            'With many axis-parallel edges and only their crossings to find, sort the vertical edges by x and sweep.',
+          ],
+          show: [0, 1],
+          note: 'Sample 1: A\'s top edge crosses B\'s left edge at (1, 2), and B\'s bottom edge crosses A\'s right edge at (2, 1).',
+          say: 'The distinct coordinates narrow down how two outlines can meet. Two vertical edges of different rectangles have different x values, so they never meet, and two horizontal edges never meet either. A corner of one rectangle cannot lie on the other\'s outline, since that would need an equal x or an equal y. So two outlines meet exactly where a horizontal edge of one crosses a vertical edge of the other, strictly inside both edges. To find such crossings among many axis-parallel edges, sort the vertical edges by x and process them from left to right with a sweep line.',
+        },
+        {
+          title: 'Keep the heights the sweep line crosses',
+          points: [
+            'Visit the 2n vertical edges in order of x. `active` holds the heights of the horizontal edges the sweep line crosses.',
+            'At an edge from y1 to y2, find the lowest active height above y1. If it is below y2, the two edges cross: print 1.',
+            'Otherwise a left edge inserts its rectangle\'s y1 and y2, and a right edge erases them.',
+          ],
+          show: [0, 7],
+          note: 'Sample 2 at x = 2, in the middle of the sweep: the lowest active height above 10 is 20, not below 12, so C\'s left edge crosses nothing.',
+          say: 'A vertical line sweeps from left to right and stops at each of the 2n vertical edges in order of x. The set `active` holds the heights of the horizontal edges that the line crosses: a rectangle\'s bottom and top go in at its left edge and come out at its right edge. A vertical edge from y1 to y2 crosses another rectangle\'s horizontal edge exactly when that edge is active and its height lies strictly between y1 and y2. One lookup checks this: active.upper_bound(y1) is the lowest active height above y1, and there is a crossing if it is below y2. If there is none, a left edge inserts its rectangle\'s two heights and a right edge erases them. In the second sample at x = 2, C\'s left edge runs from 10 to 12, and the lowest active height above 10 is 20, so nothing crosses it.',
+        },
+        {
+          title: 'Sample 1: B\'s left edge meets A\'s top',
+          points: [
+            'At x = 0, A\'s left edge finds `active` empty, then inserts A\'s heights 0 and 2.',
+            'At x = 1, B\'s left edge runs from 1 to 4. The lowest active height above 1 is 2, below 4: a crossing at (1, 2).',
+            'The sweep prints 1 after two of the six vertical edges.',
+          ],
+          show: [0, 3],
+          note: 'Sample 1 at x = 1: active = {0, 2}, and 2 lies strictly between 1 and 4, so A\'s top edge crosses B\'s left edge.',
+          say: 'In the first sample the vertical edges, in order of x, are at 0, 1, 2, 3, 5 and 6. At x = 0, A\'s left edge finds the set empty, so nothing crosses it, and A\'s heights 0 and 2 go in. At x = 1, B\'s left edge runs from 1 to 4. The lowest active height above 1 is 2, which is below 4, so A\'s top edge crosses B\'s left edge at the point (1, 2). The sweep prints 1 after looking at two of the six edges.',
+        },
+        {
+          title: 'A right edge sees its own heights',
+          points: [
+            'At x = 3, B\'s right edge runs from 1 to 4, and B\'s own heights 1 and 4 are still in `active`.',
+            'The lowest height above 1 is B\'s own top, 4, which is not below 4: the strict test never counts a rectangle\'s own edges.',
+            'After the check, 1 and 4 are erased.',
+          ],
+          show: [0, 8],
+          note: 'Sample 2 at x = 3, in the middle of the sweep: active = {0, 1, 4, 10, 12, 20}, and the lowest height above 1 is B\'s own top, 4.',
+          say: 'A right edge is checked before its rectangle\'s heights are erased. In the second sample at x = 3, B\'s right edge runs from 1 to 4, and B\'s own heights 1 and 4 are still in the set. The lowest height above 1 is 4, B\'s own top edge, and 4 is not strictly below 4, so it does not count. A rectangle\'s own heights are always exactly y1 and y2, so the strict test never mistakes them for a crossing. C\'s heights, 10 and 12, are active too, but they lie above 4. After the check, 1 and 4 are erased.',
+        },
+        {
+          title: 'Sample 2: the outer heights never trigger',
+          points: [
+            'A\'s heights 0 and 20 stay active from x = 0 to x = 20, but every inner edge runs strictly between them.',
+            'At x = 11, D\'s left edge runs from 3 to 18 and `active` = {0, 20}: the lowest height above 3 is 20, not below 18.',
+            'All 8 vertical edges pass the check, so the sweep prints 0.',
+          ],
+          show: [0, 10],
+          note: 'Sample 2 at x = 11, in the middle of the sweep: D\'s left edge, from 3 to 18, lies strictly between A\'s heights 0 and 20.',
+          say: 'A\'s heights, 0 and 20, go in at x = 0 and stay until x = 20. Every other rectangle lies inside A, so each of their vertical edges runs strictly between 0 and 20, and neither of A\'s heights is ever strictly inside one of them. At x = 11, for example, D\'s left edge runs from 3 to 18, the set holds only 0 and 20, and the lowest height above 3 is 20, which is not below 18. All eight vertical edges pass the check, so the sweep prints 0, as the statement requires for nested rectangles.',
+        },
+        {
+          title: 'O(n log n), with comparisons only',
+          points: [
+            'Sorting the 2n edges, then 2n lookups and 4n insertions or erasures, each O(log n), gives O(n log n).',
+            'Coordinates are only compared, never multiplied or added, so int is enough and nothing is rounded.',
+            'A single rectangle prints 0, and the sweep stops at the first crossing.',
+          ],
+          say: 'Sorting the 2n vertical edges takes O(n log n). Each edge then makes one lookup and two insertions or two erasures in the set, each O(log n), so the whole sweep is O(n log n), a few million steps for 10^5 rectangles. The coordinates are only compared, never multiplied or added, so int is enough and nothing is ever rounded. A single rectangle has nothing to meet, so it prints 0, and the sweep stops at the first crossing it finds.',
+        },
       ],
+      code: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  int n;
+  scanf("%d", &n);
+  vector<array<int, 4>> ev;  // (x, y1, y2, 1 for a left edge or 0 for a right edge)
+  for (int i = 0; i < n; i++) {
+    int x1, y1, x2, y2;
+    scanf("%d %d %d %d", &x1, &y1, &x2, &y2);
+    ev.push_back({x1, y1, y2, 1});
+    ev.push_back({x2, y1, y2, 0});
+  }
+  sort(ev.begin(), ev.end());
+  set<int> active;  // heights of the horizontal edges the sweep line crosses
+  for (auto [x, y1, y2, left] : ev) {
+    auto it = active.upper_bound(y1);
+    if (it != active.end() && *it < y2) { puts("1"); return 0; }
+    if (left) active.insert(y1), active.insert(y2);
+    else active.erase(y1), active.erase(y2);
+  }
+  puts("0");
+}`,
     },
     spot: [
       'Integer coordinates up to 10^9 and a yes/no or counting question about turns, sides of lines, intersections or containment',

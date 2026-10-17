@@ -76,15 +76,130 @@ export default {
       '`id`: a state numbered as one integer, such as cell·4 + direction, so that dist stays a flat array.',
     ],
     worked: {
-      title: 'the nearest shop',
-      question: 'A town is a 3 × 6 grid with rows 0 to 2 and columns 0 to 5. There are shops at (0, 0) and (2, 5), buildings at (0, 2), (1, 2), (1, 4) and (2, 4), and every other square is open. People walk between side-adjacent squares that are not buildings, one minute per step. For each open square take the walk to its nearest shop, and print the longest of these walks in minutes, or −1 if some open square cannot reach a shop. The real map is up to 1000 × 1000 with any number of shops.',
-      steps: [
-        'Recognise it: every step costs one minute, so fewest steps is BFS, and "distance to the nearest of a set" for every square is multi-source BFS. One BFS per open square costs O((nm)²), about 10^12 steps for an n × m map at full size, and one BFS per shop is not much better, 10^11 steps for 10^5 shops; one BFS seeded with every shop at once is O(nm).',
-        'Model it: square (r, c) is vertex r·6 + c, and its neighbours are the side-adjacent squares that are not buildings. Set every dist to −1, then push both shops at distance 0: dist[0] = 0 for (0, 0) and dist[17] = 0 for (2, 5).',
-        'Run it, layer by layer. Distance 1: (0, 1), (1, 0), (1, 5). Distance 2: (1, 1), (2, 0), (0, 5). Distance 3: (2, 1), (0, 4). Distance 4: (2, 2), (0, 3). Distance 5: (2, 3), (1, 3). All 12 open squares besides the shops are reached and the queue empties.',
-        'Each square is first reached from whichever shop is nearer, without ever comparing the shops: (1, 3) gets 5 from (2, 5) by way of the top row, and (2, 3) gets 5 from (0, 0) down the left column and along the bottom row. (2, 3) is only 2 columns from (2, 5), but the buildings at (2, 4) and (1, 4) make that walk 6 steps, so a formula that ignores the walls would be wrong.',
-        'Answer: 5 minutes, for the squares (1, 3) and (2, 3). The BFS is O(nm) time and keeps one dist entry per square, 10^6 ints at full size; any open square still at −1 at the end makes the answer −1. Set dist when a square is pushed, so no square enters the queue twice.',
+      problem: { source: 'kattis', id: 'fire2', name: 'Fire', difficulty: '3.1' },
+      slides: [
+        {
+          title: 'Run from a spreading fire',
+          points: [
+            'A w × h map, with w, h ≤ 1000, has walls, burning squares and your start; there are up to 100 maps.',
+            'Each second the fire spreads to the four neighbours of every burning square, and you run to one neighbour.',
+            'You may not enter a square that is burning or just catching fire. Print the fewest seconds to get off the map, or IMPOSSIBLE.',
+          ],
+          show: [0, 0],
+          note: 'Sample map 2: two fires (*), your start (@), and one open square on the edge, (0, 3), the only way out.',
+          say: 'Each test is a w by h map of up to 1000 by 1000 squares: walls, open squares, some squares on fire, and your start, with up to 100 maps. Every second the fire spreads to the four side neighbours of every burning square, and you run to one of your four neighbours. Neither of you crosses a wall. You may not run into a square that is burning or is just catching fire, but you may leave a square at the moment it catches fire. From an open square on the edge, one more second takes you out. Print the fewest seconds to get out, or IMPOSSIBLE.',
+        },
+        {
+          title: 'Simulating second by second is too slow',
+          points: [
+            'Spreading the fire and moving every position you could be in rescans all 10^6 squares each second.',
+            'In a winding maze the way out can take about 5·10^5 seconds: about 5·10^11 steps for one map.',
+            'Instead, find once when each square catches fire.',
+          ],
+          say: 'The direct approach simulates second by second: spread the fire one step, then move every position you could be in one step. Each second rescans the 10^6 squares of a 1000 by 1000 map, and in a winding maze the way out can be about 5·10^5 squares long, so that is about 5·10^11 steps for one map, and there can be 100 maps. Instead, work out once when each square catches fire, and then search your own moves once.',
+        },
+        {
+          title: 'One BFS from all the fires at once',
+          points: [
+            'fire[v] is the second square v catches fire: its fewest steps from the nearest fire, or −1 if never.',
+            'Put every burning square in `q` at distance 0, as the `sources`: one O(wh) pass fills fire[v] for every square.',
+            'Your moves also take a second each, so a second BFS gives your arrival times, dist[v].',
+          ],
+          show: [0, 1],
+          note: 'fire[v] for every open square, from one BFS that starts with both fires at time 0. Your dist is 0 at the start only.',
+          say: 'Fire spreads exactly like a BFS: a square catches fire one second after its first burning neighbour, so fire[v], the second at which square v catches fire, is its distance from the nearest fire, or −1 if no fire ever reaches it. That is a multi-source BFS: put every burning square in the queue `q` at distance 0, as the `sources`, and one O(wh) pass fills fire[v] for the whole map. Your own moves also take one second each, so your earliest arrival times come from a second BFS, whose distances are dist.',
+        },
+        {
+          title: 'Your BFS, with a deadline on every square',
+          points: [
+            'From u, enter a neighbour v only if fire[v] = −1 or dist[u] + 1 < fire[v].',
+            'Arriving earlier never hurts, since the fire only grows, so the state is the square alone, without the time.',
+            'From a reached square on the edge you are out a second later: the answer is the least such dist + 1.',
+          ],
+          say: 'Your BFS is the template\'s with one extra test: from u you may enter a neighbour v at time dist[u] + 1 only if v never burns or catches fire later, that is, fire[v] = −1 or dist[u] + 1 < fire[v]. Leaving u as it catches fire is allowed, so u itself needs no test. The time does not need to be part of the state: the fire only grows, so being somewhere earlier is never worse than being there later, and BFS reaches every square at its earliest possible time. So the state is just the square. From any reached square on the edge you step out one second later, so the answer is the smallest dist + 1 over those squares, or IMPOSSIBLE if you reach none.',
+        },
+        {
+          title: 'Sample: the fire closes in from both sides',
+          points: [
+            'You start at (4, 3). Popping (2, 3) at time 2, you may enter (1, 3) at 3, before its fire at 4.',
+            '(2, 2) and (2, 4) are refused: the fire is there at 2, before you could arrive at 3.',
+          ],
+          show: [0, 2],
+          note: 'Your BFS mid-run: popping (2, 3) at time 2 accepts (1, 3), as 3 < 4, and refuses (2, 2) and (2, 4), which burn at 2.',
+          say: 'In sample map 2, with rows and columns numbered from 0, the fires start at (1, 1) and (1, 5), you start at (4, 3), and the only open square on the edge is (0, 3). Your BFS reaches three squares at time 1 and five more at time 2. In the picture it pops (2, 3), reached at time 2. It accepts (1, 3), since you would arrive at 3 and the fire only at 4. It refuses (2, 2) and (2, 4): the fire arrives there at 2, before you could at 3.',
+        },
+        {
+          title: 'One step ahead of the fire',
+          points: [
+            'Up column 3 you reach (2, 3), (1, 3) and (0, 3) at 2, 3 and 4; the fire reaches them at 3, 4 and 5.',
+            '(0, 3) is on the edge, so you are out at 4 + 1 = 5, the sample\'s answer for this map.',
+          ],
+          show: [0, 3],
+          note: 'The end of your BFS: the way out (green) enters every square before it burns, from (2, 3) on by one second.',
+          say: 'Your BFS goes up column 3, reaching (3, 3), (2, 3), (1, 3) and (0, 3) at times 1, 2, 3 and 4, while the fire reaches them at 4, 3, 4 and 5. Every square on the way is entered strictly before it burns. (0, 3) is on the edge, so you step out one second later, at 5, which is the sample\'s answer for this map.',
+        },
+        {
+          title: 'When the fire wins, and the cost',
+          points: [
+            'In map 3 your only way to the edge passes (1, 3), which burns at 2, before you could reach it at 3: IMPOSSIBLE.',
+            'Two BFS passes are O(wh) per map: about 2·10^8 steps over 100 maps of 10^6 squares.',
+            'Starting on the edge gives 1. A square no fire reaches keeps fire[v] = −1 and never blocks you.',
+          ],
+          show: [0, 4],
+          note: 'Sample map 3 at the end: the fire reaches (1, 3) and (2, 4) before you could (red), and no square you reach is on the edge.',
+          say: 'In sample map 3 your only way to the edge is through (1, 3) to (0, 3), but the fire reaches (1, 3) at 2, and you could get there at 3 at the earliest. No square you reach is on the edge, so the answer is IMPOSSIBLE. Each BFS handles every square once, so a map costs O(wh), about 2·10^8 steps over 100 maps of 10^6 squares. If you start on the edge, the answer is 1. A square v that no fire can reach keeps fire[v] = −1 and never blocks you.',
+        },
       ],
+      code: `#include <bits/stdc++.h>
+using namespace std;
+
+int w, h;
+vector<string> g;
+const int dr[4] = {1, -1, 0, 0}, dc[4] = {0, 0, 1, -1};
+
+// Multi-source BFS over open squares, id = r * w + c. A square v may only be entered
+// at time t < fire[v] (fire[v] = -1: it never burns). With no fire limit, this is plain BFS.
+vector<int> bfs(const vector<int>& sources, const vector<int>& fire) {
+    vector<int> dist(w * h, -1);
+    queue<int> q;
+    for (int s : sources) { dist[s] = 0; q.push(s); }
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        for (int k = 0; k < 4; k++) {
+            int r = u / w + dr[k], c = u % w + dc[k], v = r * w + c;
+            if (r < 0 || r >= h || c < 0 || c >= w || g[r][c] == '#' || dist[v] != -1) continue;
+            if (fire[v] != -1 && dist[u] + 1 >= fire[v]) continue;
+            dist[v] = dist[u] + 1;
+            q.push(v);
+        }
+    }
+    return dist;
+}
+
+int main() {
+    int tests;
+    cin >> tests;
+    while (tests--) {
+        cin >> w >> h;
+        g.assign(h, "");
+        for (auto& row : g) cin >> row;
+        vector<int> fires, me;
+        for (int r = 0; r < h; r++)
+            for (int c = 0; c < w; c++) {
+                if (g[r][c] == '*') fires.push_back(r * w + c);
+                if (g[r][c] == '@') me.push_back(r * w + c);
+            }
+        vector<int> fire = bfs(fires, vector<int>(w * h, -1));
+        vector<int> dist = bfs(me, fire);
+        int best = INT_MAX;  // leave from any reached square on the edge, one second later
+        for (int r = 0; r < h; r++)
+            for (int c = 0; c < w; c++)
+                if ((r == 0 || r == h - 1 || c == 0 || c == w - 1) && dist[r * w + c] != -1)
+                    best = min(best, dist[r * w + c] + 1);
+        if (best == INT_MAX) cout << "IMPOSSIBLE\\n";
+        else cout << best << "\\n";
+    }
+}`,
     },
     spot: [
       '"Minimum number of moves, clicks, steps or minutes" where every move costs the same: BFS, not DP or Dijkstra.',

@@ -80,22 +80,115 @@ export default {
       'vertex 0: the virtual vertex for "build here or connect" problems, joined to every i by an edge whose weight c_i is the cost of serving i on its own (vertex n in the TRD\'s `withVirtualSource`, with the costs in `build`).',
     ],
     worked: {
-      title: 'trucks on bridges',
-      question: 'There are n = 6 islands and m = 7 bridges, each joining two islands and carrying trucks of weight up to its limit: 1–2 (limit 5), 2–3 (3), 3–4 (8), 4–5 (2), 5–6 (6), 1–3 (4) and 2–6 (1). Answer k = 3 queries, each a truck of weight x starting on island s: how many islands can it reach, its own included? The queries are (s = 1, x = 4), (s = 4, x = 6) and (s = 6, x = 1). In the real version n, m and k are up to 2·10^5 and the weights up to 10^9.',
-      steps: [
-        'Recognise it: a truck of weight x may use exactly the bridges with limit ≥ x, so each query asks for the size of one component of the graph made of those bridges. A BFS per query is O(n + m), about 8·10^10 steps for 2·10^5 queries. But every bridge usable at weight x is also usable by any lighter truck, so answering the queries from the heaviest truck to the lightest means bridges are only ever added: a DSU sweep, threshold style.',
-        'Model it: sort the bridges by limit from high to low (8, 6, 5, 4, 3, 2, 1) and the queries by weight from high to low (6, 4, 1), remembering each query\'s position. Before answering a query with weight x, unite the ends of every bridge with limit ≥ x not yet added; the answer is then sz[find(s)].',
-        'Query x = 6: add 3–4 (8), so p[4] = 3 and sz[3] = 2, and 5–6 (6), so p[6] = 5 and sz[5] = 2. Island 4 has root 3, so the answer is 2.',
-        'Query x = 4: add 1–2 (5), giving p[2] = 1 and sz[1] = 2, then 1–3 (4), which finds the roots 1 and 3 of two sets of size 2, so p[3] = 1 and sz[1] = 4. Island 1 is a root of size 4: the answer is 4.',
-        'Query x = 1: for 2–3 (3), find(2) = 1 and find(3) = 1, so it is skipped. For 4–5 (2), find(4) walks 4 → 3 → 1 and path halving sets p[4] = 1, while find(5) = 5; the larger set wins, so p[5] = 1 and sz[1] = 6. 2–6 (1) is skipped too, since find(6) walks 6 → 5 → 1. Island 6 has root 1: the answer is 6.',
-        'The bridges that merged two sets, with limits 8, 6, 5, 4 and 2, are exactly the ones Kruskal keeps for a maximum spanning tree (heaviest first), and the two skipped bridges each closed a cycle. The lightest of them, 2, is the heaviest truck that can travel between every pair of islands.',
-        'Answer: 4, 2 and 6, printed in the original query order. Sorting is O(m log m + k log k) and the sweep O((m + k) α(n)). Add the bridges whose limit equals x before answering, because they carry that truck; every answer is at most n, so int is enough.',
+      problem: { source: 'kattis', id: 'ladice', name: 'Ladice', difficulty: '3.8' },
+      slides: [
+        {
+          title: 'Two possible drawers for every item',
+          points: [
+            'N items and L drawers, both up to 3·10^5. Item i may go only in drawer A_i or B_i, and a drawer holds one item.',
+            'Items come in order. If A_i and B_i are both full, Mirko tries to make space by shifting items along a chain, first from A_i, then from B_i.',
+            'Print LADICA for each item that ends up in a drawer and SMECE for each one thrown away.',
+          ],
+          say: 'Mirko has N items and L drawers, both up to 3·10^5. Each drawer holds one item, and item i may only go in one of two drawers, A_i or B_i. He stores the items in order. If A_i is empty the item goes there, and otherwise, if B_i is empty, it goes there. If both are full, he tries to free A_i: he moves its item to that item\'s other drawer, and if that drawer is full too, moves its item on, and so on, until a move reaches an empty drawer or comes back to a drawer already seen. If that fails, he tries the same from B_i, and if that fails too, he throws the item away. For every item, print LADICA if it is stored and SMECE if it is thrown away.',
+        },
+        {
+          title: 'Following every chain is too slow',
+          points: [
+            'A chain can pass through every drawer, and an item that is thrown away has walked two chains.',
+            'With 10^5 drawers full in one ring, each of 2·10^5 more items walks two chains of 10^5 moves: about 4·10^10 moves.',
+            'So decide whether a chain would succeed without walking it.',
+          ],
+          say: 'Simulating the rules gives the right answer, but slowly. A chain can pass through every drawer, and an item that is thrown away has walked two chains. Suppose the first 10^5 items fill 10^5 drawers in a ring, each item joining a drawer to the next. Then each of 2·10^5 more items with both drawers on that ring walks two chains of about 10^5 moves before it is thrown away: about 4·10^10 moves. So we need to know whether a chain would succeed without walking it.',
+        },
+        {
+          title: 'Drawers are vertices, stored items are edges',
+          points: [
+            'Make each drawer a vertex and each stored item an edge between its two drawers.',
+            'A chain moves items only along these edges, so whether item i fits depends only on the components of A_i and B_i.',
+            'A stored item is never removed, so components only merge: keep them in a DSU over the drawers.',
+          ],
+          show: [0, 0],
+          note: 'Sample 1 at the start: three drawers, each a set of its own, and five items to come, listed by their two drawers.',
+          say: 'Think of each drawer as a vertex and each stored item as an edge between its two drawers. A chain of moves only shifts an item to its other drawer, along its own edge, so it stays inside one connected component of this graph. Whether item i can be stored therefore depends only on the components of A_i and B_i. A stored item may move, but it is never removed, so edges are only added and components only merge: the setting for a DSU over the drawers.',
+        },
+        {
+          title: 'A tree has exactly one empty drawer',
+          points: [
+            'Each drawer starts alone and empty. An item across two trees makes one tree; an item inside a tree closes a cycle and fills its last drawer.',
+            'Root a tree at its empty drawer: every other drawer holds the item on the edge to its parent, so any chain climbs to the root.',
+            'With a cycle, every drawer is full and every chain loops. So keep room[r]: 1 while r\'s set is a tree, 0 once it has a cycle.',
+          ],
+          show: [0, 2],
+          note: 'After items 1 and 2: three drawers and two items form one tree, so one drawer is empty and room[1] = 1. Only a root\'s room counts.',
+          say: 'Every component has at most one empty drawer. At the start each drawer is a component on its own: a tree with one empty drawer. Storing an item between two trees joins them into one tree, which still has one empty drawer, and storing an item inside a tree closes a cycle and fills its last drawer. Root a tree at its empty drawer. A leaf must hold the item on its only edge, and working inwards, every drawer holds the item on the edge to its parent. So a chain from any drawer climbs towards the root and ends in the empty drawer. In a component with a cycle every drawer is full, so a chain can only come back to a drawer it has seen. For each root r, keep room[r]: 1 while r\'s set is a tree, and 0 once it has a cycle.',
+        },
+        {
+          title: 'The rules become one check per item',
+          points: [
+            'Let a = find(A_i) and b = find(B_i). If room[a] and room[b] are both 0, every chain loops: print SMECE.',
+            'Otherwise print LADICA. If a ≠ b, hang the smaller set under the larger and add their room; then subtract 1 for the new item.',
+            'Two trees give room 1 + 1 − 1 = 1. An item inside a tree, or joining a tree to a full set, leaves room 0.',
+          ],
+          show: [0, 1],
+          note: 'Item 1 (1–2) joins the trees of drawers 1 and 2: p[2] = 1 and room[1] = 1 + 1 − 1 = 1.',
+          say: 'So each item needs one check. Let a = find(A_i) and b = find(B_i). If room[a] and room[b] are both 0, both components are full, every chain loops, and the item is thrown away: SMECE. Otherwise it is stored: LADICA. If a and b differ, hang the smaller set under the larger, as unite does, and add their room; then subtract 1, because the new item fills an empty drawer. Two trees give room 1 + 1 − 1 = 1, a tree again. An item inside a tree, or one that joins a tree to a full set, leaves room 0. An item that is thrown away changes nothing.',
+        },
+        {
+          title: 'Sample 1: the third item closes a cycle',
+          points: [
+            'Items 1 and 2 join drawers 1, 2 and 3 into one tree: p[2] = 1, p[3] = 1 and room[1] = 1.',
+            'Item 3 (1–2) has both ends in set 1, which has room 1, so it is stored and room[1] becomes 0.',
+            'Three drawers now hold three items, and items 1 and 3, both on drawers 1 and 2, form a cycle.',
+          ],
+          show: [0, 3],
+          note: 'After item 3: items 1 and 3 form a cycle between drawers 1 and 2, and room[1] = 0.',
+          say: 'Sample 1 has 3 drawers and 5 items. Item 1 joins drawers 1 and 2, two trees with room 1, so it is stored, p[2] = 1 and room[1] = 1 + 1 − 1 = 1. Item 2 joins that tree to drawer 3 in the same way: p[3] = 1, and room[1] stays 1. Item 3 again needs drawer 1 or 2. Both ends have root 1, whose room is 1, so it is stored and room[1] becomes 0. Three drawers now hold three items, and items 1 and 3, both between drawers 1 and 2, form a cycle.',
+        },
+        {
+          title: 'Items 4 and 5 are thrown away',
+          points: [
+            'Items 4 (1–3) and 5 (1–2) find root 1 at both ends, with room 0, so both print SMECE.',
+            'The output LADICA, LADICA, LADICA, SMECE, SMECE matches the sample.',
+            'Two finds per item: O(L + N α(L)). Collect the up to 3·10^5 lines in one string and print it once.',
+          ],
+          show: [0, 6],
+          note: 'The end of sample 1: items 1 to 3 are stored, and items 4 and 5, thrown away, never enter the DSU.',
+          say: 'Item 4 needs drawer 1 or 3, and item 5 drawer 1 or 2. In both cases both ends have root 1, whose room is 0: every drawer in the set is full, so any chain of moves goes round the cycle, and both items are thrown away. The output, LADICA three times and then SMECE twice, matches the sample. Each item costs two finds, so the whole run is O(L + N α(L)). With up to 3·10^5 lines of output, collect them in one string and print it once.',
+        },
       ],
+    code: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    int n, L;
+    scanf("%d %d", &n, &L);
+    // Drawers are vertices, stored items are edges. room[r]: empty drawers in r's set, always 0 or 1.
+    vector<int> p(L + 1), sz(L + 1, 1), room(L + 1, 1);
+    iota(p.begin(), p.end(), 0);
+    auto find = [&](int x) {
+        while (p[x] != x) x = p[x] = p[p[x]];
+        return x;
+    };
+    string out;
+    for (int i = 0; i < n; i++) {
+        int a, b;
+        scanf("%d %d", &a, &b);
+        a = find(a), b = find(b);
+        if (!room[a] && !room[b]) { out += "SMECE\\n"; continue; }
+        if (a != b) {
+            if (sz[a] < sz[b]) swap(a, b);
+            p[b] = a, sz[a] += sz[b], room[a] += room[b];
+        }
+        room[a]--;
+        out += "LADICA\\n";
+    }
+    fputs(out.c_str(), stdout);
+}`,
     },
     spot: [
       'Edges or "same group" relations are only ever added, and you need connectivity, component sizes or the number of components along the way.',
       '"Connect everything at minimum total cost", or keep a subset of edges so everything stays connected and the total is minimal: a minimum spanning tree.',
-      'A threshold in the question, such as "using only edges of weight ≤ q" or "the largest edge on the path is at most q": sort the edges and the queries so that edges are only ever added, increasing for "weight ≤ q" and decreasing for "limit ≥ x" (as in the worked question).',
+      'A threshold in the question, such as "using only edges of weight ≤ q" or "the largest edge on the path is at most q": sort the edges and the queries so that edges are only ever added, increasing for "weight ≤ q" and decreasing for "limit ≥ x".',
       'Each object either pays its own fixed cost or links to another object that is already served: add a virtual vertex 0 with an edge (0, i) of weight c_i.',
     ],
     disguises: [

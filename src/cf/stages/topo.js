@@ -75,19 +75,111 @@ export default {
       'len[v]: the most edges on any path that ends at v (`dp` in the TRD version\'s `longestPath`).',
       'ways[v]: the number of paths from `src` to v, mod 10^9 + 7.',
       '`src`: the start vertex; ways[v] counts the paths that begin there.',
-      'finish[v]: in the worked question, the earliest time task v can be finished, filled along `order` like len[v].',
     ],
     worked: {
-      title: 'the earliest finish of a project',
-      question: 'A project has n = 6 tasks. Task i takes t_i days, with t = (2, 4, 3, 1, 5, 2), and any number of tasks can run at once. Some tasks must finish before others start: 3 before 1, 3 before 2, 1 before 4, 2 before 4, 5 before 2, 4 before 6 and 5 before 6. Print the earliest day by which every task can be finished, or −1 if the rules contradict each other. The real version has up to 2·10^5 tasks and 2·10^5 rules, with t_i up to 10^9.',
-      steps: [
-        'Recognise it: "a before b" rules form a directed graph, a contradiction is a cycle, and since tasks run in parallel, each one starts the moment its last prerequisite ends, so the answer is the heaviest chain of tasks: a longest path in a DAG. Label order will not do, because task 1 waits for task 3 and task 2 for task 5, and sweeping over all the rules until nothing changes can take n sweeps, about 4·10^10 steps at full size.',
-        'Model it: an edge a → b for each rule "a before b", indeg[v] counted from the rules, and finish[v] = t_v plus the latest finish among v\'s prerequisites. Start with finish[v] = t_v. When Kahn\'s algorithm removes v, finish[v] is final, and each edge v → u sets finish[u] = max(finish[u], finish[v] + t_u).',
-        'Run Kahn\'s algorithm: indeg is 1, 2, 0, 2, 0, 2 for tasks 1 to 6, so the queue starts as 3, 5. Remove 3 (finish 3): finish[1] = max(2, 3 + 2) = 5 and task 1 is ready; finish[2] = max(4, 3 + 4) = 7, but 2 still waits for 5. Remove 5 (finish 5): finish[2] = max(7, 5 + 4) = 9 and 2 is ready; finish[6] = max(2, 5 + 2) = 7.',
-        'Remove 1: finish[4] = max(1, 5 + 1) = 6. Remove 2: finish[4] = max(6, 9 + 1) = 10 and 4 is ready. Remove 4: finish[6] = max(7, 10 + 2) = 12 and 6 is ready. Remove 6. All 6 tasks were removed, in the order 3, 5, 1, 2, 4, 6, so the rules have no cycle.',
-        'Had the rules also said 4 before 2, then 2 and 4 would wait for each other: after removing 3, 5 and 1 the queue is empty with 3 of 6 tasks placed, and task 6, which is on no cycle but waits for 4, is stuck behind it. That case prints −1.',
-        'Answer: 12, the largest finish, from the chain 5 → 2 → 4 → 6 (5 + 4 + 1 + 2 days). Kahn\'s algorithm with the DP is O(n + m). Finish times reach 2·10^5 · 10^9 = 2·10^14, so store them as long long.',
+      problem: { source: 'kattis', id: 'brexitnegotiations', name: 'Brexit Negotiations', difficulty: '5.3' },
+      slides: [
+        {
+          title: 'Each meeting starts with a longer recap',
+          points: [
+            'n ≤ 4·10^5 topics, each settled in its own meeting, one at a time. Topic i needs e_i minutes and lists topics that must come before it.',
+            'A meeting first spends a minute recapping each earlier meeting, so the meeting at position pos, from 0, lasts e_i + pos.',
+            'The rules have no cycle. Print the least possible length of the longest meeting, over all orders that obey them.',
+          ],
+          say: 'There are n topics, up to 4·10^5, each settled in its own meeting, one meeting at a time. Topic i needs e_i minutes, up to 10^6, and lists the topics that must be discussed before it. There are at most 4·10^5 such rules, and they have no cycle. Each meeting starts with a recap of one minute per meeting already held, so the meeting at position pos, counting from 0, lasts e_i + pos. Print the shortest possible length of the longest meeting, over all orders that obey the rules.',
+        },
+        {
+          title: 'Longest first, from the front, can fail',
+          points: [
+            'Trying orders is hopeless: 10 topics with no rules already have 10! ≈ 3.6·10^6 orders.',
+            'Holding the longest ready topic next fails: if A (1) must precede B (100), and C takes 50, it runs C, A, B, and B lasts 102.',
+            'The order A, B, C does better: B lasts 101 and C lasts 52.',
+          ],
+          say: 'Trying every order is hopeless: 10 topics with no rules can already be ordered in 10!, about 3.6·10^6, ways. A natural greedy goes from the front and always holds the longest ready topic next, since later meetings carry more recap. It fails. Say topic A takes 1 minute and must come before B, which takes 100, and C takes 50. The ready topics are A and C, so the greedy holds C first, then A, then B, which lasts 100 + 2 = 102. The order A, B, C does better: B lasts 101 and C lasts 52. From the front, the greedy cannot see the long topic waiting behind a short one.',
+        },
+        {
+          title: 'Decide the last meeting first',
+          points: [
+            'The rules ask for a topological order. The last meeting has the largest recap, n − 1 minutes, so choose it first.',
+            'The last topic must be one that no other topic needs. Among those, put the shortest last.',
+            'If an optimal order ends with topic s, but a shorter topic t that nothing needs comes earlier, moving t to the end keeps the rules and makes no meeting longer.',
+          ],
+          say: 'An order that obeys "this before that" rules is a topological order, so the question is which ready topic goes where. The recap grows with position, and the last meeting has the largest, n − 1 minutes, so decide it first. The last topic must be one that no other topic needs, and among those, put the shortest last. Suppose an optimal order ends with such a topic s, while a shorter one, t, comes earlier. Move t to the end. Nothing needs t, so the order still obeys the rules. Every meeting after t\'s old place moves one slot earlier and gets a minute shorter, and t now lasts e_t + n − 1, less than s did. So the longest meeting does not grow, and the same choice repeats for the n − 1 topics left.',
+        },
+        {
+          title: 'Kahn\'s algorithm on the reversed rules',
+          points: [
+            'Reverse every rule: adj[v] lists the topics v needs first, and indeg[b] counts the unplaced topics that need b.',
+            'Topics with indeg 0 wait in q, a min-heap by e. Fill pos from n − 1 down to 0, each with the topic popped from q.',
+            'Placing v deletes its arrows: each b in adj[v] loses 1 from indeg[b] and joins q at 0. The answer is the largest e_v + pos.',
+          ],
+          show: [0, 0],
+          note: 'Sample 2 at the start: no topic needs 1 or 6, so they wait in q. Each arrow points to a topic that must come earlier.',
+          say: 'This is Kahn\'s algorithm run backwards. Reverse every rule: adj[v] lists the topics that v needs first, and indeg[b] counts the unplaced topics that need b. A topic with indeg 0 can take the latest free position, so it waits in q, a min-heap ordered by e. Fill the positions from n − 1 down to 0, each time with the topic popped from q, and record e_v + pos. Placing v deletes its arrows: each b in adj[v] loses 1 from indeg[b], and joins q when it reaches 0. The answer is the largest e_v + pos.',
+        },
+        {
+          title: 'Sample 2: the last two meetings',
+          points: [
+            'q holds 1 (e 2) and 6 (e 4), so 1 takes pos 5 and lasts 2 + 5 = 7. Putting 6 there would cost 4 + 5 = 9.',
+            'Deleting 1\'s arrows lowers indeg[4] and indeg[3] to 1, so only 6 is ready.',
+            '6 takes pos 4 and lasts 4 + 4 = 8. Its arrow to 3 was the last one into 3, so 3 joins q.',
+          ],
+          show: [0, 2],
+          note: 'After two steps: 1 and 6 hold the last two positions, and 3, now needed by no unplaced topic, waits in q.',
+          say: 'In sample 2, no topic needs topic 1 or topic 6, so q starts with both. Topic 1 is shorter, so it takes pos 5 and lasts 2 + 5 = 7; putting 6 there instead would cost 4 + 5 = 9. Deleting 1\'s arrows lowers indeg[4] and indeg[3] to 1, so only 6 is ready. It takes pos 4 and lasts 4 + 4 = 8. Deleting its arrow to 3 brings indeg[3] to 0, and 3 joins q.',
+        },
+        {
+          title: 'Sample 2: the shorter ready topic goes later',
+          points: [
+            'Topic 3 takes pos 3 and lasts 1 + 3 = 4. Deleting its arrows frees both 2 and 4.',
+            'q holds 4 (e 3) and 2 (e 4). The shorter, 4, takes pos 2 and lasts 3 + 2 = 5.',
+            'Then 2 takes pos 1 and lasts 4 + 1 = 5, and 5 takes pos 0 and lasts 2.',
+          ],
+          show: [0, 4],
+          note: 'Mid-run: 4 has taken pos 2 ahead of the longer 2, which waits in q for pos 1.',
+          say: 'Topic 3 takes pos 3 and lasts 1 + 3 = 4. Deleting its arrows frees both 2 and 4, so q holds 4, with e = 3, and 2, with e = 4. The shorter, 4, takes pos 2 and lasts 3 + 2 = 5. Then 2 takes pos 1 and lasts 4 + 1 = 5, which frees topic 5, and 5 takes pos 0 and lasts 2 + 0 = 2.',
+        },
+        {
+          title: 'The longest meeting lasts 8',
+          points: [
+            'The order is 5, 2, 4, 3, 6, 1, and the meetings last 2, 5, 5, 4, 8 and 7 minutes: the answer is 8, as in the sample.',
+            'With m rules, each topic enters and leaves q once and each rule is handled once: O((n + m) log n).',
+            'Ready topics with equal e can go in either order. Lengths stay below 1.4·10^6, so int is enough.',
+          ],
+          show: [0, 7],
+          note: 'The end: topic 6, at pos 4, has the longest meeting, 8 minutes.',
+          say: 'The order is 5, 2, 4, 3, 6, 1, and the meetings last 2, 5, 5, 4, 8 and 7 minutes, so the answer is 8, as in the sample. With m rules, every topic enters and leaves the heap once and every rule is handled once, so the run is O((n + m) log n). When two ready topics have the same e, either can go later. Lengths stay below 1.4·10^6, so int is enough.',
+        },
       ],
+    code: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    int n;
+    scanf("%d", &n);
+    vector<int> e(n + 1), indeg(n + 1, 0);
+    vector<vector<int>> adj(n + 1);  // reversed rules: adj[v] lists the topics that must come before v
+    for (int v = 1; v <= n; v++) {
+        int d;
+        scanf("%d %d", &e[v], &d);
+        while (d--) {
+            int b;
+            scanf("%d", &b);
+            adj[v].push_back(b);
+            indeg[b]++;
+        }
+    }
+    // Kahn's algorithm from the last meeting back; among the ready topics, the shortest goes last.
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<>> q;
+    for (int v = 1; v <= n; v++) if (indeg[v] == 0) q.push({e[v], v});
+    int ans = 0;
+    for (int pos = n - 1; pos >= 0; pos--) {
+        auto [ev, v] = q.top(); q.pop();
+        ans = max(ans, ev + pos);
+        for (int u : adj[v]) if (--indeg[u] == 0) q.push({e[u], u});
+    }
+    printf("%d\\n", ans);
+}`,
     },
     spot: [
       'The statement gives pairwise constraints: "a must come before b", "x is smaller than y", prerequisites, dependencies, or a list that is sorted under some unknown order.',

@@ -63,8 +63,6 @@ try {
   for (const stage of STAGES) {
     await page.goto(`${BASE}#/path/${stage.id}`);
     await page.waitForFunction((title) => document.querySelector('h2[data-read="primer"]')?.textContent === title, stage.title);
-    // Open every step of the worked question, so they're all recorded.
-    if (await page.locator('[data-worked="all"]').count()) await page.click('[data-worked="all"]');
     add(await read('primer'), `path/${stage.id}`);
     add(captions[stage.id] || [], `diagram/${stage.id}`);
   }

@@ -67,16 +67,104 @@ export default {
       'pre[i]: ways[1] + … + ways[i], so pre[b] − pre[a − 1] counts the ways for every length from a to b.',
     ],
     worked: {
-      title: 'never three days in a row',
-      question: 'A courier is offered one job on each of n days, and the job on day i pays a_i. She may take any of them, but never work three days in a row. Find the most she can earn. Example: n = 6, with pay 4, 6, 5, 1, 8, 7. The real version has n up to 2·10^5 and a_i up to 10^9.',
-      steps: [
-        'Recognise it: one choice per day, and the rule looks back at the days just before, so this is a DP over positions. All 2^n plans are far too many, and working whenever allowed fails: it takes days 1, 2, 4 and 5 for 4 + 6 + 1 + 8 = 19.',
-        'Model it: to decide about tomorrow she needs only how many days in a row she has just worked, 0, 1 or 2. So dp[i][s] = the most earned in the first i days, given that they end in a run of exactly s worked days (s = 0 means day i was a rest). This is `bestNoLongRun` with K = 2.',
-        'Transitions into day i + 1: rest, so dp[i+1][0] is the largest of dp[i][0], dp[i][1] and dp[i][2]; or work after a run of s = 0 or 1, so dp[i+1][s+1] = dp[i][s] + a_{i+1}. Start from dp[0][0] = 0 and dp[0][1] = dp[0][2] = −∞, since nothing has been worked yet.',
-        'Fill the rows (dp[i][0], dp[i][1], dp[i][2]): after day 1, (0, 4, −∞); after day 2, (4, 6, 10); after day 3, (10, 9, 11). Already the best entry, 11 in state 2 (rest on day 1, work days 2 and 3), beats the 10 of the greedy plan, which worked days 1 and 2 and was then forced to rest.',
-        'After day 4 (pay 1): (11, 11, 10). After day 5 (pay 8): (11, 19, 19). After day 6 (pay 7): (19, 18, 26), where dp[6][2] = dp[5][1] + 7 = 19 + 7.',
-        'Answer: 26, the largest entry of the last row, from working days 2, 3, 5 and 6: 6 + 5 + 8 + 7. With 3 states and 2 choices per day it is O(n) time, and two rolling rows make it O(1) memory. The total can pass 10^14, so use long long, with a −∞ sentinel such as LLONG_MIN / 4 that adding pay cannot overflow.',
+      problem: { source: 'kattis', id: 'everythingisanail', name: 'Everything Is A Nail', difficulty: '4.4' },
+      slides: [
+        {
+          title: 'Three tools, and tasks in a fixed order',
+          points: [
+            'n tasks, up to 3·10^5, come in a fixed order, and each is a nail (0), a screw (1) or a bolt (2).',
+            'The hammer does nails, the screwdriver screws and the wrench bolts. Any task may be skipped, and any tool can come first.',
+            'Before a task you may switch tools, but the one you drop is gone for good. Find the most tasks you can do.',
+          ],
+          show: [0, 0],
+          note: 'Sample 2: ten tasks, of which at most 5 can be done.',
+          say: 'There are n tasks, up to 3·10^5, to be done in a fixed order, and each one is a nail, a screw or a bolt, written 0, 1 and 2. The hammer does nails, the screwdriver does screws and the wrench does bolts. Any task may be skipped, but never revisited, and you may start with any tool. Before a task you may switch to another tool, but the one you drop is lost for good. Find the largest number of tasks you can complete. In the second sample the tasks repeat 0, 1, 2, and the answer is 5.',
+        },
+        {
+          title: 'Too many plans, and switching greedily fails',
+          points: [
+            'Each tool is held for one unbroken stretch, so a plan is an order of the tools and up to two switch points.',
+            'That is 6 orders × about n²/2 pairs of switch points: around 2.7·10^11 plans when n = 3·10^5.',
+            'Switching whenever a task needs another tool fails: on 0, 1, 0, 0 it does 2 tasks, and keeping the hammer does 3.',
+          ],
+          say: 'A dropped tool never comes back, so each tool is held for one unbroken stretch of tasks, and a plan is an order of the tools plus at most two switch points. There are 6 orders and about n²/2 pairs of switch points, around 2.7·10^11 plans when n is 3·10^5. Greedy rules break on small cases. Switching to whatever the next task needs looks sensible, but on the tasks 0, 1, 0, 0 it gives up the hammer for one screw and then misses two nails: it does 2 tasks where keeping the hammer does 3.',
+        },
+        {
+          title: 'The state: which tool is in hand',
+          points: [
+            'The tool in hand decides whether a task can be done, and the tools already dropped decide what can come later.',
+            'Fix the order the tools are used in; then s, the number of tools dropped so far, settles both.',
+            'dp[s] = the most tasks done so far while holding order[s]. All three start at 0.',
+          ],
+          show: [0, 1],
+          note: 'Order hammer, screwdriver, wrench, before any task: every state is 0, since tools can be dropped before task 1.',
+          say: 'The past matters through two facts only: the tool in hand decides whether the next task can be done, and the tools already dropped decide what can be held later. So fix the order in which the tools will be used, one of 6. Then a single number s, how many tools have been dropped so far, gives both facts: the tool in hand is order[s], and the tools before it in the order are gone. dp[s] is the most tasks done so far while holding order[s]. Before any task all three entries are 0, because tools may be dropped before the first task.',
+        },
+        {
+          title: 'Drop first, then do the task',
+          points: [
+            'Before each task a drop moves to the next tool: dp[s] = max(dp[s], dp[s − 1]) for s = 1, then s = 2.',
+            'Then the state whose tool fits the task gains 1, and the other two skip it.',
+            'Task 4 is a nail: from 1, 2, 3 the drops change nothing, and the hammer\'s state becomes 2.',
+          ],
+          show: [0, 2],
+          note: 'Partway through the table, at task 4: drops move values down a row, then the hammer\'s row gains 1.',
+          say: 'Each task has two transitions. First the drops: holding tool s now means either holding it before, or holding tool s − 1 and dropping it, so dp[s] = max(dp[s], dp[s − 1]), for s = 1 and then s = 2, which also allows two drops at once. Then the task: the state whose tool fits it gains 1, and the other states skip it. For task 4, a nail, the column before is 1, 2, 3. The drops change nothing here, since max(2, 1) = 2 and max(3, 2) = 3. The hammer fits, so dp[0] becomes 2, and the column is 2, 2, 3.',
+        },
+        {
+          title: 'The full table for one order',
+          points: [
+            'After all 10 tasks the column is 4, 4, 5: this order completes at most 5 tasks.',
+            'Each column is built from the one before alone, so the code keeps a single dp of 3 values.',
+          ],
+          show: [0, 3],
+          note: 'The finished table for hammer, then screwdriver, then wrench; the best entry, in green, is 5.',
+          say: 'Filling the rest of the table the same way gives the last column 4, 4, 5, so with the order hammer, screwdriver, wrench at most 5 tasks can be done. Each column depends only on the one before it, so the code keeps one dp of three values and updates it in place, task by task.',
+        },
+        {
+          title: 'Reading the plan back',
+          points: [
+            'From the best cell, a task that fits the row\'s tool was done; the value before it is in the same row or one above.',
+            'Here: the hammer for task 1, the screwdriver for task 2, then the wrench for the bolts at tasks 3, 6 and 9.',
+          ],
+          show: [0, 4],
+          note: 'One best plan, traced back through the finished table; the green tasks are done, the rest skipped.',
+          say: 'To see a plan that reaches 5, walk back from the best cell. If the task fits the tool of the current row, it was done, and the value before it is one less; that value sits in the same row, or in a row above if a tool was dropped just before the task. Here the walk gives the hammer for task 1, the screwdriver for task 2, and then the wrench for the bolts at tasks 3, 6 and 9: five tasks.',
+        },
+        {
+          title: 'Answer: 5, in O(n)',
+          points: [
+            'The 6 orders give 5, 4, 4, 5, 4 and 4, so the answer is 5.',
+            '6 orders × 3 states × n tasks is about 5.4·10^6 steps for n = 3·10^5.',
+            'Every state can be reached before task 1 by dropping tools, so all start at 0 and no −∞ is needed.',
+          ],
+          show: [0, 5],
+          note: 'The finished search: the best total for each of the 6 tool orders; the answer is the largest, 5.',
+          say: 'Running the same table for each of the 6 orders gives 5, 4, 4, 5, 4 and 4, so the answer is 5, the sample\'s output. The work is 6 orders times 3 states per task, about 5.4·10^6 steps when n is 3·10^5, and the counts never pass n, so int is enough. Every state can be reached before the first task by dropping tools, so all of them start at 0 and no −∞ entry is needed.',
+        },
       ],
+      code: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    int n;
+    cin >> n;
+    vector<int> t(n);
+    for (int &x : t) cin >> x;
+
+    int best = 0;
+    vector<int> order = {0, 1, 2};
+    do {
+        // dp[s] = most tasks done so far while holding order[s], after s drops
+        vector<int> dp(3, 0);
+        for (int x : t) {
+            for (int s = 1; s < 3; s++) dp[s] = max(dp[s], dp[s - 1]);  // drop before this task
+            for (int s = 0; s < 3; s++) dp[s] += (x == order[s]);
+        }
+        best = max(best, *max_element(dp.begin(), dp.end()));
+    } while (next_permutation(order.begin(), order.end()));
+    cout << best << '\\n';
+}`,
     },
     spot: [
       'Choices are made left to right (days, trees, students in a row) and each choice only restricts the next one or two',

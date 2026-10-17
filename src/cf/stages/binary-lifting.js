@@ -77,16 +77,131 @@ export default {
       'next(x): the successor of position x under any function that gives each position one successor, such as "the furthest point one greedy step reaches"; jumping along it needs no tree (in the TRD version, `stepTable(next)` builds the 60 levels once and `afterSteps(up, x, k)` answers each query).',
     ],
     worked: {
-      title: 'the oldest ancestor within an age limit',
-      question: 'A family tree has n = 9 people, rooted at the founder, person 1; the parents of people 2 to 9 are 1, 1, 2, 4, 5, 6, 3 and 7. Person i is a_i years old, with a = (90, 70, 65, 52, 40, 31, 20, 38, 3), so every parent is older than their children. A query (v, x) asks for the oldest person among v and v\'s ancestors whose age is at most x, or −1 if v is older than x. Answer the queries (9, 45) and (8, 70). The real version has n and q up to 2·10^5.',
-      steps: [
-        'Recognise it: ages grow going up, so the people on v\'s root path who are at most x form a run that starts at v and stops below the first older ancestor; the answer is the top of that run, a "climb while the condition holds" query. Walking up one parent at a time is O(depth) per query, about 4·10^10 steps for a family line of 2·10^5 generations and 2·10^5 queries.',
-        'Model it: up[j][v] with LOG = 4, since 2^4 = 16 > 9. Row 0 is the parents, with up[0][1] = 1 so that every jump from the founder stays there. For person 9: up[0][9] = 7, up[1][9] = up[0][7] = 6, up[2][9] = up[1][6] = 4, and up[3][9] = up[2][4] = 1, because 4 is only 2 deep and the jump stops at the founder.',
-        'Query (9, 45): person 9 is aged 3, which is at most 45, so 9 qualifies. Try j = 3, 2, 1, 0 and jump whenever the landing person is at most 45: up[3][9] = 1, aged 90: stay; up[2][9] = 4, aged 52: stay; up[1][9] = 6, aged 31: jump to 6; up[0][6] = 5, aged 40: jump to 5. The answer is 5: three people above 9 qualify (7, 6 and 5), and the jumps taken, 2 then 1, are the binary digits of 3.',
-        'Why it is right: before trying 2^j, fewer than 2^(j+1) qualifying people remain above the current one. Ages only grow going up, so if at least 2^j remain, the jump lands on a qualifying person and leaves fewer than 2^j. If fewer remain, it lands on someone too old, unless it is clamped at the founder and the founder qualifies: then everyone above qualifies, the founder is the answer, and no later jump moves. Either way fewer than 2^j remain after level j, and after j = 0 none do.',
-        'Query (8, 70): person 8 is aged 38, which is at most 70. up[3][8], up[2][8] and up[1][8] are all the founder, aged 90, so stay three times; up[0][8] = 3, aged 65: jump. The answer is 3.',
-        'Answer: 5 and 3. Building the table is O(n log n), 18 levels and 3.6·10^6 entries for n = 2·10^5, and each query is O(log n). Check a_v ≤ x before climbing: if v itself is older than x, the descent never moves and would wrongly return v instead of −1.',
+      problem: { source: 'kattis', id: 'tourists', name: 'Tourists', difficulty: '3.6' },
+      slides: [
+        {
+          title: 'Sum the path lengths between multiples',
+          points: [
+            'A tree has n ≤ 2·10^5 vertices, labelled 1 to n.',
+            'For each pair x < y where y is a multiple of x, the length is the number of vertices on the path from x to y, both ends included.',
+            'Print the sum of these lengths over all such pairs.',
+          ],
+          show: [0, 0],
+          note: 'Sample 1, rooted at 1: the path from 2 to 6 has 6 vertices. The 17 pairs of this tree sum to 55.',
+          say: 'Tree City has n attractions, up to 2·10^5, labelled 1 to n and joined by n − 1 roads into a tree. A tourist at x goes on to every y greater than x that is a multiple of x, along the path between them. The length of that trip is the number of attractions on the path, counting x and y. Print the sum of the lengths over all such pairs. In the sample, the trip from 2 to 6 passes 2, 8, 10, 1, 4 and 6, so its length is 6, and the 17 trips add up to 55.',
+        },
+        {
+          title: 'Millions of pairs, each a long walk',
+          points: [
+            'x has ⌊n/x⌋ − 1 multiples above it, so there are about 2.3·10^6 pairs when n = 2·10^5.',
+            'Walking each path one edge at a time is O(depth): on a path of 2·10^5 vertices labelled in order, the walks take about 2.2·10^11 steps.',
+            'A BFS from every x is no better: n searches of n steps, 4·10^10.',
+          ],
+          say: 'Count the pairs first. x has ⌊n/x⌋ − 1 multiples above it, and adding these up over all x gives about 2.3·10^6 pairs when n = 2·10^5. That many pairs is fine, but their paths are not. Walking from x to y one edge at a time costs O(depth), and on a path of 2·10^5 vertices labelled in order the walks add up to about 2.2·10^11 steps. A BFS from every x is no better: n searches of n steps each, 4·10^10.',
+        },
+        {
+          title: 'A path length is a distance plus one',
+          points: [
+            'The tree never changes; only the pairs do. That is millions of distance queries on one fixed tree.',
+            'Rooted at 1, the length from x to y is dist(x, y) + 1, where dist(x, y) = dep[x] + dep[y] − 2·dep[lca(x, y)].',
+            'Binary lifting answers each lca(x, y) in O(log n), after O(n log n) to build up[j][v].',
+          ],
+          say: 'The tree is fixed and only the pairs change, so this is millions of distance queries on one tree, which is what binary lifting is for. Root the tree at 1. The path from x to y climbs from x to their lowest common ancestor, lca(x, y), and comes down to y, so it has dist(x, y) = dep[x] + dep[y] − 2·dep[lca(x, y)] edges, and one more vertex than edges. Building up[j][v] costs O(n log n) once, and after that every lca(x, y) costs O(log n).',
+        },
+        {
+          title: 'Build the jump table from vertex 1',
+          points: [
+            'A BFS from 1 gives dep[v] and the parent up[0][v]; vertex 1 points to itself.',
+            'Each level doubles the one below: up[j][v] = up[j−1][up[j−1][v]]. `LOG` = 18 is enough, since 2^18 > 2·10^5.',
+            'The sample is 3 deep, so levels 0 and 1 cover it; every higher level holds 1.',
+          ],
+          show: [0, 1],
+          note: 'The finished table for the sample, highlighting how up[1][2] was built: up[0][up[0][2]] = up[0][8] = 10.',
+          say: 'A BFS from vertex 1, without recursion, gives every depth dep[v] and every parent up[0][v], with vertex 1 pointing to itself so that a jump past the top stops there. Each level doubles the one below it: up[j][v] = up[j−1][up[j−1][v]]. No vertex is 2^18 deep when n is at most 2·10^5, so 18 levels are enough: LOG = 18. The sample tree is only 3 deep, so levels 0 and 1 already cover it, and every higher level holds 1. For example, up[1][2] = up[0][up[0][2]] = up[0][8] = 10.',
+        },
+        {
+          title: 'lca(2, 6): level the depths first',
+          points: [
+            '2 is at depth 3 and 6 at depth 2, so lift 2 by one: kth(2, 1) = up[0][2] = 8.',
+            '8 ≠ 6, so try the levels from the top. At j = 1, up[1][8] = up[1][6] = 1: a common ancestor, but maybe not the lowest, so don\'t jump.',
+          ],
+          show: [0, 2],
+          note: 'Midway through lca(2, 6): 2 has been lifted to 8, and the jump of 2 is refused because 8 and 6 would both land on 1.',
+          say: 'Take the pair 2 and 6. Vertex 2 is at depth 3 and 6 is at depth 2, so first lift 2 by the difference, one step: kth(2, 1) = up[0][2] = 8. Now 8 and 6 are level but different, so the LCA is higher up. Try the levels from the top. At j = 1, up[1][8] and up[1][6] are both 1. That is a common ancestor, but it may be above the lowest one, so neither vertex jumps.',
+        },
+        {
+          title: 'Climb together, then step to the parent',
+          points: [
+            'At j = 0, up[0][8] = 10 and up[0][6] = 4 differ, so both jump. 10 and 4 are now children of the LCA.',
+            'lca(2, 6) = up[0][10] = 1, so dist(2, 6) = 3 + 2 − 2·0 = 5 and the path has 6 vertices.',
+          ],
+          show: [0, 3],
+          note: 'End of lca(2, 6): 8 and 6 jumped to 10 and 4, whose parent 1 is the lowest common ancestor.',
+          say: 'At j = 0, up[0][8] = 10 and up[0][6] = 4 are different, so both jump, to 10 and 4. The levels have run out, and 10 and 4 are two children of the lowest common ancestor, so it is their parent: lca(2, 6) = up[0][10] = 1. Then dist(2, 6) = dep[2] + dep[6] − 2·dep[1] = 3 + 2 − 0 = 5 edges, and the path has 6 vertices, as in the statement.',
+        },
+        {
+          title: 'All 17 pairs, and the cost',
+          points: [
+            'The same for every pair gives the lengths in the table, which sum to 55.',
+            'O(n log n) pairs at O(log n) each make O(n log² n). The sum passes 2·10^11 on a long path, so it needs long long.',
+            'lca(a, b) skips any level whose jump is longer than dep[a]: both vertices would land on the root, so that jump is never taken.',
+          ],
+          show: [0, 4],
+          note: 'Every pair of the sample: row x, column y holds the length of the path from x to y. The rows sum to 26, 16, 6, 4 and 3, which is 55.',
+          say: 'Doing the same for all 17 pairs of the sample gives the lengths in the table, which add up to 55. There are O(n log n) pairs and each lca costs O(log n), so the whole solution is O(n log² n), plus O(n log n) to build the table. On a path of 2·10^5 vertices the sum is about 2.2·10^11, so it needs long long. With 2.3·10^6 pairs, reading the table takes most of the time, so lca(a, b) skips every level whose jump is longer than dep[a]: such a jump would land both vertices on the root, so it can never be taken.',
+        },
       ],
+      code: `#include <bits/stdc++.h>
+using namespace std;
+
+const int LOG = 18;
+int n;
+vector<vector<int>> adj;
+array<vector<int>, LOG> up;         // up[j][v] = 2^j-th ancestor of v (the root points to itself)
+vector<int> dep;
+
+void build(int root) {
+    up[0].assign(n + 1, root); dep.assign(n + 1, -1);
+    vector<int> q = {root};
+    dep[root] = 0;
+    for (size_t i = 0; i < q.size(); i++)
+        for (int c : adj[q[i]]) if (dep[c] < 0) {
+            dep[c] = dep[q[i]] + 1; up[0][c] = q[i];
+            q.push_back(c);
+        }
+    for (int j = 1; j < LOG; j++) {
+        up[j].resize(n + 1);
+        for (int v = 0; v <= n; v++) up[j][v] = up[j - 1][up[j - 1][v]];
+    }
+}
+int kth(int v, int k) {
+    for (int j = LOG - 1; j >= 0; j--) if (k >> j & 1) v = up[j][v];
+    return v;
+}
+int lca(int a, int b) {
+    if (dep[a] < dep[b]) swap(a, b);
+    a = kth(a, dep[a] - dep[b]);
+    if (a == b) return a;
+    for (int j = LOG - 1; j >= 0; j--)  // a jump longer than dep[a] would land both on the root
+        if ((1 << j) <= dep[a] && up[j][a] != up[j][b]) { a = up[j][a]; b = up[j][b]; }
+    return up[0][a];
+}
+int dist(int a, int b) { return dep[a] + dep[b] - 2 * dep[lca(a, b)]; }
+
+int main() {
+    ios::sync_with_stdio(false); cin.tie(nullptr);
+    cin >> n;
+    adj.assign(n + 1, {});
+    for (int i = 0; i < n - 1; i++) {
+        int a, b; cin >> a >> b;
+        adj[a].push_back(b); adj[b].push_back(a);
+    }
+    build(1);
+    long long total = 0;
+    for (int x = 1; x <= n; x++)
+        for (int y = 2 * x; y <= n; y += x) total += dist(x, y) + 1;
+    cout << total << '\\n';
+}`,
     },
     spot: [
       'Many queries about paths between two vertices of a fixed tree: distances, whether a vertex lies on a path, the heaviest edge on a path.',

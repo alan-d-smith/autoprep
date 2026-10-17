@@ -76,16 +76,108 @@ export default {
       'B: the number of bits SOS runs over, so the masks go from 0 to 2^B − 1 (`K` in the TRD version).',
     ],
     worked: {
-      title: 'a delivery round',
-      question: 'A van starts at the depot, stop 0, and must visit shops 1, 2 and 3 once each, in any order, finishing at whichever shop comes last. The driving times in minutes are 0–1: 4, 0–2: 5, 0–3: 7, 1–2: 2, 1–3: 3 and 2–3: 9, the same in both directions. Find the shortest total driving time. The real version has up to 17 shops and times up to 10^9.',
-      steps: [
-        'Recognise it: the route is an order of all the shops, and each leg depends only on where the van is now. There are 17! ≈ 3.6·10^14 orders at full size, but 17 shops and the depot fit in the bits of an int, so this is dp[mask][last]. Driving to the nearest shop each time does not work: it goes 0 → 1 → 2 → 3 and pays 4 + 2 + 9 = 15.',
-        'Model it: bit i of mask is 1 when stop i has been visited, and masks are written in binary with stop 0 on the right, so 0101₂ is the depot and shop 2. dp[mask][v] is the shortest time to leave the depot, visit exactly the stops in mask and stand at v, and w[v][u] is the time from v to u. Unlike the template, only the depot is a start, so dp[0001₂][0] = 0, and each step sets dp[mask | 1 << u][u] to dp[mask][v] + w[v][u] when that is smaller.',
-        'One shop visited: dp[0011₂][1] = 4, dp[0101₂][2] = 5 and dp[1001₂][3] = 7.',
-        'Two shops visited, each reached from the other shop in its mask: dp[0111₂][1] = 5 + 2 = 7 and dp[0111₂][2] = 4 + 2 = 6; dp[1011₂][1] = 7 + 3 = 10 and dp[1011₂][3] = 4 + 3 = 7; dp[1101₂][2] = 7 + 9 = 16 and dp[1101₂][3] = 5 + 9 = 14.',
-        'All shops, mask 1111₂. Ending at shop 3 means coming from mask 0111₂: min(dp[0111₂][1] + 3, dp[0111₂][2] + 9) = min(10, 15) = 10. Ending at shop 2 comes from 1011₂, min(10 + 2, 7 + 9) = 12, and ending at shop 1 from 1101₂, min(16 + 2, 14 + 3) = 17. This is where the orders 0 → 1 → 2 → 3 and 0 → 2 → 1 → 3 meet in one state, and only the cheaper survives.',
-        'Answer: 10, by 0 → 2 → 1 → 3 (5 + 2 + 3). The DP is O(2^n · n²) for n stops; with the depot that is 18 stops and at most 2^18 · 18² ≈ 8.5·10^7 steps. A route can take 1.7·10^10 minutes, so use long long.',
+      problem: { source: 'kattis', id: 'pokemongogo', name: 'Pokemon Go Go', difficulty: '4.0' },
+      slides: [
+        {
+          title: 'Catch every kind, then walk home',
+          points: [
+            'Up to 20 stops lie on a street grid, each with one Pokémon, and there are at most 15 different kinds.',
+            'Walk from home at (0, 0), catch at least one of every kind and walk back; a walk costs the rows plus the columns it crosses.',
+          ],
+          show: [0, 0],
+          note: 'Sample 1: home H and five stops, labelled by kind. Flareon is at (1, 1) and at (20, 20), which is drawn much closer than it is.',
+          say: 'There are up to 20 stops at street corners, each with one Pokémon, and at most 15 different kinds among them. Starting from home at (0, 0), we must catch at least one Pokémon of every kind and walk back home, in as few blocks as possible. Walking between two corners costs the difference in rows plus the difference in columns. In the sample, Flareon can be caught at two stops, so a route needs only one of them.',
+        },
+        {
+          title: 'Trying every order of stops is hopeless',
+          points: [
+            'Every order of 20 stops is 20! ≈ 2.4·10^18 routes, and most of them walk to stops they don\'t need.',
+            'A route needs one stop of each kind, so partway along what matters is which kinds are caught, not which stops were visited.',
+          ],
+          say: 'Trying every order of the stops means 20!, about 2.4·10^18 routes, and most of them walk to stops they don\'t need. A route needs one stop of each kind, so partway along, what matters is which kinds are already caught, not which stops were visited on the way.',
+        },
+        {
+          title: 'Kinds caught, and where you stand',
+          points: [
+            'Two partial routes that caught the same kinds and stand at the same stop can be finished in exactly the same ways.',
+            'So keep only the shorter. With at most 15 kinds there are 2^15 · 20 ≈ 6.6·10^5 such states.',
+            'A mask over the stops instead would make 2^20 · 20 ≈ 2.1·10^7 states, 32 times as many.',
+          ],
+          say: 'Partway along, the rest of a route depends on two things: which kinds are caught, and which stop you are standing at. Two partial routes that agree on both can be finished in exactly the same ways, so only the shorter needs keeping. The caught kinds fit in a mask of at most 15 bits, so there are 2^15 · 20, about 6.6·10^5 states. A mask over the 20 stops would also be correct, but with 2^20 · 20, about 2.1·10^7 states, 32 times as many.',
+        },
+        {
+          title: 'dp[mask][v]: the shortest walk so far',
+          points: [
+            'dp[mask][v] is the shortest walk from home that has caught exactly the kinds in mask and stands at stop v.',
+            'It starts at dp[1 << kind[v]][v], the distance from home to v; walking on to a stop u of a new kind offers dp[mask][v] + w[v][u].',
+            'The answer is the least dp[full][v] plus the walk from v back home.',
+          ],
+          say: 'Number the kinds from 0 in order of appearance, and let kind[v] be the kind at stop v. Let dp[mask][v] be the shortest walk from home that has caught exactly the kinds in mask and stands at stop v, and let w[v][u] be the distance between stops v and u. Walking straight to stop v costs its distance from home, which starts dp[1 << kind[v]][v]. From there, walking on to a stop u whose kind is not in mask offers dp[mask][v] + w[v][u] to dp[mask | 1 << kind[u]][u]. A stop whose kind is already caught is never worth a detour, because walking straight on is never longer. Masks only grow, so looping over them in increasing order works, and the answer is the least dp[full][v] plus the walk from v back home, where full is the mask with every kind.',
+        },
+        {
+          title: 'Two Flareons, one state',
+          points: [
+            'Via the Flareon at (20, 20), reaching the Eevee stop takes 40 + 26 = 66 blocks; via the one at (1, 1), 2 + 12 = 14.',
+            'Both walks caught Eevee and Flareon and stand at stop 0, so dp[0011₂][0] keeps 14.',
+          ],
+          show: [0, 1],
+          note: 'A moment in the middle of the DP: the walk through (1, 1), green, replaces the walk through (20, 20), red, in the same state.',
+          say: 'In the sample, Eevee gets bit 0, Flareon bit 1, Jolteon bit 2 and Umbreon bit 3, and the stops are numbered in input order. Walking to the Flareon at (20, 20) and then to the Eevee stop takes 40 + 26 = 66 blocks; walking to the Flareon at (1, 1) first takes 2 + 12 = 14. Both walks have caught Eevee and Flareon and stand at stop 0, so they are the same state, dp[0011₂][0], and it keeps 14. The DP never chooses a Flareon in advance: walks through the far one lose wherever they meet a walk through the near one.',
+        },
+        {
+          title: 'The last step walks home',
+          points: [
+            'With every kind caught, mask 1111₂, each end stop v adds its distance home to dp[1111₂][v].',
+            'That gives 28 for stops 0, 2, 3 and 4, and 40 + 40 = 80 for the far Flareon, stop 1.',
+          ],
+          show: [0, 2],
+          note: 'The full mask: beside each stop v, dp[1111₂][v] plus its distance home.',
+          say: 'Once the mask holds every kind, 1111₂, only the walk home is left, so each end stop v adds its distance from home to dp[1111₂][v]. Ending at stop 0, 2, 3 or 4 gives 28: several different routes are equally short. Ending at the far Flareon, stop 1, gives 40 + 40 = 80. The answer is the least, 28.',
+        },
+        {
+          title: 'Answer 28, in O(2^k · n²)',
+          points: [
+            'The DP\'s route H → (1, 1) → (1, 8) → (2, 8) → (5, 9) → H walks 2 + 7 + 1 + 4 + 14 = 28 blocks.',
+            'With n stops and k kinds the DP takes 2^k · n² steps, about 1.3·10^7 at n = 20 and k = 15.',
+            'With a single kind, the answer is twice the distance to its nearest stop.',
+          ],
+          show: [0, 3],
+          note: 'The end: the route behind dp[1111₂][0], which is the route in the statement walked backwards.',
+          say: 'Following the walk stored for the first end that reaches 28 gives home, then (1, 1), (1, 8), (2, 8) and (5, 9), and back home: 2 + 7 + 1 + 4 + 14 = 28 blocks, which is the route in the statement walked backwards. With n stops and k kinds there are 2^k · n states with n moves each, so 2^k · n² steps, about 1.3·10^7 for 20 stops and 15 kinds. With a single kind, the answer is twice the distance to its nearest stop.',
+        },
       ],
+      code: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    int n;
+    cin >> n;
+    vector<int> r(n), c(n), kind(n);
+    map<string, int> bit;                     // each Pokemon name gets its own bit
+    for (int v = 0; v < n; v++) {
+        string name;
+        cin >> r[v] >> c[v] >> name;
+        kind[v] = bit.emplace(name, bit.size()).first->second;
+    }
+    int full = (1 << bit.size()) - 1;
+    auto w = [&](int v, int u) { return abs(r[v] - r[u]) + abs(c[v] - c[u]); };
+    auto home = [&](int v) { return abs(r[v]) + abs(c[v]); };
+    const int INF = INT_MAX / 2;
+    vector<vector<int>> dp(full + 1, vector<int>(n, INF));  // dp[mask][v]: kinds caught, standing at v
+    for (int v = 0; v < n; v++) dp[1 << kind[v]][v] = home(v);
+    for (int mask = 1; mask <= full; mask++)
+        for (int v = 0; v < n; v++) {
+            if (dp[mask][v] == INF) continue;
+            for (int u = 0; u < n; u++)
+                if (!(mask >> kind[u] & 1)) {
+                    int &next = dp[mask | 1 << kind[u]][u];
+                    next = min(next, dp[mask][v] + w(v, u));
+                }
+        }
+    int best = INF;
+    for (int v = 0; v < n; v++) best = min(best, dp[full][v] + home(v));
+    cout << best << '\\n';
+}`,
     },
     spot: [
       'n ≤ 16, 18 or 20 with an ordering or a selection to optimise: 2^20 · 20 ≈ 2·10^7, so the constraint itself is the hint.',

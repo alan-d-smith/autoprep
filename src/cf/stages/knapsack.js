@@ -74,19 +74,93 @@ export default {
       'cnt[i]: how many copies of item i exist, in the bounded version.',
       '`can`: the subset-sum bitset; bit s is set when some subset sums to exactly s (built by `reachable` in the TRD version).',
       '`MAXS`: the largest sum the bitset tracks (`S` in the TRD version).',
-      'minW[x]: in the worked question, the least total weight of a set whose values add up to exactly x, for when the weights are too large to index by.',
     ],
     worked: {
-      title: 'heavy crates, small values',
-      question:
-        'A cargo drone can lift at most W = 9 kg. There are n = 4 crates, given as (weight, value): A (4, 3), B (8, 2), C (3, 1) and D (5, 2). Choose crates with total weight at most W and the largest total value. In the real version n ≤ 100, the weights and W are up to 10^9, and each value is at most 1000.',
-      steps: [
-        'Recognise it: each crate is taken or left under a weight budget, a 0/1 knapsack. But a table indexed by weight needs 10^9 + 1 cells, and 100 passes over it is 10^11 steps. The values are small, at most 100·1000 = 10^5 in total, so swap the roles and index by value.',
-        'Model it: minW[x] is the least total weight of a set of crates whose values add up to exactly x, with minW[0] = 0 and ∞ elsewhere. A crate (w, v) is added by sweeping x downwards from the total value to v: minW[x] = min(minW[x], minW[x − v] + w). The answer is the largest x with minW[x] ≤ W.',
-        'Here the values add up to 8, so x runs from 0 to 8. After A, minW[3] = 4 and every other x > 0 is ∞. After B, minW[2] = 8 and minW[5] = 4 + 8 = 12. After C, minW[1] = 3, minW[4] = 4 + 3 = 7 and minW[6] = 12 + 3 = 15, while minW[3] stays 4, because putting C on top of minW[2] would weigh 11.',
-        'After D, minW[2] = min(8, 0 + 5) = 5, minW[5] = min(12, 4 + 5) = 9, minW[6] = min(15, 7 + 5) = 12, minW[7] = 12 + 5 = 17 and minW[8] = 15 + 5 = 20, so for x from 0 to 8 the table now reads 0, 3, 5, 4, 7, 9, 12, 17, 20. Sweeping upwards would have let a crate count twice: in A\'s own pass, minW[6] would build on the 4 just written into minW[3] and become 8, which is two copies of A, and the answer would wrongly be 6.',
-        'Answer: 5, with crates A and D (4 + 5 = 9 kg): minW[8] = 20, minW[7] = 17 and minW[6] = 12 are too heavy, and minW[5] = 9 fits. The table need not grow with x (here minW[2] = 5 but minW[3] = 4), so check every x rather than stopping at the first that is too heavy. The DP is O(n·Σv), at most 10^7 steps; a set can weigh up to 10^11, so store weights in long long, with an ∞ such as 10^18 so that ∞ + w cannot overflow.',
+      problem: { source: 'kattis', id: 'amusicalquestion', name: 'A Musical Question', difficulty: '4.8' },
+      slides: [
+        {
+          title: 'Two CDs, as much music as possible',
+          points: [
+            'Each of two CDs holds W ≤ 1000 minutes, and n ≤ 1000 songs last up to 1000 minutes each.',
+            'Put whole songs on the CDs, each at most once, to get the most minutes in total.',
+            'Among the best totals, the CDs should differ least; print the fuller CD first.',
+          ],
+          say: 'The problem is A Musical Question. Bob has two CDs that each hold W minutes (c in the statement), with W up to 1000, and n songs, up to 1000 of them, each at most 1000 minutes long. Each song goes whole onto one CD or is left out, and he wants as many minutes as possible on the two CDs together. Among the best totals, the two CDs should differ as little as possible, and the output gives the fuller CD first. In the second sample W = 100 and the songs last 10, 20, 30, 40 and 50 minutes: all 150 minutes fit, split 80 and 70.',
+        },
+        {
+          title: 'Filling one CD first can lose',
+          points: [
+            'Each song goes on CD 1, on CD 2 or nowhere: 3^n choices, about 10^477 for n = 1000.',
+            'With W = 8 and songs 2, 2, 4, 5, 5, filling CD 1 to 8 takes 2 + 2 + 4 and leaves room for one 5: 13.',
+            '5 + 2 on each CD makes 14, so the two CDs must be filled together.',
+          ],
+          say: 'Each song goes on the first CD, on the second or nowhere, so there are 3^n choices, about 10^477 when n is 1000. Filling one CD as full as possible and then the other is not safe either. With W = 8 and songs of 2, 2, 4, 5 and 5 minutes, the only way to fill the first CD to 8 is 2 + 2 + 4, and then the second CD takes one 5: 13 minutes. Putting 5 + 2 on each CD makes 14. Even when the total comes out right, the split can be wrong: on sample 2 this gives 100 and 50 instead of 80 and 70.',
+        },
+        {
+          title: 'Index by the minutes on both CDs',
+          points: [
+            'What the remaining songs can still do depends only on the minutes c1 and c2 already on each CD.',
+            'Bit c2 of the bitset can[c1] is set when some songs fill the CDs with exactly c1 and c2 minutes.',
+            'That is (W + 1)², about 10^6 states; at the start only can[0][0] is set.',
+          ],
+          show: [0, 2],
+          note: 'Midway through sample 2, after songs 10 and 20: blue pairs are new with 20. Only multiples of 10 are drawn, since no other pair can be reached.',
+          say: 'This is a 0/1 knapsack whose weight is a pair. What the remaining songs can still achieve depends only on the minutes already on each CD, c1 on the first and c2 on the second, so that pair is the state. Only reachability matters, so keep it in bitsets: bit c2 of can[c1] is set when some songs fill the CDs with exactly c1 and c2 minutes. That is (W + 1)² states, about 10^6, and before any song only can[0][0] is set.',
+        },
+        {
+          title: 'One downward pass per song',
+          points: [
+            'Song i on CD 2 shifts the row, `can[c1] << w[i]`; on CD 1 it reads the row `can[c1 − w[i]]`.',
+            'Sweep c1 from W down, so can[c1 − w[i]] is still without song i, and each song is used once.',
+            'In all O(n·W²/64), about 1.6·10^7 word operations; a plain bool table would take 10^9.',
+          ],
+          show: [0, 3],
+          note: 'Midway through song 30\'s pass: row 30 is rebuilt from the amber cells of row 0 (song on CD 1) and of row 30 itself, shifted 30 right (song on CD 2).',
+          say: 'Song i, of length w[i], is added in one pass over the rows. Putting it on the second CD shifts a row by w[i]: can[c1] << w[i]. Putting it on the first CD takes the row w[i] lower: can[c1 − w[i]]. So can[c1] |= (can[c1] << w[i]) | can[c1 − w[i]]. Sweeping c1 from W downwards means the lower row has not been touched in this pass yet, and the shift is taken from the row\'s old value, so each song is used at most once. With 64 bits to a word, this is O(n·W²/64), about 1.6·10^7 operations, where a plain bool table would take 10^9.',
+        },
+        {
+          title: 'Sample 2, song by song',
+          points: [
+            'Song 50 adds pairs such as (100, 50): 10 + 40 + 50 on CD 1 and 20 + 30 on CD 2.',
+            'Shifts also set bits above W, such as bit 110 of can[0]; they are never read, so need no clearing.',
+          ],
+          show: [0, 6],
+          note: 'After all five songs: green pairs were reachable before song 50, blue ones are new with it.',
+          say: 'Each song only adds pairs. After song 30, for example, (30, 30) is reachable, with 10 + 20 on one CD and 30 on the other. Song 50 adds pairs such as (100, 50): 10 + 40 + 50 on the first CD and 20 + 30 on the second. The shifts also set bits above W, such as bit 110 of can[0], from 10 + 20 + 30 + 50 on the second CD. Those bits are never read, so they need no clearing.',
+        },
+        {
+          title: 'Read off the best pair',
+          points: [
+            'The largest c1 + c2 is 150, on the diagonal from (100, 50) to (50, 100).',
+            'Of those, (80, 70) and (70, 80) differ least, so the output is 80 70.',
+            'Scan only c2 ≤ c1: the table is symmetric, and the fuller CD comes first.',
+          ],
+          show: [0, 7],
+          note: 'The end: the total 150 lies on one diagonal (amber), and (80, 70) and (70, 80) differ least (blue).',
+          say: 'After the last song, read the answer off the table. The largest total c1 + c2 is 150, on the diagonal from (100, 50) to (50, 100). Of those pairs, (80, 70) and (70, 80) differ least, so the output is 80 70. The table is symmetric, because the two CDs can swap, so it is enough to scan c2 ≤ c1, which also puts the fuller CD first. A song longer than W fits on neither CD: its shift only sets bits above W, and c1 ≥ w[i] never holds.',
+        },
       ],
+      code: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    int W, n;
+    cin >> W >> n;
+    vector<int> w(n);
+    for (int &x : w) cin >> x;
+    // Bit c2 of can[c1]: some songs fill the CDs with exactly c1 and c2 minutes.
+    vector<bitset<1001>> can(W + 1);
+    can[0][0] = 1;
+    for (int i = 0; i < n; i++)
+        for (int c1 = W; c1 >= 0; c1--)    // downwards, so each song is used once
+            can[c1] |= (can[c1] << w[i]) | (c1 >= w[i] ? can[c1 - w[i]] : bitset<1001>());
+    int best1 = 0, best2 = 0;
+    for (int c1 = 0; c1 <= W; c1++)
+        for (int c2 = 0; c2 <= c1; c2++)   // can is symmetric, so let c1 be the fuller CD
+            if (can[c1][c2] && pair(c1 + c2, c2 - c1) > pair(best1 + best2, best2 - best1))
+                best1 = c1, best2 = c2;
+    cout << best1 << " " << best2 << "\\n";
+}`,
     },
     spot: [
       'You pick a subset of items, each with a cost and a gain, under a total budget that is at most about 10⁵ or can be capped there.',

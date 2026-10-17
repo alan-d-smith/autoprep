@@ -75,16 +75,98 @@ export default {
       'pre[i]: the prefix sum a[0] + … + a[i−1], so the items l..r total pre[r+1] − pre[l] (`P` in the TRD version).',
     ],
     worked: {
-      title: 'merging piles',
-      question: 'Four piles of stones stand in a row, holding 6, 4, 5 and 5 stones. A move merges two neighbouring piles into one and costs the number of stones in the new pile. Find the smallest total cost of merging all the piles into one. In the real version n ≤ 400 and a pile holds up to 10^9 stones.',
-      steps: [
-        'Recognise it: after each merge the neighbours close up, so every pile on the table is made from a contiguous segment of the original row, and n ≤ 400 allows O(n³). Trying every sequence of merges is hopeless, since 20 piles already allow about 1.2·10^17 of them. The obvious greedy fails too: merging the cheapest neighbouring pair first takes 4 + 5, then 9 + 5, then 6 + 14, and pays 9 + 14 + 20 = 43.',
-        'Model it: dp[l][r] is the cheapest way to merge piles l..r (counted from 0) into one pile, and dp[i][i] = 0. The last merge joins l..k and k+1..r for some split k and costs the segment\'s total pre[r+1] − pre[l], so dp[l][r] is the minimum over k of dp[l][k] + dp[k+1][r], plus that total. Here pre = 0, 6, 10, 15, 20.',
-        'Length 2, where the only split is down the middle: dp[0][1] = 6 + 4 = 10, dp[1][2] = 4 + 5 = 9 and dp[2][3] = 5 + 5 = 10.',
-        'Length 3: dp[0][2] = min(dp[0][0] + dp[1][2], dp[0][1] + dp[2][2]) + 15 = min(9, 10) + 15 = 24, and dp[1][3] = min(dp[1][1] + dp[2][3], dp[1][2] + dp[3][3]) + 14 = min(10, 9) + 14 = 23.',
-        'Length 4, the whole row, with total 20: splitting after pile 0, 1 or 2 gives 0 + 23 = 23, 10 + 10 = 20 or 24 + 0 = 24, so dp[0][3] = 20 + 20 = 40. The best last merge joins 6 + 4 with 5 + 5, which the greedy ruled out when it merged the 4 with a 5.',
-        'Answer: 40, by merging 6 and 4 (cost 10), then 5 and 5 (cost 10), then the two piles of 10 (cost 20). There are O(n²) segments with up to n − 1 splits each, so the DP is O(n³), about 1.1·10^7 split checks at n = 400. One merge can cost up to 4·10^11, so use long long.',
+      problem: { source: 'kattis', id: 'stringfactoring', name: 'String Factoring', difficulty: '4.1' },
+      slides: [
+        {
+          title: 'Write each repeat once, with a power',
+          points: [
+            'A block A written m ≥ 2 times in a row can be shortened to (A)^m, and A itself can be factored again.',
+            'The weight is the number of letters still written. Find the least weight of a string of at most 200 capital letters.',
+          ],
+          show: [0, 0],
+          note: 'Sample 1, PRATTATTATTIC, with ATT written once to the power 3: seven letters are still written, so this factoring weighs 7.',
+          say: 'The input is one string of at most 200 capital letters. A block A that appears m times in a row, for m at least 2, can be written once, in brackets, to the power m, and the block inside can be factored again. The weight of a factoring is the number of letters still written, not counting brackets and exponents, and the task is the least weight. In the first sample, PRATTATTATTIC, writing ATT once, cubed, leaves seven letters: P, R, A, T, T, I and C.',
+        },
+        {
+          title: 'Taking the first repeat you see fails',
+          points: [
+            'Writing each TT as (T)² first leaves `PRA(T)²A(T)²A(T)²IC`, weight 10, and the three ATT blocks can no longer be joined.',
+            'Listing every factoring is hopeless too: 40 G\'s in a row already have about 2.4·10^13 factorings.',
+          ],
+          show: [0, 1],
+          note: 'The pairs first: ten letters are still written (red), three more than with (ATT)³.',
+          say: 'Shortening the first repeat you see goes wrong. Writing each TT as T squared leaves P, R, A, T squared, A, T squared, A, T squared, I, C: ten letters, and the three copies of ATT can no longer be joined into one. Trying every factoring is hopeless too: a run of 40 G\'s alone has about 2.4·10^13 different factorings, and the input can have 200 letters.',
+        },
+        {
+          title: 'The outermost step splits or repeats',
+          points: [
+            'Any factoring of s[l..r] is either two factorings side by side, or one block written to a power.',
+            'Either way the pieces are shorter substrings, each factored on its own, so solve every s[l..r], shortest first.',
+            '200 letters have about 2·10^4 substrings, each with fewer than 200 split points: O(n³) is fast.',
+          ],
+          say: 'Look at the outermost step of a factoring of the substring s[l..r]. Either it is two factorings side by side, split after some position k, or it is one block written to a power. In both cases the pieces are shorter substrings, and how one piece is factored does not affect the other. That is an interval DP: solve every substring, shortest first. A string of 200 letters has about 2·10^4 substrings, each with fewer than 200 split points, so O(n³) is fast.',
+        },
+        {
+          title: 'dp[l][r]: the least weight of s[l..r]',
+          points: [
+            'Start from the length r − l + 1, then try every split: dp[l][k] + dp[k+1][r] for k from l to r − 1.',
+            'If s[l..r] is its first d letters repeated, it costs dp[l][l+d−1]: that holds when d divides the length and s[l..r−d] = s[l+d..r].',
+            'The answer is dp[0][n−1].',
+          ],
+          say: 'Let dp[l][r] be the least weight of s[l..r]. It starts at the length, r − l + 1, the weight of writing every letter. A split after position k offers dp[l][k] + dp[k+1][r]. For a repeat, let d be the length of the block: if d divides the length and s[l..r−d] equals s[l+d..r], the substring is its first d letters repeated, and writing that block once costs dp[l][l+d−1]. Filling the table by length makes every entry it reads final, and the answer is dp[0][n−1].',
+        },
+        {
+          title: 'Sample 1: ATT weighs 2',
+          points: [
+            'TT is T repeated, so dp[3][4] = dp[3][3] = 1.',
+            'ATT is not a repeat, but the split after A gives dp[2][2] + dp[3][4] = 1 + 1 = 2.',
+          ],
+          show: [0, 2],
+          note: 'A moment in the middle of the fill, at length 3: dp[2][4] reads two shorter entries that are already final.',
+          say: 'Back to PRATTATTATTIC, with positions counted from 0. At length 2, the TT at positions 3 and 4 is T repeated, so dp[3][4] = dp[3][3] = 1. At length 3, ATT is not a repeat, but splitting it after the A costs dp[2][2] + dp[3][4] = 1 + 1 = 2. So dp[2][4] = 2, for A followed by T squared.',
+        },
+        {
+          title: 'Three copies weigh the same as one',
+          points: [
+            'At length 9, ATTATTATT with d = 3 passes the check, since s[2..7] = s[5..10].',
+            'So dp[2][10] = dp[2][4] = 2: the block is written once, with its own factoring inside.',
+          ],
+          show: [0, 3],
+          note: 'Later in the fill, at length 9: the repeat reads dp[2][4] = 2 for the first copy (green).',
+          say: 'At length 9, positions 2 to 10 hold ATTATTATT. The block length d = 3 divides 9, and s[2..7] equals s[5..10], so it is ATT three times. Writing the block once costs what ATT costs, so dp[2][10] = dp[2][4] = 2, and the block keeps its own factoring, A followed by T squared. The best split of the same substring costs 4.',
+        },
+        {
+          title: 'Answer 6, in O(n³) time',
+          points: [
+            'dp[0][12] = dp[0][0] + dp[1][12] = 1 + 5 = 6, the factoring `PR(A(T)²)³IC`.',
+            'One letter weighs 1 and a run of nine G\'s weighs 1, with no special cases.',
+            'At n = 200 that is about 1.3·10^6 splits and at most 5.4·10^6 letter comparisons.',
+          ],
+          show: [0, 4],
+          note: 'The end of the fill: the factoring the table chose, whose 6 written letters (green) are the weight.',
+          say: 'The whole string is the last entry. Its first split, after the P, gives dp[0][0] + dp[1][12] = 1 + 5 = 6, and nothing does better, so the answer is 6: P, R, then A with T squared, all cubed, then I, C. A single letter weighs 1, and a run of nine G\'s is G to the power 9, weight 1, with no special cases. At n = 200 the splits take about 1.3·10^6 steps and the repeat checks at most 5.4·10^6 letter comparisons, well within the time limit.',
+        },
       ],
+      code: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    string s;
+    cin >> s;
+    int n = s.size();
+    vector<vector<int>> dp(n, vector<int>(n));  // dp[l][r]: least weight of s[l..r]
+    for (int len = 1; len <= n; len++)
+        for (int l = 0; l + len - 1 < n; l++) {
+            int r = l + len - 1;
+            dp[l][r] = len;
+            for (int k = l; k < r; k++)
+                dp[l][r] = min(dp[l][r], dp[l][k] + dp[k + 1][r]);
+            for (int d = 1; d < len; d++)       // s[l..r] is its first d letters, repeated
+                if (len % d == 0 && s.compare(l, len - d, s, l + d, len - d) == 0)
+                    dp[l][r] = min(dp[l][r], dp[l][l + d - 1]);
+        }
+    cout << dp[0][n - 1] << '\\n';
+}`,
     },
     spot: [
       'n ≤ 500 (or n ≤ 5000 with an O(n^2) DP) and an operation that removes or merges a contiguous block, after which the neighbours close up.',

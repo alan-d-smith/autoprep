@@ -53,15 +53,17 @@ export function stepperTpl(id, { title, frames }) {
 // Slides: { title, points, say, show: [diagram, frame], note }, where show picks a picture from the
 // stage's diagrams (visuals), note says in a line what that picture shows (it appears without the
 // diagram's own caption), and say is the voiceover.
-export function slidesTpl(id, slides, visuals = []) {
+// label names the deck; head is anything shown under it, such as the worked problem's link.
+export function slidesTpl(id, slides, visuals = [], { label = 'How it works', head = '' } = {}) {
   const old = diagrams.get(id);
   const index = old && old.frames.length === slides.length ? old.index : 0;
   if (old) halt(old);
   diagrams.set(id, { kind: 'slides', frames: slides, visuals, index, run: null, timer: null, wake: null });
   const last = slides.length - 1;
   return html`
-    <section class="viz slides ${state.ui.slideTranscript ? 'transcript' : ''}" data-viz="${id}" aria-label="How it works">
-      <h3 class="slides-label">How it works</h3>
+    <section class="viz slides ${state.ui.slideTranscript ? 'transcript' : ''}" data-viz="${id}" aria-label="${label}">
+      <h3 class="slides-label">${label}</h3>
+      ${head}
       <div class="slide-deck" aria-live="polite">
         ${slides.map((s, i) => html`<div class="slide ${visualOf(s, visuals) ? 'has-visual' : ''} ${i === index ? 'active' : ''}">${slideTpl(s, visuals)}</div>`)}
       </div>
