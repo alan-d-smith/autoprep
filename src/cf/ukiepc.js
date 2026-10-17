@@ -16,9 +16,9 @@ export const UKIEPC = [
         hints: [
           'Fire that starts on every edge and moves inwards at speed v reaches a point after (its distance to the boundary) / v. So which point of the forest burns last?',
           'The last point is the centre of the largest circle that fits inside the polygon, and the time is its radius R divided by v. The polygon may be non-convex, so binary-search on R instead: is there a point inside the forest that stays at least R away from every edge?',
-          'For a fixed R each edge rules out a "pill": every point within R of that edge (a strip plus a disk at each end). If an allowed point survives, so does a corner of the allowed region, and every corner is an intersection of two pill boundaries (line–line, line–circle or circle–circle), so test those points for being inside the polygon and at distance ≥ R from all edges.',
+          'For a fixed R each edge rules out a "pill": every point within R of that edge (a strip plus a disk at each end). If an allowed point survives, so does a corner of the allowed region. Every corner is an intersection of two pill boundaries (line–line, line–circle or circle–circle), so test those points for being inside the polygon and at distance ≥ R from all edges.',
         ],
-        solution: 'The answer is the largest inscribed circle: print R / v and its centre. Binary-search R; for each R generate the pairwise intersections of the edges shifted by R and the radius-R circles around the vertices, and accept R if some candidate lies inside the polygon at distance ≥ R − ε from every edge, remembering that point as the answer. Shift each edge to both sides so the winding order does not matter; the inside-polygon test discards the wrong ones. Checking candidates against the edges with an early exit keeps each step fast, and about 50 iterations reach 10^-6.',
+        solution: 'The answer is the largest inscribed circle: print R / v and its centre. Binary-search R. For each R generate the pairwise intersections of the edges shifted by R and the radius-R circles around the vertices, and accept R if some candidate lies inside the polygon at distance ≥ R − ε from every edge, remembering that point as the answer. Shift each edge to both sides so the winding order does not matter; the inside-polygon test discards the wrong ones. Checking candidates against the edges with an early exit keeps each step fast, and about 50 iterations reach 10^-6.',
       },
       {
         letter: 'B',
@@ -28,10 +28,10 @@ export const UKIEPC = [
         techniques: ['Ordered set', 'Area check'],
         hints: [
           'A wall can fail in two ways: a gap or an overlap. If you already knew there were no overlaps, what single number would tell you there are no gaps?',
-          'Bricks that do not overlap and whose areas add up to the area of their bounding box must cover it exactly. So the real work is detecting an overlap among 10^6 rectangles, which is a sweep-line job: sweep along x and keep the y-intervals of the active bricks sorted.',
-          'Compare the summed areas with the bounding box using 128-bit integers (the sum can reach 10^22). Then sort start and end events by x, process ends before starts at the same x, and keep active [y, y + h) intervals in an ordered set; a new interval can only overlap its predecessor or successor, so check just those two. O(n log n).',
+          'Bricks that do not overlap and whose areas add up to the area of their bounding box must cover it exactly. That leaves detecting an overlap among 10^6 rectangles with a sweep line: move along x, keeping the y-intervals of the active bricks sorted.',
+          'Compare the summed areas with the bounding box using 128-bit integers (the sum can reach 10^22). Then sort start and end events by x, process ends before starts at the same x, and keep active [y, y + h) intervals in an ordered set. A new interval can only overlap its predecessor or successor, so check only those two. O(n log n).',
         ],
-        solution: 'The bricks form a wall iff (1) their areas sum to the area of their bounding box and (2) no two bricks share interior points. Check (1) in 128-bit arithmetic. For (2) sweep over x: at each x first remove the bricks that end there, then insert those that start, and reject if a new y-interval overlaps a neighbour in the ordered set (sharing an edge is fine). Together the two conditions mean every point of the box is covered exactly once. O(n log n), with fast input for a million lines.',
+        solution: 'The bricks form a wall exactly when (1) their areas sum to the area of their bounding box and (2) no two bricks share interior points. Check (1) in 128-bit arithmetic. For (2) sweep over x: at each x first remove the bricks that end there, then insert those that start, and reject if a new y-interval overlaps a neighbour in the ordered set (sharing an edge is fine). Together the two conditions mean every point of the box is covered exactly once. O(n log n), with fast input for a million lines.',
       },
       {
         letter: 'C',
@@ -40,9 +40,9 @@ export const UKIEPC = [
         stages: [],
         techniques: ['Construction', 'ASCII art'],
         hints: [
-          'The checker only counts holes in each 4-connected blob, so you can draw C1 as crude blobs. The awkward part is that the word C2 must also sit somewhere in the picture, and every letter you write belongs to some blob.',
-          'Build it constructively: one blob per letter of C1 with 0, 1 or 2 holes (B has 2; A, D, O, P, Q, R have 1), with a column of dots between blobs. Fill the blobs with a letter that occurs in no colour name, such as X, so no row can spell a colour by accident, and make one full row of one blob read exactly C2.',
-          'Make every blob 5 rows high: a solid block for 0 holes, a ring around a run of dots for 1 hole, and two such rings stacked (like XXX / X.X / XXX / X.X / XXX) for 2 holes. Make the first blob as wide as C2 and write C2 as its bottom row; it is attached to the blob, bounded by dots or the picture edge, and the picture stays far below 10 × 100.',
+          'The checker only counts holes in each 4-connected blob, so you can draw C1 as crude blobs. But the word C2 must also sit somewhere in the picture, and every letter you write belongs to some blob.',
+          'Draw one blob per letter of C1 with 0, 1 or 2 holes (B has 2; A, D, O, P, Q, R have 1), with a column of dots between blobs. Fill the blobs with a letter that occurs in no colour name, such as X, so no row can spell a colour by accident, and make one full row of one blob read exactly C2.',
+          'Make every blob 5 rows high: a solid block for 0 holes, a ring around a run of dots for 1 hole, and two such rings stacked (like XXX / X.X / XXX / X.X / XXX) for 2 holes. Make the first blob as wide as C2 and write C2 as its bottom row, attached to the blob and bounded by dots or the picture edge. The picture stays far below 10 × 100.',
         ],
         solution: 'Any picture that meets the rules is accepted, so build a simple one. Draw one 5-row blob per letter of C1, separated by a dot column: solid for 0 holes, a ring around one dot run for 1 hole, two stacked rings for 2 holes. Fill blobs with X, which appears in no colour name, and make the first blob exactly as wide as C2 with C2 as its bottom row, so C2 appears once as a whole word and no other colour can appear. The result is 5 rows by at most about 30 columns.',
       },
@@ -54,7 +54,7 @@ export const UKIEPC = [
         techniques: ['Unbounded knapsack'],
         hints: [
           'Stages run strictly in order and extra material can always be thrown away, so more material entering a stage is never worse. That leaves one question per stage: from x units of input, what is the most output you can end with?',
-          'Machines can be run any number of times, so a stage is an unbounded knapsack over the input you spend. The twist is the shared warehouse: after every run, the input left plus the output held must fit in k, and you may discard either material at any moment.',
+          'Machines can be run any number of times, so a stage is an unbounded knapsack over the input you spend. But the warehouse is shared: after every run, the input left plus the output held must fit in k, and you may discard either material at any moment.',
           'Let g[a] be the most output you can hold with a units of input left. Start with g[x] = 0 and go from a = x down to 0: g[a] ≥ g[a + 1] (discard one input), and each machine with MI ≤ a and a − MI + MO ≤ k gives g[a − MI] ≥ min(g[a] + MO, k − (a − MI)) (discard output first so the run fits). The stage passes g[0] to the next one.',
         ],
         solution: 'Process stages in order, carrying only the largest amount of the current material. Within a stage, g[a] (best output with a units of input left) is filled from a = x down to 0 as an unbounded knapsack: discarding input gives g[a] ≥ g[a + 1], and running a machine needs a − MI + MO ≤ k and leaves min(g[a] + MO, k − (a − MI)) output, because overflowing output must be discarded before the run. That is O(k) per machine, O(k·m) overall. Sample 5 (s = k = 7, one machine 3 → 5) shows why the room check matters: you must drop two units of ore first, so the run ends with 2 ore + 5 output = 7, and the answer is 5. Without the room check the same recurrence lets runs overflow and returns 7.',
@@ -67,10 +67,10 @@ export const UKIEPC = [
         techniques: ['Regular polygons'],
         hints: [
           'Fix the number of markers n first. How much walking time is left, and which n-gon with that perimeter encloses the most land?',
-          'With n markers the perimeter is P = t − n·m, and among n-gons with a fixed perimeter the regular one has the largest area, P² / (4n·tan(π/n)). Only n is left to choose; the area first rises and then falls as n grows, so ternary-search it.',
+          'With n markers the perimeter is P = t − n·m. Among n-gons with a fixed perimeter the regular one has the largest area, P² / (4n·tan(π/n)). Only n is left to choose; the area first rises and then falls as n grows, so ternary-search it.',
           'If 3m ≥ t the answer is 0. Otherwise ternary-search the integer n in [3, ⌊(t − 1)/m⌋] on f(n) = (t − n·m)² / (4n·tan(π/n)) until a few values remain, and check those directly. O(log(t/m)) per case; doubles meet the 10^-6 relative error.',
         ],
-        solution: 'The optimal claim is convex (flip any dent outwards) and has equal sides (moving a vertex to equalise its two edges increases area at a fixed perimeter); with the sides fixed, the area is largest when the vertices lie on a circle, so the claim is the regular n-gon and with n markers its area is (t − n·m)² / (4n·tan(π/n)). Maximise over integers n ≥ 3 with n·m < t by ternary search, finishing with a short linear scan; print 0 when no triangle is possible (3m ≥ t). Each case costs O(log(t/m)), and the answers can reach about 10^16, so compare with relative error in mind.',
+        solution: 'The optimal claim is convex (flip any dent outwards) and has equal sides (moving a vertex to equalise its two edges increases area at a fixed perimeter). With the sides fixed, the area is largest when the vertices lie on a circle, so the claim is the regular n-gon; with n markers its area is (t − n·m)² / (4n·tan(π/n)). Maximise over integers n ≥ 3 with n·m < t by ternary search, finishing with a short linear scan; print 0 when no triangle is possible (3m ≥ t). Each case costs O(log(t/m)), and the answers can reach about 10^16, so compare with relative error in mind.',
       },
       {
         letter: 'F',
@@ -92,7 +92,7 @@ export const UKIEPC = [
         stages: [],
         techniques: ['Greedy', 'Case analysis', '64-bit arithmetic'],
         hints: [
-          'Since a ≥ b, Charlie should always work while fresh. The only real decision is how many breaks to take; each one should start the moment he becomes tired.',
+          'Since a ≥ b, Charlie should always work while fresh. The only decision is how many breaks to take; each one should start the moment he becomes tired.',
           'With k breaks there are W = n − k·y working days split into k + 1 runs, each with up to x fresh days, so the total is a·min(W, (k + 1)·x) + b·(the rest). This is linear in k while every run gets its full x fresh days and decreasing once all working days are fresh, so only the boundary values of k can win.',
           'Evaluate k = 0, k* = max(0, ⌊(n − x)/(x + y)⌋) (the most breaks that still leave full fresh runs) and k* + 1, skipping any k with k·y > n, and print the best. Use 64-bit integers: the totals reach 10^18.',
         ],
@@ -131,11 +131,11 @@ export const UKIEPC = [
         stages: ['topo', 'shortest-paths'],
         techniques: ['Transitive closure'],
         hints: [
-          'If a < m and m < b, then every a must come before every b even if the word has no m. Which letters\' relations do you actually need, and when is the word impossible?',
-          'Take the transitive closure of the 26-letter "comes before" relation with Floyd–Warshall. The word is impossible exactly when two letters in it (possibly the same letter) are each before the other; otherwise the closure restricted to the word\'s letters is a DAG, and any topological order of it works.',
+          'If a < m and m < b, then every a must come before every b even if the word has no m. Which letters\' relations do you need, and when is the word impossible?',
+          'Take the transitive closure of the 26-letter "comes before" relation with Floyd–Warshall. The word is impossible exactly when two letters in it (possibly the same letter) are each before the other. Otherwise the closure restricted to the word\'s letters is a DAG, and any topological order of it works.',
           'Set before[a][b] from the rules (a > b means b before a), then before[i][j] |= before[i][m] && before[m][j] for all m, i, j. If some letters u, v of the word (u = v allowed) have before[u][v] and before[v][u], print IMPOSSIBLE; otherwise topologically sort the word\'s letters and print each one as many times as it occurs.',
         ],
-        solution: 'Build a 26 × 26 relation from the rules, close it with Floyd–Warshall (26³ steps), and check every pair of letters present in the word, including a letter with itself, for a cycle; cycles among letters that do not occur are harmless. If there is none, a topological sort of the present letters under the closure (or sorting them by the number of present letters before each) gives an order, and printing each letter cnt times is a valid answer. O(26³ + |s|).',
+        solution: 'Build a 26 × 26 relation from the rules, close it with Floyd–Warshall (26³ steps), and check every pair of letters present in the word, including a letter with itself, for a cycle. Cycles among letters that do not occur are harmless. If there is none, a topological sort of the present letters under the closure (or sorting them by the number of present letters before each) gives an order, and printing each letter cnt times is a valid answer. O(26³ + |s|).',
       },
       {
         letter: 'K',
@@ -145,10 +145,10 @@ export const UKIEPC = [
         techniques: ['Multi-dimensional DP', 'Geometry'],
         hints: [
           'Work out exactly when two foam triangles overlap. With s ≤ d, which pairs of trees can interact at all?',
-          'Each piece has area s². On one trunk, pieces with bases y ≤ y′ overlap iff y′ − y < s; on neighbouring trunks (A–B or B–C) they overlap iff y′ − y < s + s′ − d; A and C never overlap. If you add pieces in increasing base height, only the highest piece already placed on each tree can clash with the next one, so the state is a triple: a 3D DP.',
-          'Sort all positions by base height and let dp[a][b][c] be the best area when a, b, c are the last pieces chosen on trees A, B, C. From each state try every later position that clashes with none of a, b, c and add s². That is O(N⁴) for N ≤ 100 positions per tree, which passes if tight; keeping running maxima over lower states brings it to O(N³).',
+          'Each piece has area s². On one trunk, pieces with bases y ≤ y′ overlap exactly when y′ − y < s; on neighbouring trunks (A–B or B–C) they overlap exactly when y′ − y < s + s′ − d; A and C never overlap. If you add pieces in increasing base height, only the highest piece already placed on each tree can clash with the next one, so the state is a triple: a 3D DP.',
+          'Sort all positions by base height and let dp[a][b][c] be the best area when a, b, c are the last pieces chosen on trees A, B, C. From each state try every later position that clashes with none of a, b, c and add s². That is O(N⁴) for N ≤ 100 positions per tree, which can pass if optimised; keeping running maxima over lower states brings it to O(N³).',
         ],
-        solution: 'Overlap is decided by base heights alone: same trunk needs a gap of at least s, adjacent trunks need y′ − y ≥ s + s′ − d, and trunks 2d apart never meet. Sorting all positions by base, a set of pieces is valid iff each piece avoids the highest earlier piece on each tree, because lower pieces end below those. So dp over (last on A, last on B, last on C) with transitions to any later non-clashing position is correct; the naive version is O(N⁴), and the jury reduces it to O(N³) with auxiliary tables. A single piece with s = 10^7 already has area 10^14, so use 64-bit integers.',
+        solution: 'Overlap is decided by base heights alone: same trunk needs a gap of at least s, adjacent trunks need y′ − y ≥ s + s′ − d, and trunks 2d apart never meet. Sorting all positions by base, a set of pieces is valid exactly when each piece avoids the highest earlier piece on each tree, because lower pieces end below those. So dp over (last on A, last on B, last on C) with transitions to any later non-clashing position is correct; the naive version is O(N⁴), and the jury reduces it to O(N³) with auxiliary tables. A single piece with s = 10^7 already has area 10^14, so use 64-bit integers.',
       },
       {
         letter: 'L',
@@ -171,7 +171,7 @@ export const UKIEPC = [
         techniques: ['Ad hoc', 'Prefix and suffix maxima'],
         hints: [
           'Removing stop i merges the two drives next to it into one. Which drives stay exactly as they were?',
-          'Every other drive is unchanged, so the new longest drive is max(merged drive, longest other drive). Prefix and suffix maxima of the gaps give the longest other drive in O(1); even simpler, the original longest drive never goes away, it either survives or is swallowed by a longer merged drive.',
+          'Every other drive is unchanged, so the new longest drive is max(merged drive, longest other drive). Prefix and suffix maxima of the gaps give the longest other drive in O(1). Simpler: the original longest drive never goes away; it either survives or is swallowed by a longer merged drive.',
           'Let G be the longest original gap and M the minimum over interior stops of s_{i+1} − s_{i−1}. The answer is max(G, M), found in one pass.',
         ],
         solution: 'Removing interior stop i gives a longest drive of max(s_{i+1} − s_{i−1}, G), because the original maximum G either stays or is contained in the merged drive. So the answer is max(G, min over i of s_{i+1} − s_{i−1}). One O(n) pass; the version with prefix and suffix maxima of the gaps is equally fast.',
@@ -189,7 +189,7 @@ export const UKIEPC = [
         stages: [],
         techniques: ['Counting', 'Strings'],
         hints: [
-          'The order of the letters does not matter at all, only how many times each letter appears.',
+          'The order of the letters does not matter, only how many times each letter appears.',
           'Each letter must appear at least as often as in a and at least as often as in b, and nothing more is required. So the shortest amalgram has max(count in a, count in b) copies of each letter.',
           'Count the 26 letters in both words and print each letter max(ca[c], cb[c]) times. O(|a| + |b|); read the 10^6-character lines with fast input.',
         ],
@@ -202,7 +202,7 @@ export const UKIEPC = [
         stages: ['prefix-sums'],
         techniques: ['Calculus', '2 × 2 linear system'],
         hints: [
-          'Each query fits its own model, and both the months and the queries number up to 10^6. Which quantities about the months L..R does the best K and B actually depend on?',
+          'Each query fits its own model, and both the months and the queries number up to 10^6. Which quantities about the months L..R do the best K and B depend on?',
           'Set both partial derivatives of p(K, B) to zero: you get a 2 × 2 linear system whose coefficients only use the count, Σx, Σy, Σx² and Σxy over the range. Four prefix-sum arrays give those in O(1) per query.',
           'Solve (Sxx + λ)·K + Sx·B = Sxy and Sx·K + (cnt + λ)·B = Sy by Cramer\'s rule and print K·X + B. Keep the prefix sums in long double (they reach 10^8 and you subtract them), and use fast I/O for two million lines.',
         ],
@@ -217,9 +217,9 @@ export const UKIEPC = [
         hints: [
           'Between two checkpoints the shortest route runs straight. At a checkpoint, what can it do: pass straight through, bounce off it, or turn around one of its endpoints?',
           'A bounce off a checkpoint is a mirror reflection, and it disappears if you reflect the rest of the course across that checkpoint\'s line (unfolding). With n ≤ 16 you can afford to try every subset of bouncing checkpoints; what remains is a shortest path whose only real turns are at checkpoint endpoints.',
-          'For each mirror pattern, build the reflected checkpoints. Nodes are the start, the end and the checkpoint endpoints; a node on checkpoint i connects to a node on checkpoint j > i iff the straight segment between them meets the (reflected) checkpoints i + 1 … j − 1 in order. Edges only go forward in checkpoint order, so the graph is a DAG and a DP over the nodes in that order gives the shortest route (Dijkstra on the same graph also works, just more slowly); take the best over all patterns.',
+          'For each mirror pattern, build the reflected checkpoints. Nodes are the start, the end and the checkpoint endpoints; a node on checkpoint i connects to a node on checkpoint j > i exactly when the straight segment between them meets the (reflected) checkpoints i + 1 … j − 1 in order. Edges only go forward in checkpoint order, so the graph is a DAG and a DP over the nodes in that order gives the shortest route (Dijkstra on the same graph also works, more slowly). Take the best over all patterns.',
         ],
-        solution: 'A shortest route bends only at checkpoints, either reflecting off one at equal angles or turning around an endpoint. The jury removes reflections by enumerating the 2^n choices of reflecting checkpoints and mirroring the later course, then solves a shortest path over start, end and endpoints, where an edge exists iff its segment crosses every intermediate (mirrored) checkpoint in the required order. Since edges go forward in checkpoint order the shortest path is a DP, and the 15 s limit covers the enumeration; enumerating the reflection choices only for the checkpoints between each pair of endpoints is cheaper still. Treat touching a checkpoint (including at an endpoint or along a collinear stretch) as crossing it.',
+        solution: 'A shortest route bends only at checkpoints, either reflecting off one at equal angles or turning around an endpoint. The jury removes reflections by enumerating the 2^n choices of reflecting checkpoints and mirroring the later course, then solves a shortest path over start, end and endpoints. An edge exists exactly when its segment crosses every intermediate (mirrored) checkpoint in the required order. Since edges go forward in checkpoint order the shortest path is a DP, and the 15 s limit covers the enumeration. Enumerating the reflection choices only for the checkpoints between each pair of endpoints is cheaper still. Treat touching a checkpoint (including at an endpoint or along a collinear stretch) as crossing it.',
       },
       {
         letter: 'D',
@@ -230,7 +230,7 @@ export const UKIEPC = [
         hints: [
           'Three equations and four unknowns leave one free variable. Write every flap in terms of it.',
           'With n = a, the equations give e = σ − a, s = a − r and w = σ − p − a, where σ = (p + r + y)/2. So you minimise max(|a − 0|, |a − σ|, |a − r|, |a − (σ − p)|): the largest distance from a to four points on a line.',
-          'The best a is the midpoint of the smallest and largest of {0, σ, r, σ − p}; then compute e, s and w from it. O(1) per request. The jury\'s alternatives are to binary-search the maximum T, the route the answer-search stage teaches (T is achievable iff the four intervals [q − T, q + T], one around each of those points q, share a value of a), or to try each pair of flaps with equal absolute value.',
+          'The best a is the midpoint of the smallest and largest of {0, σ, r, σ − p}; then compute e, s and w from it. O(1) per request. The jury\'s alternatives are to binary-search the maximum T, as the answer-search stage teaches (T is achievable exactly when the four intervals [q − T, q + T], one around each of those points q, share a value of a), or to try each pair of flaps with equal absolute value.',
         ],
         solution: 'Eliminate variables: e + n = (p + r + y)/2 = σ, s = n − r, w = e − p, so with n = a all four flaps are a minus a constant from {0, σ, r, σ − p} (up to sign). Minimising the maximum distance from a to a set of points on a line puts a at the midpoint of the extreme points, giving the optimum (max − min)/2. Output n = a, e = σ − a, s = a − r, w = σ − p − a; this reproduces every sample line. The jury\'s binary search on T is a valid alternative.',
       },
@@ -242,7 +242,7 @@ export const UKIEPC = [
         techniques: ['Fenwick tree of hulls'],
         hints: [
           'The climbers you keep must be non-decreasing in height. What decides the cost is, for each kept climber, which kept climber came just before.',
-          'It is the longest-non-decreasing-subsequence DP with a different score: dp[x] = min over earlier kept i with h_i ≤ h_x of dp[i] + (x − i − 1)². Add a height −∞ climber before the start and +∞ after the end so the end gaps count. O(n²) is too slow for 10^6, and the square makes each candidate a line in x: convex hull trick.',
+          'It is the longest-non-decreasing-subsequence DP with a different score: dp[x] = min over earlier kept i with h_i ≤ h_x of dp[i] + (x − i − 1)². Add a height −∞ climber before the start and +∞ after the end so the end gaps count. O(n²) is too slow for 10^6. The square makes each candidate a line in x: convex hull trick.',
           'With X = x − 1, dp[i] + (X − i)² = X² + (dp[i] + i²) − 2i·X, a line with slope −2i. Keep a Fenwick tree over compressed heights whose nodes hold lower hulls of these lines: insert line i with the usual Fenwick update at position h_i (the O(log n) nodes whose ranges contain h_i) and answer a prefix query over heights ≤ h_x. Slopes arrive in decreasing order and queries in increasing X, so each hull is a deque with a moving pointer: O(n log n).',
         ],
         solution: 'With sentinels at both ends, dp[x] = min(dp[i] + (x − i − 1)²) over i < x with h_i ≤ h_x, and the answer is dp at the right sentinel. Rewriting the cost as a line in x lets a convex hull answer the minimum, and the height condition is handled like LIS with a Fenwick tree whose nodes are hulls (the jury slides call them lists of lines sorted by gradient). Insertions are in slope order and queries in x order, so each node is a monotone deque and the total is O(n log n). Costs reach 10^12, so use 64-bit values and 128-bit (or long double) for the hull comparisons.',
@@ -270,7 +270,7 @@ export const UKIEPC = [
         hints: [
           'Comparing the key at every position costs rk·ck per position, about 10^12 steps at worst. You need each position checked in O(1), and then a fast way to mark every cell that lies inside some match.',
           'A 2D rolling (polynomial) hash checks each position in O(1): hash every length-ck window of each row, then roll a second hash down each column over rk of those row hashes. Marking cells covered by at least one match is adding 1 on rectangles: a 2D difference array.',
-          'Compute the key\'s hash the same way and compare it with the block hash at every top-left corner (use mod 2^61 − 1 or two moduli). For a match with top-left corner (r, c), add +1 at (r, c) and (r + rk, c + ck) and −1 at (r, c + ck) and (r + rk, c), one past its last row and column; 2D prefix sums of these then count the matches covering each cell. Print the haystack character where the count is positive, "." elsewhere. O(rh·ch).',
+          'Compute the key\'s hash the same way and compare it with the block hash at every top-left corner (use mod 2^61 − 1 or two moduli). For a match with top-left corner (r, c), add +1 at (r, c) and (r + rk, c + ck) and −1 at (r, c + ck) and (r + rk, c), one past its last row and column. 2D prefix sums of these then count the matches covering each cell. Print the haystack character where the count is positive, "." elsewhere. O(rh·ch).',
         ],
         solution: 'Hash rows with one base, then columns of row hashes with another, to get the hash of every rk × ck block in O(rh·ch); positions whose hash equals the key\'s are matches. Each match covers a rectangle, so record it with four updates in a 2D difference array and recover coverage with prefix sums. Print the original character where coverage is positive. The jury also mentions Aho–Corasick on rows followed by matching the column pattern of row-match ids.',
       },
@@ -281,7 +281,7 @@ export const UKIEPC = [
         stages: ['geometry'],
         techniques: ['Ray–edge intersection', 'Rational arithmetic'],
         hints: [
-          'Grow the new shape from a tiny copy around the origin. Whether k·A fits inside B can only change at scales where the boundaries touch, a vertex of one polygon lying on an edge of the other; and because the shapes are not convex, the scales that fit need not form a single interval.',
+          'Grow the new shape from a tiny copy around the origin. Whether k·A fits inside B can only change at scales where the boundaries touch, a vertex of one polygon lying on an edge of the other. Because the shapes are not convex, the scales that fit need not form a single interval.',
           'Look along rays from the origin. Scaling moves a vertex v of A along its own ray to k·|v|, so where that ray crosses B tells you the ranges of k for which v is inside B; symmetrically, the ray through a vertex u of B tells you when u is not inside k·A. Every vertex yields a set of allowed k-ranges.',
           'Compute the allowed ranges for every vertex of both polygons (O((n + m)²) ray–edge intersections) and sweep over k to find the largest scale allowed by all of them. Rays often pass exactly through other vertices, so do the intersections in exact rational arithmetic and handle tangent and collinear cases deliberately.',
         ],
@@ -309,7 +309,7 @@ export const UKIEPC = [
         hints: [
           'Removing a cable splits the tree into two parts, and the new cable must join them. For a demand between the two parts, how does its new path length depend on the two computers you connect?',
           'A crossing demand (s, t, c) costs c·(dist(s, u) + 1 + dist(v, t)), which separates into a cost of u inside one part and a cost of v inside the other. Finding the vertex that minimises a weighted sum of distances in a tree is a rerooting DP.',
-          'For each step, weight each vertex by the total packets of the crossing demands it is an endpoint of (s counts in its part, t in the other), compute f(root) with one DFS per part and then f(child) = f(parent) + W − 2·W_sub(child) for every vertex, where W is the part\'s total weight. On each side pick the smallest-numbered vertex of minimum f among those with fewer than 3 cables, print the pair in increasing order, and apply the change to the tree. O(n·(n + d)) overall.',
+          'For each step, weight each vertex by the total packets of the crossing demands it is an endpoint of (s counts in its part, t in the other). Compute f(root) with one DFS per part, then f(child) = f(parent) + W − 2·W_sub(child) for every vertex, where W is the part\'s total weight. On each side pick the smallest-numbered vertex of minimum f among those with fewer than 3 cables, print the pair in increasing order, and apply the change to the tree. O(n·(n + d)) overall.',
         ],
         solution: 'Demands inside one part keep their distances, so only crossing demands matter and their total is f1(u) + f2(v) + (sum of their packets), where fi is a weighted distance sum within part i. Rerooting computes fi for every vertex in O(size) after one subtree-weight DFS, so each of the n − 1 steps costs O(n + d). Because the optimal pairs are all combinations of the minimisers on each side, the tie-break is met by taking the smallest-numbered minimiser on each side (skipping vertices that already have 3 cables). Keep the modified tree for the next step; values reach about 10^16, so use 64-bit integers.',
       },
@@ -337,7 +337,7 @@ export const UKIEPC = [
           'Pure implementation: a name containing "rest" is rest, otherwise one containing "leg" is legs, otherwise arms. Pick one fixed character per type from the Supplementary Multilingual Plane whose Unicode name contains the required word.',
           'For example U+1F9B5 LEG, U+1F4AA FLEXED BICEPS and U+1F634 SLEEPING FACE. Day d (0-based) uses exercise d mod n; print weeks 1 to 4 with seven days and week 5 with three, each line starting with the week number and a space, writing the UTF-8 bytes directly.',
         ],
-        solution: 'Map each exercise to rest, leg or arm by substring checks in that order, then print 31 days as 4 full weeks plus 3 days, cycling through the plan. Use one fixed emoji per type whose Unicode name contains face, leg, or arm/biceps. In C++ just print the UTF-8 bytes; in Java set the output encoding to UTF-8.',
+        solution: 'Map each exercise to rest, leg or arm by substring checks in that order, then print 31 days as 4 full weeks plus 3 days, cycling through the plan. Use one fixed emoji per type whose Unicode name contains face, leg, or arm/biceps. In C++ print the UTF-8 bytes; in Java set the output encoding to UTF-8.',
       },
     ],
   },
@@ -354,9 +354,9 @@ export const UKIEPC = [
         hints: [
           'The professor\'s loop is cubic only if there are about N rounds and each round makes about N² comparisons. When does an essay compare against many others without being postponed?',
           'Construction: essays that do not dominate each other (an antichain in deviation versus quality) never postpone each other, so each one scans all later ones. Add essays that dominate the antichain, arranged so that only one essay gets marked per round.',
-          'Put K = ⌊N/2⌋ antichain essays first (deviation i and quality i for i = 1 … K), then N − K essays with word count exactly W and qualities 501, 502, …. These form a chain that dominates the whole antichain, so each round marks only the best remaining chain essay, while every antichain essay scans the rest of the antichain before meeting the chain: about N³/16 ≥ N³/20 comparisons.',
+          'Put K = ⌊N/2⌋ antichain essays first (deviation i and quality i for i = 1 … K), then N − K essays with word count exactly W and qualities 501, 502, …. These form a chain that dominates the whole antichain, so each round marks only the best remaining chain essay. Every antichain essay scans the rest of the antichain before meeting the chain: about N³/16 ≥ N³/20 comparisons.',
         ],
-        solution: 'Make the first half pairwise incomparable and the second half a chain that dominates all of them. In every round each antichain essay compares with all later antichain essays and is then postponed by the first chain essay, each chain essay but the last is postponed by its successor, and only the best chain essay is marked, so for N/2 rounds each round costs about K²/2 comparisons, N³/16 in total (about 6.3·10^7 for N = 1000, above the 5·10^7 needed). Use word counts W + i, or W − i when W + K > 10^4, so all values stay in range and all pairs are distinct. The jury\'s slides use the mirror image: their remaining N − K essays are dominated by the last N − K antichain essays instead of dominating the antichain, so each round marks two essays, one from each group. Either way there are O(N) rounds of O(N²) comparisons.',
+        solution: 'Make the first half pairwise incomparable and the second half a chain that dominates all of them. In every round each antichain essay compares with all later antichain essays and is then postponed by the first chain essay. Each chain essay but the last is postponed by its successor, and only the best chain essay is marked. So for N/2 rounds each round costs about K²/2 comparisons, N³/16 in total (about 6.3·10^7 for N = 1000, above the 5·10^7 needed). Use word counts W + i, or W − i when W + K > 10^4, so all values stay in range and all pairs are distinct. The jury\'s slides use the mirror image: their remaining N − K essays are dominated by the last N − K antichain essays instead of dominating the antichain, so each round marks two essays, one from each group. Either way there are O(N) rounds of O(N²) comparisons.',
       },
       {
         letter: 'B',
@@ -379,10 +379,10 @@ export const UKIEPC = [
         techniques: ['Polygon area'],
         hints: [
           'All posts lie on one circle and the fence connects them in angular order. How can you write the enclosed area as a sum over consecutive chosen posts?',
-          'Splitting the polygon into triangles from the centre gives area = Σ ½R²·sin(θ_next − θ_cur) over consecutive chosen posts (signed, so it still works when the centre is outside). The area is a sum of terms that each depend on two consecutive choices: a DP over chosen posts in order.',
+          'Splitting the polygon into triangles from the centre gives area = Σ ½R²·sin(θ_next − θ_cur) over consecutive chosen posts (signed, so it still works when the centre is outside). Each term depends on two consecutive choices, so use a DP over chosen posts in order.',
           'Fix the first chosen post S. Let dp[j][c] be the best area of a chain from S to post j using c posts; dp[j][c] = max over i < j of dp[i][c − 1] + ½R²·sin(θ_j − θ_i), and close the polygon with the triangle from the last post back to S. Try every S: O(n³·p) ≈ 10^8 simple steps.',
         ],
-        solution: 'Represent the polygon by its chosen posts in increasing angle; its area is the sum of signed centre triangles ½R²·sin(Δθ) for consecutive posts, including the wrap-around pair. For every starting post S, a DP over (last post, posts used) maximises the chain area, and the closing triangle back to S completes it. Using more posts never hurts, but taking the maximum over all counts up to p is just as easy. Remember R = 1000 m and convert degrees to radians.',
+        solution: 'Represent the polygon by its chosen posts in increasing angle; its area is the sum of signed centre triangles ½R²·sin(Δθ) for consecutive posts, including the wrap-around pair. For every starting post S, a DP over (last post, posts used) maximises the chain area, and the closing triangle back to S completes it. Using more posts never hurts, but taking the maximum over all counts up to p is just as easy. Use R = 1000 m and convert degrees to radians.',
       },
       {
         letter: 'D',
@@ -405,7 +405,7 @@ export const UKIEPC = [
         techniques: ['Incremental subset sums'],
         hints: [
           'There are 2^30 ≈ 10^9 possible spells, and scoring each from scratch costs O(n²). Can you split the symbols into two halves?',
-          'Meet in the middle: split the symbols into halves of 15. A spell\'s strength is (pairs i ≤ j inside the left half, including each chosen symbol\'s own d_{i,i}) + (the same inside the right half) + (cross pairs). The cross term couples the halves, so you cannot just combine the best of each side, but it can be built up one symbol at a time.',
+          'Meet in the middle: split the symbols into halves of 15. A spell\'s strength is (pairs i ≤ j inside the left half, including each chosen symbol\'s own d_{i,i}) + (the same inside the right half) + (cross pairs). The cross term couples the halves, so you cannot combine the best of each side. But it can be built up one symbol at a time.',
           'Precompute the inner strengths f[L] of every left mask and g[R] of every right mask. For each left mask L, compute w_j = Σ over i in L of d_{i,j} for each right symbol j, then sweep all right masks with cross[R] = cross[R without its lowest bit] + w_{lowest bit} and keep the best f[L] + g[R] + cross[R]. That is 2^15 · 2^15 ≈ 10^9 O(1) steps, fine in 4.2 s with tight loops.',
         ],
         solution: 'Split the n ≤ 30 symbols into two halves and precompute the inner strengths of all subsets of each half incrementally. For each left subset, the cross contribution of a right subset is a sum of per-symbol weights, so all 2^15 right subsets can be scored in O(1) each by extending from the subset without its lowest bit. This brute-forces all 2^30 combinations at O(1) apiece, as the jury suggests. The empty spell is allowed (print 0 and an empty line), and symbols can be printed in any order.',
@@ -431,7 +431,7 @@ export const UKIEPC = [
         techniques: ['Two pointers'],
         hints: [
           'At time t the follower is at arc length t along the track and the leader at t + s. When does the formula for the distance between them change?',
-          'Only when one of them passes a vertex. Between those moments both walk in straight lines at unit speed, so their difference vector is linear in t and the squared distance is a convex quadratic, which you can minimise exactly (or by ternary search).',
+          'Only when one of them passes a vertex. Between those moments both walk in straight lines at unit speed, so their difference vector is linear in t. The squared distance is a convex quadratic, which you can minimise exactly (or by ternary search).',
           'Let L_k be the distance along the track to vertex k and L the total track length. Merge the breakpoints L_k (follower at vertex k) and L_k − s (leader at vertex k) with two pointers over t in [0, L − s]. On each piece take the vector D0 from follower to leader at its start and w = u_leader − u_follower, the difference of their unit direction vectors. If w = 0 (both heading the same way) the distance stays |D0| on that piece; otherwise clamp τ = −(D0·w)/|w|² to the piece and evaluate |D0 + w·τ|. Keep the minimum. O(n).',
         ],
         solution: 'Parametrise by the follower\'s arc length t; the leader is at t + s. Cut [0, L − s] at every time either walker reaches a vertex; on each piece both move linearly, so the distance is minimised in closed form (the jury also allows ternary search on each piece). Two pointers walk both positions along the polyline in O(n). The track can be about 3·10^12 m long, so keep cumulative lengths in long double and compute positions relative to segment starts.',
@@ -444,7 +444,7 @@ export const UKIEPC = [
         techniques: ['Lazy segment tree', 'Mergeable summaries'],
         hints: [
           'Range additions and range questions mixed, up to 3·10^5 requests in total on up to 3·10^5 values: you need a segment tree. What small summary of a range lets you answer "are the local minima increasing?" and lets you combine two neighbouring ranges?',
-          'Use a lazy segment tree. Adding d to a whole node shifts every stored value but never changes the up/down pattern or the validity inside it, so it is a lazy tag; merging two halves can only create or remove a local minimum at the seam.',
+          'Use a lazy segment tree. Adding d to a whole node shifts every stored value but never changes the up/down pattern or the validity inside it, so it is a lazy tag. Merging two halves can only create or remove a local minimum at the seam.',
           'Per node keep: first and last value, direction of the first and last non-flat step, the first and last local minimum strictly inside, and whether the inside minima increase. On merge, a valley appears at the seam if the last non-flat step on the left is down and the next non-flat step is up (equal values across the seam are flat); check the order across the seam. For a query, also count the first element as a minimum if the first step is up and the last if the last step is down.',
         ],
         solution: 'Store in every segment-tree node a summary of its range: endpoints, the first and last non-flat step directions, the first and last interior valley values, and a validity flag. Merging checks for a valley at the seam (collapsing equal values) and that valleys stay strictly increasing across it; a range add only shifts the stored values, so it is a lazy tag, as in the jury solution. A query merges O(log n) nodes and then adds the end elements as minima when the sequence starts by rising or ends by falling. O((n + m) log n). Values can reach about 3·10^13 after the updates, so store them and the lazy tags in 64-bit integers.',
@@ -459,9 +459,9 @@ export const UKIEPC = [
         hints: [
           'Fix which pin goes into which hole first: earth to earth, and the other two either way, so only two assignments. Then a pin of radius r fits a hole of radius R exactly when its centre is within R − r of the hole\'s centre.',
           'So shrink each pin to a point and each hole to a disk of radius R − r: the question becomes whether a rigid triangle (rotations and translations, no reflection) can have each vertex in its own disk. If it can, it can with two of the vertices on the boundary of their disks.',
-          'Try each pair of vertices as the pair on the boundary: put the first on its circle at angle φ, put the second on its circle at the right distance (a circle–circle intersection, up to two points; each fixes a rotation and so the third vertex); minimise the third vertex\'s excess distance over φ with fine sampling plus ternary search. Handle disks of radius 0 and output the transformed pin centres.',
+          'Try each pair of vertices as the pair on the boundary: put the first on its circle at angle φ, put the second on its circle at the right distance (a circle–circle intersection, up to two points; each fixes a rotation and so the third vertex). Minimise the third vertex\'s excess distance over φ with fine sampling plus ternary search. Handle disks of radius 0 and output the transformed pin centres.',
         ],
-        solution: 'Enumerate the two pin-to-hole assignments, shrink pins to points and holes to disks of radius R − r (negative means impossible). A rigid placement with each vertex in its disk exists iff one exists with two vertices on their circles, so parametrise one boundary vertex by an angle, place the second by circle–circle intersection, and check the third; the jury describes this as case analysis plus ternary search. The tolerances in the statement (10^-6 fit, 2·10^-6 guarantee for NO) allow a numeric search. Nobody solved it in the contest.',
+        solution: 'Enumerate the two pin-to-hole assignments, shrink pins to points and holes to disks of radius R − r (negative means impossible). A rigid placement with each vertex in its disk exists exactly when one exists with two vertices on their circles, so parametrise one boundary vertex by an angle, place the second by circle–circle intersection, and check the third; the jury describes this as case analysis plus ternary search. The tolerances in the statement (10^-6 fit, 2·10^-6 guarantee for NO) allow a numeric search. Nobody solved it in the contest.',
       },
       {
         letter: 'J',
