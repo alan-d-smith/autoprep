@@ -14,7 +14,7 @@ export function focusReason(focus) {
   if (focus.reason === 'gap') {
     return `You take ${focus.ratio.toFixed(1)}× as long on these as your pace elsewhere predicts. Closing that gap is worth ${answersPhrase(focus.gapPoints)} a round.`;
   }
-  return `This is where most of your time goes. Getting it to goal pace is worth ${answersPhrase(focus.points)} a round.`;
+  return `Getting these to goal pace gains more than any other kind of question: ${answersPhrase(focus.points)} a round.`;
 }
 
 const clock = (ms) => {

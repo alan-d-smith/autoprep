@@ -203,7 +203,7 @@ export function mathPicture(skillId, q) {
       const hopsText = placeParts(b).length > 1 ? `hop forward by each place of ${b}, biggest first` : `hop forward ${b}`;
       return {
         svg: placeHops(a, b, 1),
-        caption: `Start at ${a} and ${hopsText}.${lead ? ` The ${lead.place}, ${lead.digits.join(' and ')}, make ${lead.sum}, but they are the leftmost column, so nothing is carried: ${lead.sum} is written as it is.` : ''}`,
+        caption: `Start at ${a} and ${hopsText}.${lead ? ` The ${lead.place}, ${lead.digits.join(' and ')}, make ${lead.sum}, but they are the leftmost column, so ${lead.sum} is written as it is.` : ''}`,
       };
     }
     case 'add-carry':

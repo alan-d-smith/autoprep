@@ -136,7 +136,7 @@ export const SKILLS = {
     lesson: {
       title: 'Add the tens, then the ones',
       idea: 'Start from the bigger number and add the other one place by place, biggest place first. Each step is a single-digit addition, and the answer comes out in the order you type it.',
-      when: 'No column adds up to 10 or more, like 43 + 25. The leftmost column may, as there is nothing further left to carry into: in 72 + 51 the tens make 12, and you just write 12 in front of the 3.',
+      when: 'No column adds up to 10 or more, like 43 + 25. The leftmost column may, as there is nothing to its left to carry into: in 72 + 51 the tens make 12, and you write 12 in front of the 3.',
     },
     steps({ x, y }) {
       const [a, b] = x >= y ? [x, y] : [y, x];
@@ -206,7 +206,7 @@ export const SKILLS = {
     sample: [84, 29],
     lesson: {
       title: 'Round the number you take away',
-      idea: 'Borrowing digit by digit means holding a change in your head while you work. Instead, round the number you are subtracting up to the next ten (if it already ends in 0, the next hundred, and so on), subtract that, and add back the extra. Both steps are clean.',
+      idea: 'Borrowing digit by digit means holding a change in your head while you work. Instead, round the number you take away up to the next ten (if it already ends in 0, the next hundred, and so on), subtract that, and add back the extra. Both steps are clean.',
       when: 'A digit on top is smaller than the one underneath, like 84 − 29 or 72 − 36. It is quickest when the number you take away ends in 7, 8 or 9.',
     },
     steps({ x, y }) {
@@ -278,7 +278,7 @@ export const SKILLS = {
     sample: [12, 47],
     lesson: {
       title: 'Times ten, plus a bit',
-      idea: '11 × n is 10 × n plus one more n. 12 × n is 10 × n plus double n. Putting a zero on the end is free, so the only real work is one addition (and, for × 12, a doubling).',
+      idea: '11 × n is 10 × n plus one more n. 12 × n is 10 × n plus double n. 10 × n is n with a zero on the end, so the only work is one addition (and, for × 12, a doubling).',
       when: 'An 11 or 12 times a bigger number, like 11 × 47 or 12 × 38.',
     },
     steps({ x, y }) {
@@ -356,7 +356,7 @@ export const SKILLS = {
     sample: [1081, 23],
     lesson: {
       title: 'Estimate the tens, then fix the ones',
-      idea: 'Round the divisor to estimate the tens of the answer: 1081 ÷ 23 is a bit under 1081 ÷ 20 ≈ 54, and 23 × 50 = 1150 is already too big, so the tens digit is 4. 23 × 40 = 920 leaves 161, and 23 × 7 = 161. The answer is 47.',
+      idea: 'Round the divisor to estimate the tens of the answer: 1081 ÷ 23 is a bit under 1081 ÷ 20 ≈ 54. 23 × 50 = 1150 is already too big, so the tens digit is 4. 23 × 40 = 920 leaves 161, and 23 × 7 = 161. The answer is 47.',
       when: 'The divisor is 13 or more, like 1081 ÷ 23. This only appears when you widen the multiplication ranges.',
     },
     steps: chunkedDivision,
@@ -404,7 +404,7 @@ Object.assign(SKILLS, {
     sample: ['4.7', '0.38'],
     lesson: {
       title: 'Line up the points, then work in whole numbers',
-      idea: 'Give both numbers the same number of decimal places and treat them as whole tenths or hundredths: 4.7 + 0.38 is 470 + 38 = 508 hundredths, so 5.08. Then put the point back. Adding digits from different places is the only real mistake, and this makes it impossible.',
+      idea: 'Give both numbers the same number of decimal places and treat them as whole tenths or hundredths: 4.7 + 0.38 is 470 + 38 = 508 hundredths, so 5.08. Adding digits from different places is the main mistake, and this makes it impossible.',
       when: 'An addition or subtraction where at least one number has a decimal point, like 4.7 + 0.38 or 7.25 − 0.6.',
     },
     steps({ op, x, y }) {
@@ -420,7 +420,7 @@ Object.assign(SKILLS, {
     sample: ['0.7', '64'],
     lesson: {
       title: 'Multiply whole numbers, then place the point',
-      idea: 'Ignore the decimal points and multiply the whole numbers with your usual method. Count the decimal places in the question and give the answer that many: 0.7 × 64 → 7 × 64 = 448 → one place → 44.8. A quick size check catches slips: 0.7 of 64 must be a bit less than 64.',
+      idea: 'Ignore the decimal points and multiply the whole numbers with your usual method. Count the decimal places in the question and give the answer that many: 0.7 × 64 → 7 × 64 = 448 → one place → 44.8. A size check catches slips: 0.7 of 64 must be a bit less than 64.',
       when: 'A multiplication where either number has a decimal point, like 0.7 × 64 or 1.2 × 3.5.',
     },
     steps({ x, y }) {
